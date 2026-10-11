@@ -13,12 +13,12 @@
 // #30 はこれを両側のパネルに入れた。サイドバー側の半分は、広がる列（#981）と一緒に無く
 // なった＝レールの幅は固定なので、ドラッグが書く幅が無い。一般的な形はそのまま＝この
 // モジュールがパネル固有のことを知っていたことは一度も無い。
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 
 export type PanelKey = 'inspectorWidth';
 
 const CACHE_KEY: Record<PanelKey, string> = {
-  inspectorWidth: 'hologram-inspector-width',
+  inspectorWidth: 'dot-inspector-width',
 };
 
 // 絶対の上下限、px 単位。下限は、引き出し直さないと使えない細切れまで縮むのを防ぎ、パネルを
@@ -71,7 +71,7 @@ export function cachedWidth(key: PanelKey): number | null {
 export function persistWidth(key: PanelKey, px: number): void {
   writeCache(key, px);
   try {
-    hologramIpc.setPref(key, px);
+    dotIpc.setPref(key, px);
   } catch {
     /* 無視する */
   }
@@ -81,7 +81,7 @@ export function persistWidth(key: PanelKey, px: number): void {
 // 未設定・読めない時は null を返す＝その場合は、既に使っているキャッシュの推測がそのまま通る。
 export async function loadWidth(key: PanelKey): Promise<number | null> {
   try {
-    const prefs = hologramIpc.getPrefs ? await hologramIpc.getPrefs() : null;
+    const prefs = dotIpc.getPrefs ? await dotIpc.getPrefs() : null;
     const px = prefs ? prefs[key] : null;
     if (typeof px !== 'number' || !Number.isFinite(px)) return null;
     writeCache(key, px);

@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '../lib/harness.ts';
 
-test('以前のリスト設定が残っていてもグリッドで表示し、表示設定を変更できる', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('以前のリスト設定が残っていてもグリッドで表示し、表示設定を変更できる', async ({ launchDot }) => {
+  const { page } = await launchDot({
     seed: ({ configDir }) => {
       const file = path.join(configDir, 'config.json');
       const config = JSON.parse(fs.readFileSync(file, 'utf8'));

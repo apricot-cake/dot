@@ -3,11 +3,11 @@ import { expect, test, vi } from 'vitest';
 const { createVerificationTab, VERIFICATION_TAB_CAPABILITY, VERIFICATION_TAB_CAPABILITY_KEY } = require('./lib-verification-tab.cts');
 
 const url = 'https://x.com/alice/status/123';
-const host = 'com.hologram.host.verify.0123456789ab';
+const host = 'com.dot.host.verify.0123456789ab';
 const key = 'verification.tab.42';
 
 function environment(capability: unknown = VERIFICATION_TAB_CAPABILITY) {
-  const stored: Record<string, string> = { 'verification.tab.99': 'com.hologram.host.verify.abcdef012345', ordinaryPreference: 'unchanged' };
+  const stored: Record<string, string> = { 'verification.tab.99': 'com.dot.host.verify.abcdef012345', ordinaryPreference: 'unchanged' };
   const calls: string[] = [];
   const chrome = {
     tabs: {
@@ -58,7 +58,7 @@ test('対応検査から作成まで同じ evaluate で行い binding 確認後�
   expect(env.chrome.tabs.create).toHaveBeenCalledWith({ url: 'about:blank', active: false });
   expect(env.calls).toEqual(['create', 'persist', 'readback', 'navigate']);
   expect(env.chrome.tabs.update).toHaveBeenCalledWith(42, { url });
-  expect(env.stored).toEqual({ [key]: host, 'verification.tab.99': 'com.hologram.host.verify.abcdef012345', ordinaryPreference: 'unchanged' });
+  expect(env.stored).toEqual({ [key]: host, 'verification.tab.99': 'com.dot.host.verify.abcdef012345', ordinaryPreference: 'unchanged' });
 });
 
 test('Worker が無い場合は評価もタブ作成もしない', async () => {
@@ -104,7 +104,7 @@ test('保存中にルーティング能力の印が失われた場合は URL 遷
 
 test('不正な検証 host はタブ作成前に拒否する', async () => {
   const env = environment();
-  await expect(createVerificationTab(env.worker, url, 'com.hologram.host')).rejects.toThrow('接続先が無効');
+  await expect(createVerificationTab(env.worker, url, 'com.dot.host')).rejects.toThrow('接続先が無効');
   expect(env.chrome.tabs.create).not.toHaveBeenCalled();
 });
 

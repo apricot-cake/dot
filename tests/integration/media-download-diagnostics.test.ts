@@ -38,7 +38,7 @@ async function failuresOf<T>(run: () => Promise<T>): Promise<{ result: T; failur
 }
 
 beforeAll(async () => {
-  dir = path.join(process.env.HOLOGRAM_CONFIG_DIR as string, 'diag');
+  dir = path.join(process.env.DOT_CONFIG_DIR as string, 'diag');
   fs.mkdirSync(dir, { recursive: true });
   global.fetch = ((url: unknown) => respond(String(url))) as typeof fetch;
   // media-download.mts は `module.exports` で公開していて、このプロジェクトのバンドラの

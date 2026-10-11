@@ -1,8 +1,8 @@
 import { generatedActionBadge } from './tokens.generated';
 
-export const VERIFICATION_HOST = 'com.hologram.host.verify';
+export const VERIFICATION_HOST = 'com.dot.host.verify';
 export const VERIFICATION_TAB_CAPABILITY = 'verification-host-routing-v1';
-export const VERIFICATION_TAB_CAPABILITY_KEY = '__HOLOGRAM_VERIFICATION_TAB_CAPABILITY__';
+export const VERIFICATION_TAB_CAPABILITY_KEY = '__DOT_VERIFICATION_TAB_CAPABILITY__';
 
 // Worker ごとの登録完了の印。保存先そのものは storage.local に保持する。
 export function setVerificationRoutingReady(ready: boolean) {
@@ -19,7 +19,7 @@ export async function verificationHost(tabId?: number): Promise<string | undefin
   const key = verificationKey(tabId);
   const stored = await chrome.storage.local.get(key);
   if (!Object.hasOwn(stored, key)) return undefined;
-  if (typeof stored[key] !== 'string' || !/^com\.hologram\.host\.verify\.[a-f0-9]{12}$/.test(stored[key])) throw new Error('検証用の接続先が無効です。検証タブを開き直してください。');
+  if (typeof stored[key] !== 'string' || !/^com\.dot\.host\.verify\.[a-f0-9]{12}$/.test(stored[key])) throw new Error('検証用の接続先が無効です。検証タブを開き直してください。');
   return stored[key];
 }
 
@@ -28,5 +28,5 @@ export async function showVerificationBadge(tabId: number) {
   await chrome.action.setBadgeText({ tabId, text: 'TEST' });
   await chrome.action.setBadgeBackgroundColor({ tabId, color: generatedActionBadge.verificationBackground });
   await chrome.action.setBadgeTextColor({ tabId, color: generatedActionBadge.verificationText });
-  await chrome.action.setTitle({ tabId, title: 'Hologram — 検証用ライブラリ' });
+  await chrome.action.setTitle({ tabId, title: 'dot — 検証用ライブラリ' });
 }

@@ -9,7 +9,7 @@ import { hasPosterIdentity, posterAppearanceHash, posterKeyOf } from '../../app/
 
 const dirs: string[] = [];
 function mkHandle() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-poster-profiles-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-poster-profiles-'));
   dirs.push(dir);
   const { sqlite } = openDatabase(path.join(dir, 'test.db'));
   return { sqlite, stmts: preparePostStmts(sqlite), resolveTagId: makeTagResolver(sqlite) };

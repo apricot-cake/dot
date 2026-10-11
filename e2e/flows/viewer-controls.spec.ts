@@ -1,8 +1,8 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('閲覧と編集を切り替え、保存とキャンセルを区別する', async ({ launchHologram }) => {
-  const hologram = await launchHologram();
-  const { page } = hologram;
+test('閲覧と編集を切り替え、保存とキャンセルを区別する', async ({ launchDot }) => {
+  const dot = await launchDot();
+  const { page } = dot;
   await page.locator('[data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' }).dblclick();
   const toolbar = page.locator('[data-slot="viewer-toolbar"]');
   await expect(toolbar).toBeVisible();
@@ -12,7 +12,7 @@ test('閲覧と編集を切り替え、保存とキャンセルを区別する',
   const editButton = page.locator('[data-slot="viewer-edit"]');
   await expect(editButton).toHaveCSS('border-top-width', '1px');
   await expect(editButton).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  const edits = () => hologram.readDb((db) => db.prepare('SELECT rotation,flipped,cropX FROM media ORDER BY postId,seq').all());
+  const edits = () => dot.readDb((db) => db.prepare('SELECT rotation,flipped,cropX FROM media ORDER BY postId,seq').all());
   const before = edits();
   const detail = await page.locator('[data-slot="inspector-toggle"]').boundingBox();
   const tools = await toolbar.boundingBox();

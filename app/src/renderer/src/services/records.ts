@@ -10,10 +10,10 @@ import type { Translate } from './translation.ts';
 // ランタイムの結合（manual groups / ungrouped の除外設定＝生きた viewer 状態）は
 // makeGroupRecords(deps) を通して注入されるので、このファイルは Node 上でも読み込める
 // （scripts/test-records-unit.cts が dynamic import で動かす）。下の読み込み・永続化の
-// 一対は hologramIpc（services/ipc.ts）を経由する。postKeyOf は今はただの named export
+// 一対は dotIpc（services/ipc.ts）を経由する。postKeyOf は今はただの named export
 // で、計画中の重複保存検知が実装されたら同じ URL→キー正規化を import できる。
 import { isSortAscending, sortOption } from './sort-direction.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 // URL→identity キーの正規化は native-host/ 側にある。ブリッジもこれを持つ必要があり
 // （タイムラインの「保存済み」バッジが、パーマリンがすでにライブラリにあるかをこれに
 // 問い合わせる、#54）、ここに2つ目の実装を置くと、バッジとグリッドが「どの投稿が
@@ -36,19 +36,19 @@ export const isVideoFile = (f: string | null | undefined) => /\.(mp4|webm|mov|m4
 const isUgoiraFile = (f: string | null | undefined) => /\.zip$/i.test(f || '');
 // メディアと切り抜き範囲の型は保存スキーマから導く。
 export type CropRect = import('../../../../../native-host/post-schemas.mts').CropRectShape;
-type HologramMediaItem = import('../../../../../native-host/post-schemas.mts').MediaItemShape;
-const mediaItemsOf = (p: HologramPost): HologramMediaItem[] => (Array.isArray(p.media) ? (p.media as HologramMediaItem[]).filter((m) => m && m.file) : []);
-export const mediaFilesOf = (p: HologramPost): string[] => mediaItemsOf(p).map((m) => m.file as string);
+type DotMediaItem = import('../../../../../native-host/post-schemas.mts').MediaItemShape;
+const mediaItemsOf = (p: DotPost): DotMediaItem[] => (Array.isArray(p.media) ? (p.media as DotMediaItem[]).filter((m) => m && m.file) : []);
+export const mediaFilesOf = (p: DotPost): string[] => mediaItemsOf(p).map((m) => m.file as string);
 // 保存した原文は検索や再処理に使うため変更しない。カードとインスペクタで本文を
 // 読むときだけ、同じ場所に画像が表示されていることを繰り返す添付 URL を隠す。
 // X は通常の外部リンクを entities.urls から展開済みだが、添付画像を示す末尾の
 // t.co は entities.media 側にあり短縮 URL のまま残る。そのため、画像を持つ X 投稿の
 // 末尾だけを添付 URL とみなす。本文中の外部リンクは残す。
-export function displayPostText(p: HologramPost): string {
+export function displayPostText(p: DotPost): string {
   let text = String(p?.text || p?.title || '').trim();
   if (!text) return '';
 
-  const media = Array.isArray(p?.media) ? (p.media as HologramMediaItem[]).filter(Boolean) : [];
+  const media = Array.isArray(p?.media) ? (p.media as DotMediaItem[]).filter(Boolean) : [];
   if (!media.length) return text;
 
   for (const item of media) {
@@ -62,7 +62,7 @@ export function displayPostText(p: HologramPost): string {
 // 先頭の media アイテムのサムネイル用ファイル＝動画/gif ならその poster（生の動画は
 // <img src> になれない）、そうでなければファイル自体。動画に poster がなければ
 // カード画像は空になる。
-export const artworkFile = (p: HologramPost): string => {
+export const artworkFile = (p: DotPost): string => {
   const items = mediaItemsOf(p);
   if (items.length) {
     const first = items[0];
@@ -76,7 +76,7 @@ export const artworkFile = (p: HologramPost): string => {
   // ここから辿れる poster はないので、代わりに出せるものもない。
   return p.image && !isVideoFile(p.image) ? p.image : '';
 };
-export function densityImage(p: HologramPost): string {
+export function densityImage(p: DotPost): string {
   return artworkFile(p);
 }
 
@@ -102,9 +102,9 @@ export function textPlateAspect(text: string | null | undefined): string {
 // --- グルーピング（image-view から移植） ------------------------------------
 // 投稿全体の保存は同じ投稿 URL ごとにまとめる。個別保存は captureId ごとのカードにする。
 // 手動グループは自動より優先し、ungrouped は投稿 URL ごとの自動グループを解除する。
-export const postIdKey = (p: HologramPost): string => p.captureId || (p.url || '') + '|' + (p.capturedAt || '');
+export const postIdKey = (p: DotPost): string => p.captureId || (p.url || '') + '|' + (p.capturedAt || '');
 // 1レコードの「artwork ページ」＝本来の media、なければローカル／移行された画像。
-export const groupFilesOf = (p: HologramPost): string[] => {
+export const groupFilesOf = (p: DotPost): string[] => {
   const m = mediaFilesOf(p);
   if (m.length) return m;
   const a = artworkFile(p);
@@ -118,9 +118,9 @@ export const groupFilesOf = (p: HologramPost): string[] => {
 // 「missing」の空状態に落ち着く。代表の選び方は groupRecords と同じ（本文を
 // 持つレコードを優先する）。純粋関数＝byId は注入される（このため
 // Node 上でも読み込める）。
-export function imageTabGroup(view: { id?: string; recs: string[] | null | undefined }, byId: (id: string) => HologramPost | undefined): HologramPostGroup | null {
+export function imageTabGroup(view: { id?: string; recs: string[] | null | undefined }, byId: (id: string) => DotPost | undefined): DotPostGroup | null {
   const ids: string[] = Array.isArray(view.recs) ? view.recs : [];
-  const records = ids.map((id) => byId(id)).filter(Boolean) as HologramPost[];
+  const records = ids.map((id) => byId(id)).filter(Boolean) as DotPost[];
   if (!records.length) return null;
   const rep = records.find((r) => r.text) || records[0];
   return { key: 'imgtab:' + (view.id || ''), records, rep, files: records.flatMap(groupFilesOf) };
@@ -128,7 +128,7 @@ export function imageTabGroup(view: { id?: string; recs: string[] | null | undef
 // image タブのタイトル＝代表レコードの title/text を24字以内に切ったもの、
 // なければその投稿者、それも無ければ呼び出し元が渡す「Untitled」の既定値
 // （i18n は呼び出し元が持つ）。
-export function imageTabTitleOf(g: HologramPostGroup, fallback: string): string {
+export function imageTabTitleOf(g: DotPostGroup, fallback: string): string {
   const p = g.rep;
   const raw = (p.title || p.text || '').trim().replace(/\s+/g, ' ');
   const base = raw || p.displayName || fallback;
@@ -141,13 +141,13 @@ export function imageTabTitleOf(g: HologramPostGroup, fallback: string): string 
 // どちらも getter 関数にしているのは、viewer.js が読み込み／編集のたびに元の
 // 束縛を再代入するから＝値渡しのスナップショットでは古くなってしまう。
 export function makeGroupRecords(deps: { manualGroups(): string[][]; ungrouped(): Set<string>; joinReplies?: boolean }) {
-  return function groupRecords(list: HologramPost[]): HologramPostGroup[] {
+  return function groupRecords(list: DotPost[]): DotPostGroup[] {
     const manualGroups = deps.manualGroups();
     const ungrouped = deps.ungrouped();
     // URL 由来のグループキー。stampPost がレコードごとに一度だけ前計算する
     // （_postKey）。何らかの理由でスタンプより古いレコードには、その場でのパース
     // にフォールバックする。
-    const pk = (p: HologramPost) => (p._postKey !== undefined ? p._postKey : postKeyOf(p.url));
+    const pk = (p: DotPost) => (p._postKey !== undefined ? p._postKey : postKeyOf(p.url));
     const manualOf = new Map<string, string>(); // captureId → 'manual:idx'（手動グループが優先）
     manualGroups.forEach((members, idx) => members.forEach((cid) => manualOf.set(cid, 'manual:' + idx)));
     let solo = 0;
@@ -161,7 +161,7 @@ export function makeGroupRecords(deps: { manualGroups(): string[][]; ungrouped()
       }
       return { p, key };
     });
-    const pidOf = (p: HologramPost) => {
+    const pidOf = (p: DotPost) => {
       const k = pk(p);
       return k ? k.split(/[/:]/).pop() : null;
     };
@@ -217,7 +217,7 @@ export function makeGroupRecords(deps: { manualGroups(): string[][]; ungrouped()
       return root;
     };
     const map = new Map<string, any>();
-    const order: HologramPostGroup[] = [];
+    const order: DotPostGroup[] = [];
     for (const e of base) {
       const key = resolveKey(e.key);
       let g: any = map.get(key);
@@ -240,18 +240,18 @@ export function makeGroupRecords(deps: { manualGroups(): string[][]; ungrouped()
       // 遡ったホップ数（上の合流で使う idIndex のキー付けと同じ考え方）。byOwnId は
       // グループごとに作るので、複数の投稿者が混ざる手動グループでは単に連鎖が
       // できない＝そのメンバーは日時／captureId で並ぶ、それがそこでは望ましい。
-      const byOwnId = new Map<string, HologramPost>();
+      const byOwnId = new Map<string, DotPost>();
       for (const p of g.records) {
         const id = pidOf(p);
         if (id && p.userId) byOwnId.set(pk(p)?.split(':')[0] + '|' + p.userId + '|' + id, p);
       }
-      const depthCache = new Map<HologramPost, number>();
-      const depthOf = (start: HologramPost): number => {
+      const depthCache = new Map<DotPost, number>();
+      const depthOf = (start: DotPost): number => {
         const cached = depthCache.get(start);
         if (cached !== undefined) return cached;
-        let cur: HologramPost | undefined = start;
-        const path: HologramPost[] = [];
-        const positions = new Map<HologramPost, number>();
+        let cur: DotPost | undefined = start;
+        const path: DotPost[] = [];
+        const positions = new Map<DotPost, number>();
         let parentDepth: number | undefined;
         while (cur) {
           const known = depthCache.get(cur);
@@ -278,7 +278,7 @@ export function makeGroupRecords(deps: { manualGroups(): string[][]; ungrouped()
             parentDepth = -1;
             break;
           }
-          const parent: HologramPost | undefined = byOwnId.get(pk(cur)?.split(':')[0] + '|' + cur.userId + '|' + String(cur.replyToId));
+          const parent: DotPost | undefined = byOwnId.get(pk(cur)?.split(':')[0] + '|' + cur.userId + '|' + String(cur.replyToId));
           if (!parent || parent === cur) {
             parentDepth = -1;
             break;
@@ -312,7 +312,7 @@ export function makeGroupRecords(deps: { manualGroups(): string[][]; ungrouped()
 // を順位付けし、X の生の件数が支配的にならないようにする。欠損値、SNS を特定
 // できない投稿、比較不能な母集団には null を返す。同値には平均順位を割り当てる。
 // （image-view から移植）
-export function percentileFn(list: HologramPost[]): (p: HologramPost) => number | null {
+export function percentileFn(list: DotPost[]): (p: DotPost) => number | null {
   const byPlat: Record<string, number[]> = {};
   list.forEach((p) => {
     const k = typeof p.platform === 'string' ? p.platform.trim() : '';
@@ -361,7 +361,7 @@ export type GalleryItem = { src: string; alt: string; video: boolean; postId?: s
 export function makeGallery(deps: { fileSrc(file: string): string }) {
   const { fileSrc } = deps;
   // 1投稿分のギャラリー項目。p.image / p.video と media[] はいずれも原本。
-  function buildGalleryItems(p: HologramPost): GalleryItem[] {
+  function buildGalleryItems(p: DotPost): GalleryItem[] {
     const items: GalleryItem[] = [];
     const postId = typeof p.captureId === 'string' && p.captureId ? p.captureId : undefined;
     // artworkFile のフォールバックと同じ注意点: `image` が動画名を持つことは
@@ -369,7 +369,7 @@ export function makeGallery(deps: { fileSrc(file: string): string }) {
     // 書かれた行はそうでない場合があり、そのままだと詳細ビューが
     // <img src="…mp4"> を開いてしまう＝本来は問題なく再生できるファイルの上に
     // 空白ページが出る（#496）。ファイル名で判断する。
-    const media = Array.isArray(p.media) ? (p.media as HologramMediaItem[]) : [];
+    const media = Array.isArray(p.media) ? (p.media as DotMediaItem[]) : [];
     const primaryMedia = media.findIndex((m) => !!m?.file && m.file === p.image);
     if (p.image) {
       const m = primaryMedia >= 0 ? media[primaryMedia] : null;
@@ -388,7 +388,7 @@ export function makeGallery(deps: { fileSrc(file: string): string }) {
     }
     if (p.video) items.push({ src: fileSrc(p.video), alt: '', video: true, postId });
     if (Array.isArray(p.media)) {
-      for (const [mediaSeq, m] of (p.media as HologramMediaItem[]).entries()) {
+      for (const [mediaSeq, m] of (p.media as DotMediaItem[]).entries()) {
         if (!m || !m.file) continue;
         if (m.file === p.image || m.file === p.video) continue;
         const ugoira = m.type === 'ugoira' && Array.isArray(m.frames) && m.frames.length ? { file: m.file, frames: m.frames } : undefined;
@@ -417,7 +417,7 @@ export function makeGallery(deps: { fileSrc(file: string): string }) {
     return items;
   }
   // グループ全体のギャラリー: 全レコードの原本を src でまとめて重複除去する。
-  function buildGroupGalleryItems(g: HologramPostGroup): GalleryItem[] {
+  function buildGroupGalleryItems(g: DotPostGroup): GalleryItem[] {
     if (g.records.length === 1) return buildGalleryItems(g.rep);
     const seen = new Set<string>();
     const items: GalleryItem[] = [];
@@ -454,7 +454,7 @@ export function monoHue(seed: string): number {
 // #180/#183: 埋め込まれた quote／reply-to カードのモデル＝保存済みサイドカーの
 // サブレコード（p.quotedPost / p.replyToPost）から inspector/QuotedPostCard.tsx が
 // 描画するものへの純粋な写像。保存済み投稿への移動はインスペクタ側で追加する。
-export function quotedCardModelOf(sub: any, kind: 'quote' | 'reply', t: Translate): HologramQuotedCardModel | null {
+export function quotedCardModelOf(sub: any, kind: 'quote' | 'reply', t: Translate): DotQuotedCardModel | null {
   if (!sub) return null;
   const displayName = sub.displayName || sub.screenName || '';
   const media = Array.isArray(sub.media) ? sub.media : [];
@@ -491,11 +491,11 @@ export function makeCardModel(deps: {
   /** 並び替え項目。件数のソートは、その項目だけをカードに出す。 */
   sortMetric(): string;
   /** SNS 内人気順のパーセンタイル。0 が最下位、1 が最上位。 */
-  likesPercentile(p: HologramPost): number | null;
+  likesPercentile(p: DotPost): number | null;
   /** 反応数の絞り込み時だけ、非ゼロの反応数を併記する。 */
 }) {
   const { t, formatCount, formatDate, compactDate, fileSrc, smokeCapture, shape, imgAspect, gridThumbW, sortMetric, likesPercentile } = deps;
-  return function cardModel(g: HologramPostGroup, i: number): Record<string, any> {
+  return function cardModel(g: DotPostGroup, i: number): Record<string, any> {
     const p = g.rep;
     const view = shape();
     const aspectCache = imgAspect();
@@ -617,7 +617,7 @@ export function makeCardModel(deps: {
 // ソート用のタイムスタンプを事前計算する＝getFilteredPosts() が比較のたびに
 // new Date() を呼ばずに済むように（描画のたびではなく、レコードの到着時に
 // 一度だけ行う）。
-export function stampPost(p: HologramPost): HologramPost {
+export function stampPost(p: DotPost): DotPost {
   p._dateMs = p.date ? +new Date(p.date) : 0;
   p._capturedMs = p.capturedAt ? +new Date(p.capturedAt) : 0;
   p._postKey = postKeyOf(p.url); // URL 由来のグループキー。無ければ groupRecords がレコードごとに3回パースし直すことになる
@@ -626,7 +626,7 @@ export function stampPost(p: HologramPost): HologramPost {
 }
 
 // manual-groups.json / ungrouped.json の読み込み・永続化（P4「IPC→service」の
-// ドメイングルーピング切り出し＝生の hologramIpc 呼び出しを viewer.js から
+// ドメイングルーピング切り出し＝生の dotIpc 呼び出しを viewer.js から
 // ここへ移した。これら2つのストアをすでに注入 deps として使っている
 // makeGroupRecords/makeGallery の隣に置く）。ブラウザ側（viewer.js）からだけ
 // 呼ばれ、Node の単体テストからは一切呼ばれない。
@@ -641,7 +641,7 @@ export function stampPost(p: HologramPost): HologramPost {
 // 手動グルーピングの編集はライブでは同期しない。
 export async function loadManualGroups() {
   try {
-    const r = await hologramIpc.getManualGroups();
+    const r = await dotIpc.getManualGroups();
     return (r && r.groups) || [];
   } catch {
     return [];
@@ -649,7 +649,7 @@ export async function loadManualGroups() {
 }
 export async function loadUngrouped() {
   try {
-    const r = await hologramIpc.getUngrouped();
+    const r = await dotIpc.getUngrouped();
     return new Set<string>((r && r.keys) || []);
   } catch {
     return new Set<string>();

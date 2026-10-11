@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('非アクティブでもメニューのホバー強調とサブメニューが動く', async ({ launchHologram }) => {
-  const { app, page } = await launchHologram();
+test('非アクティブでもメニューのホバー強調とサブメニューが動く', async ({ launchDot }) => {
+  const { app, page } = await launchDot();
   await page.locator('[data-slot="toolbar-sort"]').press('Enter');
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: false });

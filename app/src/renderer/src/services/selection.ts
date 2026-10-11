@@ -1,11 +1,11 @@
 // 選択の状態＝投稿グリッドの複数選択の Set と、Shift 範囲の起点。唯一の持ち主として
-// 切り出したもの。hologramStore の 'selectedSet' キーがその状態そのもの（揃え続けるべき
+// 切り出したもの。dotStore の 'selectedSet' キーがその状態そのもの（揃え続けるべき
 // 別の閉包の Set は無い）＝書き換えのたびに store.get('selectedSet') で今の Set を読み、
 // 新しい Set を組み（ストアの set() は === が同一なら何もしないし、グリッドの
 // コンポーネントの Cell＝Grid.tsx を参照＝がこのキーを直接購読しているので、通知するには
 // 新しい参照が要る）、それを書き戻す。Shift 範囲の起点は以前と同じくモジュールの私的な
 // 変数のまま（購読側はいない＝viewer の内部だけのもので、state→store の段が自分で
-// hologramStore へ入れないと決めた）。
+// dotStore へ入れないと決めた）。
 // 書き換えの周りの副作用（#postGrid の 'selecting' クラス、一括の IPC・確認・描画の
 // まとめ）はすべて viewer.js が持ち、このモジュールの問い合わせと書き換えの API だけを
 // 呼ぶ。今は本物の ES モジュールで、その export は orchestrator と画面下の FloatingBar の
@@ -32,21 +32,21 @@ export function anchorIndex() {
   return anchor;
 }
 
-type PostIdKey = (p: HologramPost) => string;
+type PostIdKey = (p: DotPost) => string;
 
 // `groups` のうち、今選ばれている群すべて（一括操作はこれに対して働く）。`postIdKey` は
 // 群の代表を、その選択のキーへ解決する。
-export function selectedGroups(groups: HologramPostGroup[], postIdKey: PostIdKey): HologramPostGroup[] {
+export function selectedGroups(groups: DotPostGroup[], postIdKey: PostIdKey): DotPostGroup[] {
   const set = current();
   return groups.filter((g) => set.has(postIdKey(g.rep)));
 }
 // 選ばれた群すべての、レコードすべて。
-export function selectedRecords(groups: HologramPostGroup[], postIdKey: PostIdKey): HologramPost[] {
-  const records: HologramPost[] = [];
+export function selectedRecords(groups: DotPostGroup[], postIdKey: PostIdKey): DotPost[] {
+  const records: DotPost[] = [];
   selectedGroups(groups, postIdKey).forEach((g) => records.push(...g.records));
   return records;
 }
-export function isAllSelected(groups: HologramPostGroup[], postIdKey: PostIdKey): boolean {
+export function isAllSelected(groups: DotPostGroup[], postIdKey: PostIdKey): boolean {
   const set = current();
   return groups.length > 0 && groups.every((g) => set.has(postIdKey(g.rep)));
 }
@@ -54,7 +54,7 @@ export function isAllSelected(groups: HologramPostGroup[], postIdKey: PostIdKey)
 // カードを選択に出し入れする。shiftKey を伴う場合は、最後の起点から範囲選択もする
 // （Google フォト風）。`idx` と `key` が押されたカードを指し、`groups`（と `postIdKey`）が
 // 範囲のメンバーをキーへ解決する。
-export function toggle(idx: number, key: string, shiftKey: boolean, groups: HologramPostGroup[], postIdKey: PostIdKey) {
+export function toggle(idx: number, key: string, shiftKey: boolean, groups: DotPostGroup[], postIdKey: PostIdKey) {
   const next = new Set(current());
   if (shiftKey && anchor !== null) {
     const lo = Math.min(anchor, idx);
@@ -84,7 +84,7 @@ export function clear() {
   store.setState({ selectedSet: new Set<string>() });
 }
 
-export function selectAll(groups: HologramPostGroup[], postIdKey: PostIdKey) {
+export function selectAll(groups: DotPostGroup[], postIdKey: PostIdKey) {
   const next = new Set(current());
   groups.forEach((g) => next.add(postIdKey(g.rep)));
   anchor = null;
@@ -93,7 +93,7 @@ export function selectAll(groups: HologramPostGroup[], postIdKey: PostIdKey) {
 
 // 全選択・全解除のボタンとツールバーのショートカット。すべて選ばれた状態と、何も選ばれて
 // いない状態の間を一手で行き来する。
-export function toggleAll(groups: HologramPostGroup[], postIdKey: PostIdKey) {
+export function toggleAll(groups: DotPostGroup[], postIdKey: PostIdKey) {
   if (isAllSelected(groups, postIdKey)) clear();
   else selectAll(groups, postIdKey);
 }

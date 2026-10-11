@@ -16,7 +16,7 @@
 //
 // 見た目そのもの（%の読みやすさ、アイコンの意味）は実際のElectronアプリを
 // 目視する領分。これは自前のサンドボックス化したElectronインスタンスを起動
-// する（HOLOGRAM_SMOKE）。
+// する（DOT_SMOKE）。
 //
 //   node e2e/harness/cases/test-app-image-zoom.cts
 
@@ -33,8 +33,8 @@ const electronPath = resolveElectron();
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-imagezoom-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-imagezoom-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -221,9 +221,9 @@ const evalJs = evalSource(async ({ waitFor }) => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

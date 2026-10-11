@@ -198,17 +198,17 @@ const setSetting = (key: string, value: unknown) => {
 // スクロール追従とホスト側の重なり順が壊れるため）。だから素の document からそのまま拾える。
 // 拾えるのは状態非依存のホスト要素だけで、丸そのものは closed ShadowRoot の中に
 // いる（#310＝部分木に留まったまま、ホストの CSS とページ JS からは隔離する）。
-const controlHosts = (): any[] => Array.from(window.document.querySelectorAll('[data-hologram-overlay]'));
+const controlHosts = (): any[] => Array.from(window.document.querySelectorAll('[data-dot-overlay]'));
 // ホスト要素から丸へ。見た目・タブ順・アクセシブル名を見るテストは、すべてこちら側を通る。
 const disc = (el: any): any => (el?.shadowRoot || closedRoots.get(el))?.firstElementChild ?? el;
-const controls = (): any[] => controlHosts().filter((el) => disc(el).hasAttribute('data-hologram-face'));
+const controls = (): any[] => controlHosts().filter((el) => disc(el).hasAttribute('data-dot-face'));
 const labelOf = (el: any): string | null => disc(el)?.getAttribute('aria-label');
 // 一方、失敗を知らせる上部のバナーは共有の ShadowRoot（ui-root.ts）にいる。
-const saveBanners = (): any[] => Array.from((window.document.querySelector('hologram-extension-ui') as any)?.shadowRoot?.querySelectorAll('[data-hologram-save-banner]') || []);
-// テストが控えた closed root 内の data-hologram-face で見分ける。production のページ JS は
+const saveBanners = (): any[] => Array.from((window.document.querySelector('dot-extension-ui') as any)?.shadowRoot?.querySelectorAll('[data-dot-save-banner]') || []);
+// テストが控えた closed root 内の data-dot-face で見分ける。production のページ JS は
 // この属性へ到達できない。文言そのものは別のテストが見る。
-const marks = () => controls().filter((el) => disc(el).getAttribute('data-hologram-face') === 'mark');
-const saveButtons = () => controls().filter((el) => disc(el).getAttribute('data-hologram-face') === 'save');
+const marks = () => controls().filter((el) => disc(el).getAttribute('data-dot-face') === 'mark');
+const saveButtons = () => controls().filter((el) => disc(el).getAttribute('data-dot-face') === 'save');
 // overlay.ts は「これは保存済みか」の問い合わせを QUERY_DEBOUNCE_MS（300）の裏でまとめる。
 // そのタイマーが鳴るまでは何も送られておらず、観測できるものも無い。400 はその数字に余裕を
 // 足したもの。両方のタイマーは本物で同じ時計に積まれるので、負荷の高い機械では揃って遅れる
@@ -400,7 +400,7 @@ describe('savedBadgeMode の三値', () => {
     setSetting('savedBadgeMode', 'hover');
     expect(controls()).toHaveLength(0);
     expect(controlHosts()).toEqual(hosts);
-    expect(hosts.every((host) => host.shadowRoot === null && !host.hasAttribute('data-hologram-face'))).toBe(true);
+    expect(hosts.every((host) => host.shadowRoot === null && !host.hasAttribute('data-dot-face'))).toBe(true);
   });
 
   test('保存済みの投稿にポインタを乗せると印が出る', () => {
@@ -440,7 +440,7 @@ describe('savedBadgeMode の三値', () => {
   test('印は title を持たず、読み上げ名だけを持つ', () => {
     expect(marks()[0].hasAttribute('title')).toBe(false);
     expect(disc(marks()[0]).hasAttribute('title')).toBe(false);
-    expect(labelOf(marks()[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(marks()[0])).toBe('Open saved post in dot');
   });
 
   // #310: 部分木に留まったままホストの CSS からは隔離する＝丸はホスト要素の ShadowRoot の中に
@@ -601,9 +601,9 @@ describe('保存ボタン', () => {
     expect(b.tagName).toBe('BUTTON');
     // 4つの顔（印・保存・処理中・再試行）はすべて同じ寸法を共有する＝押した瞬間に角が縮まない。
     expect(b.style.width).toBe('24px');
-    expect(b.style.background).toBe('var(--hologram-control-surface)');
+    expect(b.style.background).toBe('var(--dot-control-surface)');
     // #310: 影はもうカードの面と共有しておらず、24px 専用のトークンを自分で持つ。
-    expect(b.style.boxShadow).toBe('var(--hologram-control-shadow)');
+    expect(b.style.boxShadow).toBe('var(--dot-control-shadow)');
     expect(b.getAttribute('aria-label')).toBe('Save post');
     // 押せる顔は必ずタブ順に入る（#536）＝グリフだけのボタンなので、名前とフォーカスの
     // どちらが欠けてもキーボードにも読み上げにも見えなくなる。
@@ -640,7 +640,7 @@ describe('保存ボタン', () => {
     // 状態色ではなく、面の色とハローと拡大だけ。要点は、ホバー中も半透明のままだということ
     // ＝保存済みの印と同じ不透明度に揃えてある（2026-07-29 のユーザー判断）ので、ホバーで
     // 不透明に戻ると写真を透かして見せる意味が消える。
-    expect(b.style.background).toBe('var(--hologram-control-surface-hover)');
+    expect(b.style.background).toBe('var(--dot-control-surface-hover)');
     expect(b.style.transform).toBe('scale(1.04)');
 
     b.dispatchEvent(new window.Event('pointerleave'));
@@ -669,7 +669,7 @@ describe('保存ボタン', () => {
     test('保存中は押せないスピナーを表示し、ホバーし直しても保持する', () => {
       try {
         expect(saveButtons()).toHaveLength(0);
-        const busy = controls().find((el: any) => disc(el).dataset.hologramFace === 'busy');
+        const busy = controls().find((el: any) => disc(el).dataset.dotFace === 'busy');
         expect(busy).toBeDefined();
         expect(disc(busy).tagName).toBe('DIV');
         expect(disc(busy).getAttribute('aria-label')).toBe('Saving');
@@ -680,7 +680,7 @@ describe('保存ボタン', () => {
         expect(sent).toHaveLength(before);
         hoverAway();
         hover('p2');
-        expect(controls().find((el: any) => disc(el).dataset.hologramFace === 'busy')).toBe(busy);
+        expect(controls().find((el: any) => disc(el).dataset.dotFace === 'busy')).toBe(busy);
       } finally {
         deferSaveReply = false;
         pendingSaveReply?.(saveReply);
@@ -766,7 +766,7 @@ describe('保存に失敗したとき', () => {
     expect(banners[0].textContent).toContain("Can't connect to the app");
     expect(banners[0].dataset.variant).toBe('toast');
     expect(banners[0].textContent).toContain('Details');
-    expect(banners[0].parentElement.querySelector('[data-hologram-toast-details]')?.textContent).toContain('Retry');
+    expect(banners[0].parentElement.querySelector('[data-dot-toast-details]')?.textContent).toContain('Retry');
     expect(banners[0].textContent).not.toContain('Error when communicating');
   });
 
@@ -867,7 +867,7 @@ describe('複数画像の個別保存', () => {
     const unit = window.document.getElementById('p4');
     const parent = unit.parentElement;
     const fresh = unit.cloneNode(true) as HTMLElement;
-    fresh.querySelectorAll('[data-hologram-overlay]').forEach((control) => control.remove());
+    fresh.querySelectorAll('[data-dot-overlay]').forEach((control) => control.remove());
     unit.remove();
     await settle();
     parent.append(fresh);
@@ -884,7 +884,7 @@ describe('複数画像の個別保存', () => {
   // 失敗の文面は失敗より長生きしない。#310 以降、角はそもそも文面を持ち越さない（失敗した
   // 瞬間にバナーが余さず述べるため）ので、印は常に自分の名前だけを持つ。
   test('印は前の失敗の文面を引きずらない', () => {
-    expect(labelOf(controlOf('p4a')[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(controlOf('p4a')[0])).toBe('Open saved post in dot');
     setSetting('savedBadgeMode', 'hover');
   });
 });
@@ -910,7 +910,7 @@ describe('画像単位の保存履歴がある投稿', () => {
   test('保存した2枚目だけに印が付く', () => {
     expect(controlOf('p10a')).toHaveLength(0);
     expect(controlOf('p10b')).toHaveLength(1);
-    expect(labelOf(controlOf('p10b')[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(controlOf('p10b')[0])).toBe('Open saved post in dot');
   });
 
   test('未保存の画像では個別保存ボタンを出す', async () => {
@@ -928,7 +928,7 @@ describe('画像単位の保存履歴がある投稿', () => {
 
     expect(saveButtons()).toHaveLength(0);
     expect(controlOf('p10b')).toHaveLength(1);
-    expect(labelOf(controlOf('p10b')[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(controlOf('p10b')[0])).toBe('Open saved post in dot');
     hoverAway();
   });
 
@@ -936,7 +936,7 @@ describe('画像単位の保存履歴がある投稿', () => {
     for (const fn of runtimeListeners) fn({ type: 'savedUpdate', url: 'https://x.com/ivan/status/1010', media: ['https://pbs.twimg.com/media/KKK?format=jpg&name=orig'] });
 
     expect(controlOf('p10a')).toHaveLength(1);
-    expect(labelOf(controlOf('p10a')[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(controlOf('p10a')[0])).toBe('Open saved post in dot');
     expect(controlOf('p10b')).toHaveLength(1);
   });
 });
@@ -989,7 +989,7 @@ describe('ボタンを切っても印は残る', () => {
 
     const host = controlHosts().find((candidate) => candidate.parentElement === boxOf('p1'));
     expect(host).toBeDefined();
-    expect(disc(host).hasAttribute('data-hologram-face')).toBe(false);
+    expect(disc(host).hasAttribute('data-dot-face')).toBe(false);
     expect(host.style.pointerEvents).toBe('none');
 
     const underlying = window.document.createElement('button');
@@ -1005,7 +1005,7 @@ describe('ボタンを切っても印は残る', () => {
       expect(received[0].button).toBe(0);
       expect(received[0].isTrusted).toBe(true);
       expect(host.style.pointerEvents).toBe('none');
-      expect(disc(host).hasAttribute('data-hologram-face')).toBe(false);
+      expect(disc(host).hasAttribute('data-dot-face')).toBe(false);
     } finally {
       underlying.remove();
       setSetting('savedBadgeMode', 'hover');
@@ -1095,7 +1095,7 @@ describe('メディアタブのグリッドタイル（#349）', () => {
       hover('p8');
 
       expect(p8Controls()).toHaveLength(1);
-      expect(labelOf(p8Controls()[0])).toBe('Open saved post in Hologram');
+      expect(labelOf(p8Controls()[0])).toBe('Open saved post in dot');
       hoverAway();
     });
   });
@@ -1197,7 +1197,7 @@ describe('投稿情報が取れなかった保存（#310・#367）', () => {
   });
 
   test('角そのものは印のまま＝長い文面を載せない', () => {
-    expect(labelOf(controlOf('p11a')[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(controlOf('p11a')[0])).toBe('Open saved post in dot');
     expect(controlOf('p11a')[0].hasAttribute('title')).toBe(false);
   });
 });
@@ -1224,11 +1224,11 @@ describe('ホストの版がずれているときの案内（#205 の配線漏�
     const banner: any = saveBanners().at(-1);
 
     expect(banner.dataset.state).toBe('partial');
-    expect(banner.textContent).toBe('Saved — please update the Hologram app (it no longer matches this extension)');
+    expect(banner.textContent).toBe('Saved — please update the dot app (it no longer matches this extension)');
   });
 
   test('角そのものは印のまま＝長い文面を載せない', () => {
-    expect(labelOf(controlOf('p12a')[0])).toBe('Open saved post in Hologram');
+    expect(labelOf(controlOf('p12a')[0])).toBe('Open saved post in dot');
   });
 });
 
@@ -1274,7 +1274,7 @@ describe('テキストのみの投稿（#575）', () => {
 
     // 見るのは p14 自身の箱だけ（controls() は他の投稿の一時的な face='flash' も拾ってしまう）。
     expect(controlOf('p14')).toHaveLength(1);
-    expect(disc(controlOf('p14')[0]).getAttribute('data-hologram-face')).toBe('save');
+    expect(disc(controlOf('p14')[0]).getAttribute('data-dot-face')).toBe('save');
     expect(labelOf(controlOf('p14')[0])).toBe('Save post');
     hoverAway();
   });
@@ -1290,8 +1290,8 @@ describe('テキストのみの投稿（#575）', () => {
 
     const p14Controls = controlOf('p14');
     expect(p14Controls).toHaveLength(1);
-    expect(disc(p14Controls[0]).getAttribute('data-hologram-face')).toBe('mark');
-    expect(labelOf(p14Controls[0])).toBe('Open saved post in Hologram');
+    expect(disc(p14Controls[0]).getAttribute('data-dot-face')).toBe('mark');
+    expect(labelOf(p14Controls[0])).toBe('Open saved post in dot');
   });
 
   // 印はアバターに乗る＝丸の中心がアバターの縁（左上から 135° の点）に来るので、半分が写真に
@@ -1555,7 +1555,7 @@ describe('拡張が更新されて孤児になったタブ（#594）', () => {
   test('孤児になる前は普通に保存ボタンが出ている', () => {
     const [button] = controlOf('p15');
 
-    expect(disc(button).getAttribute('data-hologram-face')).toBe('save');
+    expect(disc(button).getAttribute('data-dot-face')).toBe('save');
   });
 
   // 直す前は Uncaught Error になり、受領を待つタイムアウトまで回転子が回り続けたあげく、

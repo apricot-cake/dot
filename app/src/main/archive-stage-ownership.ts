@@ -61,7 +61,7 @@ async function lock(root: string, key: string): Promise<RequestLock> {
 }
 export async function archiveStageRoot(profile: string, temporary = os.tmpdir(), create = true) {
   const realProfile = canonical(await fs.realpath(profile));
-  const root = path.join(temporary, `hologram-archive-stages-${createHash('sha256').update(realProfile).digest('hex')}`);
+  const root = path.join(temporary, `dot-archive-stages-${createHash('sha256').update(realProfile).digest('hex')}`);
   if (create) await fs.mkdir(root, { recursive: true });
   await regular(root, true);
   const marker = path.join(root, 'owner.json');

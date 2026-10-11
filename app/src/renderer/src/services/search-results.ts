@@ -1,4 +1,4 @@
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import type { SearchCandidate } from '../../../shared/search-fields.ts';
 import { getGeneration } from './posts-data.ts';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ export function matchingIds(kind: string, query: string, entries?: SearchCandida
   if (cache.size > 100) cache.clear();
   const state = { pending: true, ids: undefined as Set<string> | undefined };
   cache.set(key, state);
-  const request = entries ? hologramIpc.searchCandidates(query, entries) : hologramIpc.searchFullText(query).then((hits) => hits.map((hit) => hit.postId));
+  const request = entries ? dotIpc.searchCandidates(query, entries) : dotIpc.searchFullText(query).then((hits) => hits.map((hit) => hit.postId));
   void request
     .then((ids) => {
       if (getGeneration() !== generation || cache.get(key) !== state) return;
@@ -49,11 +49,11 @@ export function matchingIds(kind: string, query: string, entries?: SearchCandida
     });
   return new Set();
 }
-export function matchesPost(query: string, post: HologramPost) {
+export function matchesPost(query: string, post: DotPost) {
   return matchingIds('posts', query).has(post.captureId);
 }
 
-export function postQueriesReady(node: HologramQueryNode | undefined): boolean {
+export function postQueriesReady(node: DotQueryNode | undefined): boolean {
   if (!node) return true;
   if (node.kind === 'group') {
     const ready = node.children.map(postQueriesReady);

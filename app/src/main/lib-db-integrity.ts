@@ -75,7 +75,7 @@ function listOwnedFiles(saveFolder: string): string[] {
   const out: string[] = [];
   for (const name of names) {
     if (name === TRASH_SUBDIR || name === AVATAR_SUBDIR || name === ITEMS_SUBDIR) continue;
-    if (name.startsWith('.')) continue; // .hologram-inbox、.trash、ドット始まりのファイル
+    if (name.startsWith('.')) continue; // .dot-inbox、.trash、ドット始まりのファイル
     if (/\.tmp(-\d+)?$/i.test(name)) continue;
     try {
       if (fs.statSync(path.join(saveFolder, name)).isFile()) out.push(name);

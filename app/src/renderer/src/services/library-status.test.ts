@@ -2,7 +2,7 @@
 //
 // 主張は1つ＝読み込みが着地していないうち(libraryLoaded=false)は、
 // postGroups/posterGroups が何を持っていようと空状態を返さない。
-// #682 の実際の不具合は、この保証が守られなかったもの。`hologramIpc.getPrefs().then(...)`
+// #682 の実際の不具合は、この保証が守られなかったもの。`dotIpc.getPrefs().then(...)`
 // がライブラリ自身の読み込み(loadPosts)より先に解決すると、allPosts がまだ []
 // のまま renderPosts() が postGroups=null を書き、起動直後に初回向けの
 // 「投稿がありません」が一瞬ちらつく(services/orchestrator.ts の bootApp と

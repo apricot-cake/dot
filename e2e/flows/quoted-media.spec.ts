@@ -6,11 +6,11 @@ import { quotedCaptureId } from '../../native-host/quoted-id.mts';
 import { openDatabase } from '../../app/src/main/lib-db.ts';
 import { makeTagResolver, preparePostStmts, writePost } from '../../app/src/main/lib-db-record-writer.ts';
 
-test('引用元は一覧に出ず、インスペクタの画像からローカルビューアを開ける', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('引用元は一覧に出ず、インスペクタの画像からローカルビューアを開ける', async ({ launchDot }) => {
+  const { page } = await launchDot({
     posts: [FIXTURE_POSTS[0]],
     seed({ saveFolder }) {
-      const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+      const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
       try {
         const file = `quoted-media/${quotedCaptureId('https://x.com/quoted/status/123')}/image.png`;
         fs.mkdirSync(path.dirname(path.join(saveFolder, file)), { recursive: true });
@@ -38,10 +38,10 @@ test('引用元は一覧に出ず、インスペクタの画像からローカ�
 
 for (const viewer of [false, true]) {
   for (const kind of ['quotedPost', 'replyToPost']) {
-    test(`${viewer ? 'ビューア' : 'ライブラリ'}から保存済みの${kind}へ移動する`, async ({ launchHologram }) => {
-      const { page } = await launchHologram({
+    test(`${viewer ? 'ビューア' : 'ライブラリ'}から保存済みの${kind}へ移動する`, async ({ launchDot }) => {
+      const { page } = await launchDot({
         seed({ saveFolder }) {
-          const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+          const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
           try {
             sqlite.prepare('UPDATE posts SET url = ? WHERE captureId = ?').run('https://x.com/target/status/123', FIXTURE_POSTS[0].captureId);
             writePost(preparePostStmts(sqlite), makeTagResolver(sqlite), {

@@ -1,4 +1,4 @@
-const VERIFICATION_TAB_CAPABILITY_KEY = '__HOLOGRAM_VERIFICATION_TAB_CAPABILITY__';
+const VERIFICATION_TAB_CAPABILITY_KEY = '__DOT_VERIFICATION_TAB_CAPABILITY__';
 const VERIFICATION_TAB_CAPABILITY = 'verification-host-routing-v1';
 
 interface VerificationTabArguments {
@@ -13,10 +13,10 @@ async function openVerificationTabInWorker({ url, host, capabilityKey, capabilit
   const scope = globalThis as any;
   const chrome = scope.chrome;
   const requireCapability = () => {
-    if (scope[capabilityKey] !== capability) throw new Error('開発用 Chrome の Hologram 拡張機能が検証タブの隔離に対応していません。拡張機能を再配備してください。');
+    if (scope[capabilityKey] !== capability) throw new Error('開発用 Chrome の dot 拡張機能が検証タブの隔離に対応していません。拡張機能を再配備してください。');
   };
   requireCapability();
-  if (!/^com\.hologram\.host\.verify\.[a-f0-9]{12}$/.test(host)) throw new Error('検証用の接続先が無効です。');
+  if (!/^com\.dot\.host\.verify\.[a-f0-9]{12}$/.test(host)) throw new Error('検証用の接続先が無効です。');
   if (!/^https:\/\/(?:x\.com|twitter\.com|bsky\.app|www\.pixiv\.net)\//.test(url)) throw new Error('検証する投稿の HTTPS URL を指定してください。');
   const tab = await chrome.tabs.create({ url: 'about:blank', active: false });
   if (!Number.isInteger(tab?.id) || tab.id < 0) throw new Error('検証用タブを作成できませんでした。');
@@ -29,7 +29,7 @@ async function openVerificationTabInWorker({ url, host, capabilityKey, capabilit
     requireCapability();
     await chrome.action.setBadgeText({ tabId: tab.id, text: 'TEST' });
     await chrome.action.setBadgeBackgroundColor({ tabId: tab.id, color: '#985800' });
-    await chrome.action.setTitle({ tabId: tab.id, title: 'Hologram — 検証用ライブラリ' });
+    await chrome.action.setTitle({ tabId: tab.id, title: 'dot — 検証用ライブラリ' });
     requireCapability();
     await chrome.tabs.update(tab.id, { url });
     return tab.id;
@@ -45,7 +45,7 @@ async function openVerificationTabInWorker({ url, host, capabilityKey, capabilit
 }
 
 async function createVerificationTab(worker: { evaluate: (fn: typeof openVerificationTabInWorker, args: VerificationTabArguments) => Promise<number> } | undefined, url: string, host: string): Promise<number> {
-  if (!worker) throw new Error('開発用 Chrome の Hologram 拡張機能を起動してください。');
+  if (!worker) throw new Error('開発用 Chrome の dot 拡張機能を起動してください。');
   return worker.evaluate(openVerificationTabInWorker, { url, host, capabilityKey: VERIFICATION_TAB_CAPABILITY_KEY, capability: VERIFICATION_TAB_CAPABILITY });
 }
 

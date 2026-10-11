@@ -209,7 +209,7 @@ function installNavigationGuards() {
 
 // --- ウィンドウ ---
 // show ＝ #32 より前と同じ意味（隠して作り、アクティブにせずに見せる＝SMOKE /
-//   HOLOGRAM_START_MINIMIZED / HOLOGRAM_START_INACTIVE。いずれも単一ウィンドウの経路）。
+//   DOT_START_MINIMIZED / DOT_START_INACTIVE。いずれも単一ウィンドウの経路）。
 // opts.secondary ＝ #32 St1: Ctrl+Shift+N、2回目起動の入口、「新しいウィンドウを開く」のメニュー
 //   操作から開いたウィンドウ。この実行でアプリ自身が最初に開くウィンドウ（index.ts の起動時の
 //   呼び出しで、常に主ウィンドウ）と対になる。副ウィンドウは:
@@ -240,7 +240,7 @@ function createWindow(show = true, opts?: { secondary?: boolean }) {
   const secondary = !!(opts && opts.secondary);
   const theme = resolveTheme();
   const dark = isDarkTheme(theme);
-  const smoke = process.env.HOLOGRAM_SMOKE === '1';
+  const smoke = process.env.DOT_SMOKE === '1';
   // 副ウィンドウは、永続化された主ウィンドウの位置と大きさを読まない＝代わりに、それを開いた
   // ウィンドウから（下で）カスケードするので、ここの `sb` は主ウィンドウ専用。
   const sb = smoke || secondary ? null : savedWindowBounds();
@@ -275,7 +275,7 @@ function createWindow(show = true, opts?: { secondary?: boolean }) {
     // 非表示へ固定する。paintWhenInitiallyHidden によりレンダラーの検証は継続する。
     show: show && !hideBackgroundWindows(process.argv, process.env),
     backgroundColor: dark ? '#0c0e12' : '#f6f7f9',
-    title: 'Hologram',
+    title: 'dot',
     icon: APP_ICON,
     paintWhenInitiallyHidden: true,
     titleBarStyle: 'hidden',
@@ -329,7 +329,7 @@ function createWindow(show = true, opts?: { secondary?: boolean }) {
   return win;
 }
 
-// ウィンドウをアクティブにせずに z 順の一番下へ移す。使うのは下の HOLOGRAM_START_INACTIVE の
+// ウィンドウをアクティブにせずに z 順の一番下へ移す。使うのは下の DOT_START_INACTIVE の
 // 検証経路だけなので、koffi は devDependency で、require は意図して遅延させてある。パッケージ
 // 済みのビルドがこの行に届くことはないし、万一届いても、アプリが死ぬのではなくウィンドウが
 // そのままの場所に留まるだけ。HWND は void* ではなく uintptr_t として渡す＝

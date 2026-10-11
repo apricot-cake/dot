@@ -6,7 +6,7 @@ import { postKeyOf } from '../../native-host/post-key.mts';
 
 function save(config: string, captureId: string, url: string, metadata: Record<string, unknown> = {}) {
   return new Promise<any>((resolve, reject) => {
-    const child = spawn(process.execPath, [path.resolve('native-host/bridge.mts')], { env: { ...process.env, HOLOGRAM_CONFIG_DIR: config }, stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [path.resolve('native-host/bridge.mts')], { env: { ...process.env, DOT_CONFIG_DIR: config }, stdio: ['pipe', 'pipe', 'pipe'] });
     const body = Buffer.from(JSON.stringify({ type: 'savePost', captureId, metaOk: true, metadata: { url, platform: 'x', text: '重複保存の検証', ...metadata } }));
     const header = Buffer.alloc(4);
     header.writeUInt32LE(body.length);
@@ -28,7 +28,7 @@ function save(config: string, captureId: string, url: string, metadata: Record<s
 }
 
 test('別プロセスから再保存してもDB取込前の投稿を重複作成しない', async () => {
-  const config = process.env.HOLOGRAM_CONFIG_DIR!;
+  const config = process.env.DOT_CONFIG_DIR!;
   const folder = path.join(config, 'saves');
   fs.mkdirSync(config, { recursive: true });
   fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ saveFolder: folder }));
@@ -38,11 +38,11 @@ test('別プロセスから再保存してもDB取込前の投稿を重複作成
   expect(second.ok).toBe(true);
   expect(second.captureId).toBe(first.captureId);
   expect(fs.readdirSync(path.join(folder, 'items'))).toEqual([first.captureId]);
-  expect(fs.readdirSync(path.join(folder, '.hologram-inbox', 'new'))).toEqual([`${first.captureId}.json`]);
+  expect(fs.readdirSync(path.join(folder, '.dot-inbox', 'new'))).toEqual([`${first.captureId}.json`]);
 });
 
 test('画像の取得がすべて失敗しても本文を保持して一部保存を記録する', async () => {
-  const config = path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'partial');
+  const config = path.join(process.env.DOT_CONFIG_DIR!, 'partial');
   const folder = path.join(config, 'saves');
   fs.mkdirSync(config, { recursive: true });
   fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ saveFolder: folder }));
@@ -52,14 +52,14 @@ test('画像の取得がすべて失敗しても本文を保持して一部保�
   });
   expect(result.ok).toBe(true);
   expect(result.mediaCount).toBe(0);
-  const envelope = JSON.parse(fs.readFileSync(path.join(folder, '.hologram-inbox', 'new', `${result.captureId}.json`), 'utf8'));
+  const envelope = JSON.parse(fs.readFileSync(path.join(folder, '.dot-inbox', 'new', `${result.captureId}.json`), 'utf8'));
   expect(envelope.record.text).toBe('取得できた本文');
   expect(envelope.record.media).toEqual([]);
   expect(envelope.record.saveIncomplete).toBe(true);
 });
 
 test('別ライブラリの同じ投稿を保存済みとして採用せず、要求先に保存する', async () => {
-  const config = path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'library-bound-index');
+  const config = path.join(process.env.DOT_CONFIG_DIR!, 'library-bound-index');
   const folderA = path.join(config, 'library-a');
   const folderB = path.join(config, 'library-b');
   const url = 'https://x.com/library/status/2078680803660431846';
@@ -72,7 +72,7 @@ test('別ライブラリの同じ投稿を保存済みとして採用せず、�
   const result = await save(config, '1789500000004-a555', url);
   expect(result.ok).toBe(true);
   expect(result.captureId).toBe('1789500000004-a555');
-  const envelope = JSON.parse(fs.readFileSync(path.join(folderA, '.hologram-inbox', 'new', `${result.captureId}.json`), 'utf8'));
+  const envelope = JSON.parse(fs.readFileSync(path.join(folderA, '.dot-inbox', 'new', `${result.captureId}.json`), 'utf8'));
   expect(envelope.record.url).toBe(url);
   expect(envelope.record.text).toBe('重複保存の検証');
   expect(fs.readdirSync(folderB)).toEqual([]);

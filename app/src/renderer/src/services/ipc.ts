@@ -1,9 +1,9 @@
-// 生の preload IPC 面（window.hologram / HologramPreload）に対する薄いサービス
-// の継ぎ目。viewer.js は window.hologram に直接触れないよう分解が進んでいる
+// 生の preload IPC 面（window.dot / DotPreload）に対する薄いサービス
+// の継ぎ目。viewer.js は window.dot に直接触れないよう分解が進んでいる
 // （最終形B の P4「IPC→service」――バックログの「手書きの .js をゼロにし、
 // 本物の React 製品へ」）――このモジュールが今も生のブリッジを呼ぶ唯一の
 // 場所で、他のすべての呼び出し元はここを経由する。各 export は
-// window.hologram へ転送するだけなので、この切り出しは挙動の変化ゼロの
+// window.dot へ転送するだけなので、この切り出しは挙動の変化ゼロの
 // 純粋なリネームだった。呼び出しをドメインごとに、すでにそのロジックを
 // 持つ兄弟サービスへグループ化するのは次の切り出し――これまでに済んで
 // いるのは: タブ（tab-state.js: loadTabs/persistTabs）、タグ／タグ種類／
@@ -19,18 +19,18 @@
 // updateTags/importImages/clearAll/exportSave/
 // exportComplete/importComplete/pickSaveFolder/onSaveFolderProgress/
 // onPostsChanged）――それらドメインサービスは viewer.ts と同じく、
-// window.hologram を直接ではなくこのモジュールを呼ぶ。ここにまだ平坦な
+// window.dot を直接ではなくこのモジュールを呼ぶ。ここにまだ平坦な
 // ままなのは（既存／新規どちらの置き場にするかまだ決めていない）:
 // 横断的な prefs／config／ウィンドウの外枠。今では本物の ES モジュール
 // （named export）で、すべての呼び出し元から直接 import される。
 
-const bridge = () => window.hologram;
+const bridge = () => window.dot;
 
-// 共有の HologramPreload 契約（app/src/preload/index.ts 自身が export する
+// 共有の DotPreload 契約（app/src/preload/index.ts 自身が export する
 // 公開 api の typeof。types/globals.d.ts で別名も付けている）に照らして
 // 注釈しているので、下の転送アローはどれも実装から文脈的に型付けされる
 // ――純粋な素通し層に、引数ごとの注釈は要らない。
-export const hologramIpc: HologramPreload = {
+export const dotIpc: DotPreload = {
   takePostLink: () => bridge().takePostLink(),
   onPostLink: (cb) => bridge().onPostLink(cb),
   getConfig: () => bridge().getConfig(),

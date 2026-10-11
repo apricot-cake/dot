@@ -9,10 +9,10 @@ import { ASPECT_RATIOS } from './aspect-ratio.ts';
 // 触れない。実行時の結び付きは注入する＝再代入される viewer の let（appBooted）は getter の
 // 関数として、後で宣言する const（PF_NAME / CF）は遅延させたアロー関数として入る。だから
 // このファイルは Node でも読み込める（scripts/test-tabstate-unit.cts が動的 import で
-// 動かす）。loadTabs/persistTabs は hologramIpc（services/ipc.ts）を呼ぶが、あちらは
-// window.hologram をアロー関数の中で遅延して触る＝import 自体に副作用が無いので、Node でも
+// 動かす）。loadTabs/persistTabs は dotIpc（services/ipc.ts）を呼ぶが、あちらは
+// window.dot をアロー関数の中で遅延して触る＝import 自体に副作用が無いので、Node でも
 // 無害なままでいられる。
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 
 export function genTabId() {
   return 'tab_' + Math.random().toString(36).slice(2, 10);
@@ -82,7 +82,7 @@ export function makeTabLabels(deps: { t: Translate; platformName(v: string): str
 
   // スナップショットの状態からタブのタイトルを導く。純粋関数（DOM は読まない）。
   // 有効なラベルを優先順に ・ でつなぐので、どのタブも一意になる。
-  function tabTitleOf(state: HologramTabSnapshot | null | undefined, _ctx: { allCount?: number | null } | null | undefined): { text: string; iconType: string } {
+  function tabTitleOf(state: DotTabSnapshot | null | undefined, _ctx: { allCount?: number | null } | null | undefined): { text: string; iconType: string } {
     const filters = (state && state.f) || [];
     const folderId = (state && state.folderId) || '';
     const search = (state && state.search) || '';
@@ -141,17 +141,17 @@ export function makeTabLabels(deps: { t: Translate; platformName(v: string): str
   return { filterLabel, tabTitleOf, posterFilterLabel };
 }
 
-// エントリの擬似 URL を導く（ラベルと同一性のキー＝HologramNavEntry.u を参照）。
+// エントリの擬似 URL を導く（ラベルと同一性のキー＝DotNavEntry.u を参照）。
 // グリッドの種別は今のところクエリ文字列を持たない（正本は state。履歴のページ #145 は
 // tabTitleOf 経由で state から表示ラベルを導く）＝u に同一性が要るのは image の種別だけ
 // （「同じ画像を開き直しても積み上がらない」）。
-export function navEntryUrl(kind: HologramNavEntry['kind'], state: any): string {
+export function navEntryUrl(kind: DotNavEntry['kind'], state: any): string {
   if (kind === 'image') return '/image/' + ((state && Array.isArray(state.recs) && state.recs[0]) || '');
   return kind === 'posters' ? '/posters' : '/posts';
 }
 
 // ブラウザ風の戻る／進むのための、タブごとのビューの履歴（#144: エントリはタグ付き
-// 共用体 HologramNavEntry の JSON＝posts / posters / image がすべて同じスタックに乗る）。
+// 共用体 DotNavEntry の JSON＝posts / posters / image がすべて同じスタックに乗る）。
 // idx は今のエントリを指す。線形なので、戻ってから新しい変更を加えると、進む側の
 // エントリは捨てられる。スタックは adopt/saveInto 経由でタブのオブジェクトに載って切り替えを
 // またぎ、tabs.json へ永続化される（保留の判断5）。
@@ -168,7 +168,7 @@ export function navEntryUrl(kind: HologramNavEntry['kind'], state: any): string 
 //                  実際に訪れた」という信号そのもの（置き換え＝実時間の打ち込み、ギャラリーの
 //                  ページ送り、並び順＝は、Issue で確定した記録の粒度の設計に従い、意図して
 //                  そちらからは見えないようにしてある）。
-export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot(): HologramNavEntry; apply(e: HologramNavEntry): void; onChange(): void; onPush?(e: HologramNavEntry): void }) {
+export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot(): DotNavEntry; apply(e: DotNavEntry): void; onChange(): void; onPush?(e: DotNavEntry): void }) {
   const { cap, enabled, snapshot, apply, onChange, onPush } = deps;
   let hist: string[] = [];
   let idx = -1;
@@ -178,16 +178,16 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
   // 保留の判断2）。移動や引き取りで初期化されるので、移動の後の編集は新しく push する。
   let lastKey: unknown = null;
 
-  const sameEntry = (a: HologramNavEntry, b: HologramNavEntry) => a.u === b.u && a.kind === b.kind && JSON.stringify(a.state) === JSON.stringify(b.state);
+  const sameEntry = (a: DotNavEntry, b: DotNavEntry) => a.u === b.u && a.kind === b.kind && JSON.stringify(a.state) === JSON.stringify(b.state);
   function saveScrollTop(scrollTop: number) {
     if (idx < 0 || !enabled()) return;
-    const entry = JSON.parse(hist[idx]) as HologramNavEntry;
+    const entry = JSON.parse(hist[idx]) as DotNavEntry;
     hist[idx] = JSON.stringify({ ...entry, scrollTop: Math.max(0, scrollTop) });
   }
 
   // 新しいビューを記録する。状態が今のエントリと同じなら何もしないので、背面の更新や、
   // 同じクエリの描画のやり直しが積み上がらない。
-  function push(e: HologramNavEntry) {
+  function push(e: DotNavEntry) {
     if (!enabled()) return;
     lastKey = null;
     const s = JSON.stringify(e);
@@ -202,7 +202,7 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
   // 今のエントリをその場で書き換える（実時間の打ち込み、ギャラリーのページ送り、並び順＝
   // 決着した置き換えの一覧）。書き換えた結果が1つ前のエントリと同じになったら（例えば
   // 打ち込みのセッションで、始めた場所まで消し戻した時）、同じ隣人を2つ残さずに捨てる。
-  function replace(e: HologramNavEntry) {
+  function replace(e: DotNavEntry) {
     if (!enabled()) return;
     if (idx < 0) {
       push(e);
@@ -221,7 +221,7 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
   }
   // push と置き換えの振り分け。null でないまとめのキーが繰り返されると、そのまとまりは、
   // 最初の記録が push したエントリへ畳まれる。
-  function record(e: HologramNavEntry, coalesceKey?: unknown) {
+  function record(e: DotNavEntry, coalesceKey?: unknown) {
     if (coalesceKey != null && coalesceKey === lastKey) {
       replace(e);
       return;
@@ -241,7 +241,7 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
   const back = () => go(idx - 1);
   const forward = () => go(idx + 1);
   // 今のエントリ（解析した複製）＝最初の記録／引き取りより前は null。
-  function current(): HologramNavEntry | null {
+  function current(): DotNavEntry | null {
     return idx >= 0 ? JSON.parse(hist[idx]) : null;
   }
   // 今のエントリを適用し直す（タブの切り替え時。引き取ったスタックがビューを知っている）。
@@ -249,7 +249,7 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
     if (idx >= 0) apply(JSON.parse(hist[idx]));
   }
   // タブが選択された時に、その履歴を引き取る（無ければ種を入れる）。
-  function adopt(t: HologramTab | null | undefined) {
+  function adopt(t: DotTab | null | undefined) {
     lastKey = null;
     if (t && Array.isArray(t._navHist) && t._navHist.length) {
       hist = t._navHist;
@@ -261,7 +261,7 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
     onChange();
   }
   // 生きている履歴を、タブのオブジェクトに載せて切り替えをまたいで運ぶ。
-  function saveInto(t: HologramTab) {
+  function saveInto(t: DotTab) {
     t._navHist = hist;
     t._navIdx = idx;
   }
@@ -276,17 +276,17 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
 // 大きさの上限は NAV_CAP だけ。Chrome も同じやり方でタブの履歴を再起動をまたいで運ぶ）。
 // 旧来の renderLimit の欄は、窓で描く経路と一緒に無くなった＝仮想化するグリッドは
 // scrollTop だけからどの深さでも戻せる（古い保存済みの欄は無視する）。
-export type HologramTabPersist = z.output<typeof TabPersistSchema>;
+export type DotTabPersist = z.output<typeof TabPersistSchema>;
 // 永続化するタブ1枚。塊の兄弟は id / pinned / title だけ＝main が索引を張る列がそれ
 // （位置は配列の順序から来る）。
 // #565: nav / scrollTop / autoTitle も以前は兄弟として載っていて、main の INSERT がそれを
 // 黙って落としていた。だから戻る／進むのスタックとスクロール位置は再起動のたびに死んでいたのに、
 // テストはすべて緑のままだった。ここの明示的な型が、それを直したまま保つ防ぎ＝4つ目の兄弟は
 // 今やコンパイルエラーになるので、次のタブごとの欄は、生き残る場所へ置くしかない。
-export type HologramPersistedTab = TabRecord;
-export type HologramPersistedTabs = TabsState;
+export type DotPersistedTab = TabRecord;
+export type DotPersistedTabs = TabsState;
 
-export function serializeTabs(tabs: HologramTab[], activeTabId: string | null): HologramPersistedTabs {
+export function serializeTabs(tabs: DotTab[], activeTabId: string | null): DotPersistedTabs {
   return {
     activeTabId,
     tabs: tabs.map((t) => ({
@@ -305,11 +305,11 @@ export function serializeTabs(tabs: HologramTab[], activeTabId: string | null): 
 }
 
 // 保存形式は共通スキーマで検証する。復元時には表示用 URL と添字だけを導出する。
-export function sanitizeSavedTabs(saved: unknown, _genId: () => string): { tabs: HologramTab[]; activeTabId: string } | null {
+export function sanitizeSavedTabs(saved: unknown, _genId: () => string): { tabs: DotTab[]; activeTabId: string } | null {
   if (saved == null) return null;
   const data = TabsSchema.parse(saved);
   if (!data.tabs.length) return null;
-  const tabs: HologramTab[] = data.tabs.map((t) => {
+  const tabs: DotTab[] = data.tabs.map((t) => {
     const p = t.state;
     const clean = (view: typeof p.view) => {
       if (!view) return;
@@ -342,19 +342,19 @@ export function sanitizeSavedTabs(saved: unknown, _genId: () => string): { tabs:
 }
 
 // tabs.json の読み込みと永続化（P4 の「IPC → service」の領域ごとのまとめの一部＝素の
-// hologramIpc.getTabs/setTabs の呼び出しを viewer.js からここへ、それが包む直列化・復元の
+// dotIpc.getTabs/setTabs の呼び出しを viewer.js からここへ、それが包む直列化・復元の
 // 対の隣へ移した）。呼ばれるのはブラウザからだけ（viewer.js）で、Node の単体テストから
 // 呼ばれることはない。
 export async function loadTabs() {
   try {
-    return await hologramIpc.getTabs();
+    return await dotIpc.getTabs();
   } catch {
     return null;
   }
 }
-export async function persistTabs(tabs: HologramTab[], activeTabId: string | null) {
+export async function persistTabs(tabs: DotTab[], activeTabId: string | null) {
   try {
-    await hologramIpc.setTabs(serializeTabs(tabs, activeTabId));
+    await dotIpc.setTabs(serializeTabs(tabs, activeTabId));
   } catch {
     /* できる範囲で */
   }

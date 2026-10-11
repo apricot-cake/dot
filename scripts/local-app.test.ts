@@ -13,8 +13,8 @@ function launcher(running: boolean) {
   const module = { exports };
   const env = {
     PATH: 'normal-path',
-    HOLOGRAM_CONFIG_DIR: 'sandbox-config',
-    HOLOGRAM_START_INACTIVE: '1',
+    DOT_CONFIG_DIR: 'sandbox-config',
+    DOT_START_INACTIVE: '1',
     ELECTRON_RUN_AS_NODE: '1',
     ELECTRON_RENDERER_URL: 'sandbox-renderer',
     NODE_OPTIONS: '--inspect',
@@ -49,7 +49,7 @@ test('検証起動は CLI の背面指定を付け普段のライブラリを使
   const { main, spawn, child } = launcher(false);
   await main('verify');
   expect(spawn).toHaveBeenCalledOnce();
-  expect(spawn.mock.calls[0][1]).toEqual([path.resolve(__dirname, '../app'), '--remote-debugging-port=9222', '--hologram-background']);
+  expect(spawn.mock.calls[0][1]).toEqual([path.resolve(__dirname, '../app'), '--remote-debugging-port=9222', '--dot-background']);
   expect(spawn.mock.calls[0][2]).toEqual({ env: { PATH: 'normal-path' }, detached: true, windowsHide: true, stdio: 'ignore' });
   expect(child.unref).toHaveBeenCalledOnce();
 });
@@ -63,7 +63,7 @@ test('検証で起動済みアプリを見つけても前面要求を送らな�
 test('通常起動は起動済みアプリへ表示要求を送る', async () => {
   const { main, spawn } = launcher(true);
   await main('launch');
-  expect(spawn.mock.calls[0][1]).toEqual([path.resolve(__dirname, '../app'), '--hologram-activate-existing']);
+  expect(spawn.mock.calls[0][1]).toEqual([path.resolve(__dirname, '../app'), '--dot-activate-existing']);
 });
 
 test('通常の新規起動へ背面指定を付けない', async () => {

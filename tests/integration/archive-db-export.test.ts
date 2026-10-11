@@ -25,10 +25,10 @@ let trashDir: string;
 let outPath: string;
 
 beforeEach(() => {
-  handle = openDatabase(path.join(mkTempDir('hologram-archive-export-db-'), 'test.db'));
-  srcFolder = mkTempDir('hologram-archive-export-lib-');
-  trashDir = mkTempDir('hologram-archive-export-trash-');
-  outPath = path.join(mkTempDir('hologram-archive-export-out-'), 'export.zip');
+  handle = openDatabase(path.join(mkTempDir('dot-archive-export-db-'), 'test.db'));
+  srcFolder = mkTempDir('dot-archive-export-lib-');
+  trashDir = mkTempDir('dot-archive-export-trash-');
+  outPath = path.join(mkTempDir('dot-archive-export-out-'), 'export.zip');
 
   const { sqlite } = handle;
   const stmts = preparePostStmts(sqlite);
@@ -98,8 +98,8 @@ describe('writeCompleteZip: 投稿サイドカーの再生成', () => {
   });
 
   test('新品の空 DB は空、ゴミ箱の採否は content 判定へ反映する', async () => {
-    const empty = openDatabase(path.join(mkTempDir('hologram-empty-export-db-'), 'empty.db'));
-    const dir = mkTempDir('hologram-empty-export-lib-');
+    const empty = openDatabase(path.join(mkTempDir('dot-empty-export-db-'), 'empty.db'));
+    const dir = mkTempDir('dot-empty-export-lib-');
     fs.writeFileSync(path.join(trashDir, 'old.json'), '{}');
     try {
       let snapshot = await prepareCompleteExport(empty.sqlite, dir, trashDir, { includeTrash: false });
@@ -139,22 +139,22 @@ describe('writeCompleteZip: 投稿サイドカーの再生成', () => {
   });
 
   test('コピー失敗は私有 staging を掃除し、ZIP を作らない', async () => {
-    const before = fs.readdirSync(os.tmpdir()).filter((n) => n.startsWith('.hologram-complete-export-'));
+    const before = fs.readdirSync(os.tmpdir()).filter((n) => n.startsWith('.dot-complete-export-'));
     const hook = vi.spyOn(fs.promises, 'copyFile').mockRejectedValue(new Error('copy failed'));
     try {
       await expect(prepareCompleteExport(handle.sqlite, srcFolder, trashDir)).rejects.toThrow('copy failed');
     } finally {
       hook.mockRestore();
     }
-    expect(fs.readdirSync(os.tmpdir()).filter((n) => n.startsWith('.hologram-complete-export-'))).toEqual(before);
+    expect(fs.readdirSync(os.tmpdir()).filter((n) => n.startsWith('.dot-complete-export-'))).toEqual(before);
     expect(fs.existsSync(outPath)).toBe(false);
   });
 
   test('DB / WAL / SHM は書庫に含めない', async () => {
-    for (const name of ['hologram.db', 'hologram.db-wal', 'hologram.db-shm']) fs.writeFileSync(path.join(srcFolder, name), 'SQL');
+    for (const name of ['dot.db', 'dot.db-wal', 'dot.db-shm']) fs.writeFileSync(path.join(srcFolder, name), 'SQL');
     await writeCompleteZip(handle.sqlite, srcFolder, trashDir, outPath);
     const zip = await loadZip(outPath);
-    for (const name of ['hologram.db', 'hologram.db-wal', 'hologram.db-shm']) expect(zip.file('library/' + name)).toBeNull();
+    for (const name of ['dot.db', 'dot.db-wal', 'dot.db-shm']) expect(zip.file('library/' + name)).toBeNull();
   });
 
   test('文字だけ・整理情報だけ・ゴミ箱だけを空と扱わない', async () => {
@@ -274,7 +274,7 @@ describe('writeCompleteZip: includeTrash', () => {
   test('マニフェストの includesTrash がオプション値を反映する', async () => {
     await writeCompleteZip(handle.sqlite, srcFolder, trashDir, outPath, { includeTrash: true });
     const zip = await loadZip(outPath);
-    const manifest = JSON.parse(await zip.file('hologram-export.json')?.async('string'));
+    const manifest = JSON.parse(await zip.file('dot-export.json')?.async('string'));
     expect(manifest.includesTrash).toBe(true);
     expect(manifest.version).toBe(2);
     expect(manifest.source).toBe('db');

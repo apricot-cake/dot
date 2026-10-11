@@ -19,7 +19,7 @@ export function TagGroupMenuHost() {
   if (!menu) return null;
 
   const current = menu.rows.find((r) => !r.sep && r.checked);
-  const pick = (row: HologramTagGroupMenuRow) => {
+  const pick = (row: DotTagGroupMenuRow) => {
     close();
     menu.onPick(row.kind as string);
   };

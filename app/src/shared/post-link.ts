@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { postKeyOf } from '../../../native-host/post-key.mts';
 
-export const POST_LINK_SCHEME = 'hologram';
+export const POST_LINK_SCHEME = 'dot';
 const webUrl = z.url({ protocol: /^https?$/ });
 export const PostLinkSchema = z.object({
   url: webUrl.refine((url) => postKeyOf(url) !== null),

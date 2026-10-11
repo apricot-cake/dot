@@ -10,12 +10,12 @@
 // 死んでいた。
 //
 // confirm.ts と同じ形（コールバックはシリアライズできないので、
-// hologramStore ではなく専用のブリッジ）。ModalChrome（App.tsx）は、
+// dotStore ではなく専用のブリッジ）。ModalChrome（App.tsx）は、
 // confirm に対してとまったく同じように、モーダル表示中の body クラス＋
 // タイトルバーの色付けのために get()/subscribe() を読む。
 //
 // config: { title, value?, okLabel?, cancelLabel?, placeholder?, onOk(value:string) }
-let current: HologramPromptModel | null = null;
+let current: DotPromptModel | null = null;
 let seq = 0;
 const subs = new Set<() => void>();
 const notify = () => {
@@ -27,7 +27,7 @@ const notify = () => {
     }
   }
 };
-export function open(config: HologramPromptConfig) {
+export function open(config: DotPromptConfig) {
   current = Object.assign({ openId: ++seq }, config);
   notify();
 }

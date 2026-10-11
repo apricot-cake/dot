@@ -4,8 +4,8 @@
 // の再構築。
 import { expect, test } from '../lib/harness.ts';
 
-test('閉じた検索タブを復元すると検索結果と戻る履歴が残る', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('閉じた検索タブを復元すると検索結果と戻る履歴が残る', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const tabs = page.locator('[data-slot="tab"]');
   const search = page.getByRole('combobox', { name: 'ライブラリ内を検索', exact: true });
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
@@ -33,8 +33,8 @@ test('閉じた検索タブを復元すると検索結果と戻る履歴が残�
   await expect(cards.first()).toContainText('夕暮れの街並み');
 });
 
-test('最後のタブも、複数回閉じたタブも直前から順に復元する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('最後のタブも、複数回閉じたタブも直前から順に復元する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const tabs = page.locator('[data-slot="tab"]');
   const search = page.getByRole('combobox', { name: 'ライブラリ内を検索', exact: true });
   for (const word of ['猫', '夕暮れ']) {
@@ -54,8 +54,8 @@ test('最後のタブも、複数回閉じたタブも直前から順に復元�
   await expect(tabs).toHaveCount(3);
 });
 
-test('検索語を打つとグリッドが絞り込まれ、消すと元に戻る', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('検索語を打つとグリッドが絞り込まれ、消すと元に戻る', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   await expect(cards).toHaveCount(4);
 
@@ -74,8 +74,8 @@ test('検索語を打つとグリッドが絞り込まれ、消すと元に戻�
   await expect(cards).toHaveCount(4);
 });
 
-test('投稿者名でも絞り込める', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('投稿者名でも絞り込める', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const search = page.getByRole('combobox', { name: 'ライブラリ内を検索', exact: true });
   await search.fill('akane_machi');
 
@@ -84,8 +84,8 @@ test('投稿者名でも絞り込める', async ({ launchHologram }) => {
   await expect(cards.first()).toContainText('夕暮れの街並み');
 });
 
-test('常設の検索欄へ入力しても右端の操作は動かず、検索語はフォーカスを外しても見える', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('常設の検索欄へ入力しても右端の操作は動かず、検索語はフォーカスを外しても見える', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const input = page.getByRole('combobox', { name: 'ライブラリ内を検索', exact: true });
   await expect(input).toBeVisible();
   // 候補ポップアップを開く間は Base UI が背面を aria-hidden にするため、位置測定は

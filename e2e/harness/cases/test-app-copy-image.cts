@@ -14,8 +14,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const electronPath = resolveElectron();
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-copyimage-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-copyimage-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -28,8 +28,8 @@ fs.writeFileSync(path.join(saveFolder, '日本語 空白.jpg'), jpeg);
 fs.writeFileSync(path.join(saveFolder, 'dummy-0002.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="red"/></svg>');
 
 const evalJs = evalSource(async () => {
-  const h = (window as any).hologram;
-  const results = [await h.copyImage('日本語 空白.jpg'), await h.copyImage('dummy-0002.svg'), await h.copyImage('../Hologram/config.json'), await h.copyImage('missing.jpg')];
+  const h = (window as any).dot;
+  const results = [await h.copyImage('日本語 空白.jpg'), await h.copyImage('dummy-0002.svg'), await h.copyImage('../dot/config.json'), await h.copyImage('missing.jpg')];
   let emptyRejected = false;
   try {
     await h.copyImage('');
@@ -41,11 +41,11 @@ const evalJs = evalSource(async () => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
-  HOLOGRAM_COPY_TEST_ELECTRON: electronPath,
-  HOLOGRAM_COPY_TEST_SAVE: saveFolder,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
+  DOT_COPY_TEST_ELECTRON: electronPath,
+  DOT_COPY_TEST_SAVE: saveFolder,
 });
 
 if (process.platform !== 'win32') throw new Error('This native clipboard test requires Windows');
@@ -62,7 +62,7 @@ if ($null -ne $original) {
   }
 }
 try {
-  & $env:HOLOGRAM_COPY_TEST_ELECTRON '.' | Out-Host
+  & $env:DOT_COPY_TEST_ELECTRON '.' | Out-Host
   if ($LASTEXITCODE -ne 0) { throw 'Electron failed' }
   $image = [System.Windows.Forms.Clipboard]::GetImage()
   if ($null -eq $image -or $image.Width -ne 1 -or $image.Height -ne 1) { throw 'Image mismatch' }

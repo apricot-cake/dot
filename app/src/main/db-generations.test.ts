@@ -10,7 +10,7 @@ import { GENERATIONS_DIRNAME, generationName, generationsDir, latestGeneration, 
 
 const made: string[] = [];
 function tempLibrary(names: string[] = []): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-gen-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-gen-'));
   made.push(dir);
   if (names.length) {
     fs.mkdirSync(path.join(dir, GENERATIONS_DIRNAME), { recursive: true });
@@ -28,13 +28,13 @@ const nameFor = (y: number, m: number, d: number, h = 12) => generationName(new 
 describe('世代の名前', () => {
   test('名前と時刻は往復する', () => {
     const at = new Date(2026, 7, 2, 9, 5, 30);
-    expect(generationName(at)).toBe('hologram-20260802-090530.db');
-    expect(parseGenerationName('hologram-20260802-090530.db')?.getTime()).toBe(at.getTime());
+    expect(generationName(at)).toBe('dot-20260802-090530.db');
+    expect(parseGenerationName('dot-20260802-090530.db')?.getTime()).toBe(at.getTime());
   });
 
   test('自分のものでない名前は読まない', () => {
-    expect(parseGenerationName('hologram.db')).toBeNull();
-    expect(parseGenerationName('hologram-20260802-090530.db.tmp-1')).toBeNull();
+    expect(parseGenerationName('dot.db')).toBeNull();
+    expect(parseGenerationName('dot-20260802-090530.db.tmp-1')).toBeNull();
     expect(parseGenerationName('notes.txt')).toBeNull();
   });
 });

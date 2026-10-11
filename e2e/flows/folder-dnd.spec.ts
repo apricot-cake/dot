@@ -23,8 +23,8 @@ const FOLDERS = [
 function seedFolders({ saveFolder }: { saveFolder: string }) {
   const { openDatabase } = require(path.join(appDir, 'src', 'main', 'lib-db.ts'));
   const { createDbWriter } = require(path.join(appDir, 'src', 'main', 'lib-db-write.ts'));
-  // #176: hologram.db は今や configDir ではなく保存フォルダの中にある。
-  const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+  // #176: dot.db は今や configDir ではなく保存フォルダの中にある。
+  const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
   createDbWriter(sqlite).setFolders({ folders: FOLDERS, activeId: null });
   sqlite.close();
 }
@@ -38,8 +38,8 @@ async function openFolderTree(page: import('@playwright/test').Page): Promise<vo
   await expect(page.locator('[data-slot="popover-content"]')).toBeVisible();
 }
 
-test('フォルダ行を上端・下端へドロップすると並び順が入れ替わる', async ({ launchHologram }) => {
-  const { page } = await launchHologram({ seed: seedFolders });
+test('フォルダ行を上端・下端へドロップすると並び順が入れ替わる', async ({ launchDot }) => {
+  const { page } = await launchDot({ seed: seedFolders });
   await openFolderTree(page);
   const row = (id: string) => page.locator(`[data-folder-id="${id}"]`).first();
 
@@ -58,7 +58,7 @@ test('フォルダ行を上端・下端へドロップすると並び順が入�
     await page.mouse.up();
   };
 
-  const rootOrder = () => page.evaluate(async () => (await window.hologram.getFolders()).folders.filter((folder) => folder.parentId == null).map((folder) => folder.id));
+  const rootOrder = () => page.evaluate(async () => (await window.dot.getFolders()).folders.filter((folder) => folder.parentId == null).map((folder) => folder.id));
 
   await expect(row('f-a')).toBeVisible();
   await expect(row('f-b')).toBeVisible();
@@ -70,8 +70,8 @@ test('フォルダ行を上端・下端へドロップすると並び順が入�
   await expect.poll(rootOrder).toEqual(['f-a', 'f-b']);
 });
 
-test('親フォルダを開くと子はインデントされ、横スクロールを出さない', async ({ launchHologram }) => {
-  const { page } = await launchHologram({ seed: seedFolders });
+test('親フォルダを開くと子はインデントされ、横スクロールを出さない', async ({ launchDot }) => {
+  const { page } = await launchDot({ seed: seedFolders });
   await openFolderTree(page);
   const row = (id: string) => page.locator(`[data-folder-id="${id}"]`).first();
 

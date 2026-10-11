@@ -15,10 +15,10 @@ function git(cwd: string, args: string[], env = environment): string {
 }
 
 function fixture(): string {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-precommit-test-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-precommit-test-'));
   fixtures.push(directory);
   git(directory, ['init', '--quiet']);
-  git(directory, ['config', 'user.name', 'Hologram Test']);
+  git(directory, ['config', 'user.name', 'dot Test']);
   git(directory, ['config', 'user.email', 'test@example.invalid']);
   git(directory, ['config', 'commit.gpgsign', 'false']);
   git(directory, ['config', 'core.autocrlf', 'false']);

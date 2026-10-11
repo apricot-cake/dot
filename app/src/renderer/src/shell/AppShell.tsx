@@ -6,7 +6,7 @@ import { type PanelResize, resolveCssLength, usePanelResize } from './use-panel-
 import { LIMITS, type PanelKey, cachedWidth, clampWidth, loadWidth, persistWidth } from '../services/panel-width-pref.ts';
 import { isVisible as inspectorIsVisible, load as inspectorLoad, subscribeVisible as subscribeInspectorVisible } from '../services/inspector-panel.ts';
 import { registerScroller } from '../services/content-area.ts';
-import { hologramImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
+import { dotImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
 import { load as panelsLoad } from '../services/panels.ts';
 import { load as shortcutOverridesLoad } from '../services/shortcut-registry.ts';
 import { store, subscribeKey } from '../services/store.ts';
@@ -147,7 +147,7 @@ export function AppShell() {
   // 判断＝コンテンツの列に付ける `hidden` と、下にある舞台自身のコンポーネント。かつては
   // `body.image-tab-active` と index.html の3つの CSS 規則だった。ツールバーが自分の
   // コントロールを入れ替えるのと同じ述語なので、2つの半分が食い違うことはあり得ない。
-  const imageView = useSyncExternalStore(hologramImageTabSource.subscribe, imageViewIsActive);
+  const imageView = useSyncExternalStore(dotImageTabSource.subscribe, imageViewIsActive);
   // スクロール根を、そのスクロール位置を読み書きする React の外のモジュールへ手渡す
   // （services/content-area.ts）。かつては、ツールバーの下から始まらねばならない浮いた
   // パネルのために、この要素の上端を測って --content-top へ入れることもしていた。据え付けの

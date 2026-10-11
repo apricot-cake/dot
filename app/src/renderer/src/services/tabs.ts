@@ -3,7 +3,7 @@
 // 共有の描画ブリッジへ push していた）から、グリッドのソース
 // （services/grid.ts）や image-tab のソース（services/image-tab.ts）と同じ
 // 形の pull されるソースへ変換したもの。viewer.js はもう tabs/activeTabId
-// をクロージャの状態として持たない――hologramStore の 'tabs'/'activeTabId'
+// をクロージャの状態として持たない――dotStore の 'tabs'/'activeTabId'
 // のキーが今ではその状態そのもの（selection.ts が selectedSet に対して
 // 行ったのと同じ「唯一の正本」への移行）。renderTabs() の呼び出し場所は
 // すべて無くなり、その通知は下のストア購読を通して今では自動になっている。
@@ -53,7 +53,7 @@ const notify = () => {
   }
 };
 
-function navKindOf(t: HologramTab): 'posts' | 'posters' | 'image' {
+function navKindOf(t: DotTab): 'posts' | 'posters' | 'image' {
   if (Array.isArray(t._navHist) && t._navHist.length) {
     const i = Math.max(0, Math.min(typeof t._navIdx === 'number' ? t._navIdx : t._navHist.length - 1, t._navHist.length - 1));
     try {
@@ -80,11 +80,11 @@ function liveActiveState() {
   };
 }
 
-function get(): HologramTabsModel | null {
+function get(): DotTabsModel | null {
   const tt = tabTitleOf;
   const icons = tabIcons;
   if (!tt || !icons) return null;
-  const rawTabs: HologramTab[] | undefined = store.getState().tabs;
+  const rawTabs: DotTab[] | undefined = store.getState().tabs;
   if (!rawTabs) return null; // viewer の initTabs() でまだ読み込まれていない
   const activeTabId = store.getState().activeTabId;
   const allCount = store.getState().allPostsCount;
@@ -118,7 +118,7 @@ function get(): HologramTabsModel | null {
   return { tabs, closeTitle, newTitle };
 }
 
-export const hologramTabsSource = {
+export const dotTabsSource = {
   configure(cfg: TabsConfig) {
     tabTitleOf = cfg.tabTitleOf;
     tabIcons = cfg.tabIcons;

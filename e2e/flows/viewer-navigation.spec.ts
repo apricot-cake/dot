@@ -2,8 +2,8 @@ import path from 'node:path';
 import { openDatabase } from '../../app/src/main/lib-db.ts';
 import { expect, test } from '../lib/harness.ts';
 
-test('ビューアーではインスペクタのサムネイルを隠し、一覧へ戻ると表示する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('ビューアーではインスペクタのサムネイルを隠し、一覧へ戻ると表示する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const card = page.locator('[data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' });
   await card.click();
   const toggle = page.locator('[data-slot="inspector-toggle"]');
@@ -21,10 +21,10 @@ test('ビューアーではインスペクタのサムネイルを隠し、一�
   await expect(thumb.first()).toBeVisible();
 });
 
-test('画像送りは枚数を挟んで下部中央に固定する', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('画像送りは枚数を挟んで下部中央に固定する', async ({ launchDot }) => {
+  const { page } = await launchDot({
     seed: ({ saveFolder }) => {
-      const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+      const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
       sqlite.prepare("INSERT INTO media(postId,seq,file,type,width,height) SELECT 'e2e-0003',1,file,type,width,height FROM media WHERE postId='e2e-0002' AND seq=0").run();
       sqlite.close();
     },

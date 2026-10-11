@@ -20,8 +20,8 @@ const { evalSource } = require('../../../scripts/lib-wait.cts');
 
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-taggroups-ipc-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-taggroups-ipc-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -31,9 +31,9 @@ function launch(evalJs): Promise<Record<string, any>> {
   return new Promise((resolve) => {
     const env = Object.assign({}, process.env, {
       APPDATA: tmp,
-      HOLOGRAM_CONFIG_DIR: configDir,
-      HOLOGRAM_SMOKE: '1',
-      HOLOGRAM_SMOKE_EVAL: evalJs,
+      DOT_CONFIG_DIR: configDir,
+      DOT_SMOKE: '1',
+      DOT_SMOKE_EVAL: evalJs,
     });
     const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
     let out = '';
@@ -66,17 +66,17 @@ function launch(evalJs): Promise<Record<string, any>> {
 // 名前をキーにし、投稿を必要とせず、その読み取りは id を並行配列で返す
 // ので、これは #810 が加えた poster-tag の実体読み取りもカバーする。
 const setEvalJs = evalSource(async () => {
-  const hologram = (window as any).hologram;
-  await hologram.setPosterTags({ tags: { 'x:1': ['ブルアカ', 'アロナ'] } });
-  const ids = (await hologram.getPosterTags()).tags['x:1'].tagIds;
-  await hologram.setTagGroups(
+  const dot = (window as any).dot;
+  await dot.setPosterTags({ tags: { 'x:1': ['ブルアカ', 'アロナ'] } });
+  const ids = (await dot.getPosterTags()).tags['x:1'].tagIds;
+  await dot.setTagGroups(
     [
       { id: ids[0], groupId: 'work' },
       { id: ids[1], groupId: 'character' },
     ],
     { work: 'シリーズ', character: '登場人物' },
   );
-  const r = await hologram.getTagGroups();
+  const r = await dot.getTagGroups();
   const kindOf = Object.fromEntries(r.memberships.map((t) => [t.name, t.groupId]));
   return { memberships: kindOf.ブルアカ + ',' + kindOf.アロナ, labels: r.labels.work + ',' + r.labels.character };
 });
@@ -85,7 +85,7 @@ const setEvalJs = evalSource(async () => {
 // 自分では一切書き込まずに種別を読み返す — 1回目の起動の古いメモリ上の値が
 // ここに漏れることはあり得ないので、一致すれば本物の永続化を証明する。
 const getEvalJs = evalSource(async () => {
-  const r = await (window as any).hologram.getTagGroups();
+  const r = await (window as any).dot.getTagGroups();
   const kindOf = Object.fromEntries(r.memberships.map((t) => [t.name, t.groupId]));
   return { memberships: kindOf.ブルアカ + ',' + kindOf.アロナ, labels: (r.labels && r.labels.work + ',' + r.labels.character) || null };
 });

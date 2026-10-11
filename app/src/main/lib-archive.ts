@@ -29,7 +29,7 @@ function isVolatile(name) {
 }
 
 // --- zip 爆弾・際限のない展開への防ぎ -------------------------------------
-// `hologram-export.zip` はマシン間で受け渡すものなので、悪意のある・壊れたものが、ギガバイトに
+// `dot-export.zip` はマシン間で受け渡すものなので、悪意のある・壊れたものが、ギガバイトに
 // 展開される小さな圧縮 payload を宣言し（zip 爆弾）、取り込みの時にメモリを食い尽くす (DoS) 形が
 // ありうる。展開する前に、エントリの数・展開後の合計バイト数・エントリ1つの展開後の大きさに
 // 上限を掛ける。使うのは ZIP の中央ディレクトリが宣言している大きさ（読むのが安く、展開が要ら
@@ -497,7 +497,7 @@ async function prepareCompleteExport(sqlite: Database.Database, srcFolder: strin
     // バイナリは素のディスクの写し。.json の絞り込みは念のためのもの＝#302 以降ライブラリの
     // フォルダは投稿ごとの JSON を1つも持たないが、移行前の残り物が、下で DB から作り直す
     // レコードを覆い隠してはいけない。
-    for (const name of collect(srcFolder, (n) => !n.toLowerCase().endsWith('.json') && !/^hologram\.db(?:-(wal|shm))?$/i.test(n))) addFile(path.join(srcFolder, name), `library/${name}`);
+    for (const name of collect(srcFolder, (n) => !n.toLowerCase().endsWith('.json') && !/^dot\.db(?:-(wal|shm))?$/i.test(n))) addFile(path.join(srcFolder, name), `library/${name}`);
     for (const name of collect(path.join(srcFolder, 'avatars'))) addFile(path.join(srcFolder, 'avatars', name), `library/avatars/${name}`);
     // #290: 共有のカスタム絵文字の置き場。avatars/ と同じく、ディスクを正本として扱う。
     for (const name of collect(path.join(srcFolder, 'emoji'))) addFile(path.join(srcFolder, 'emoji', name), `library/emoji/${name}`);
@@ -558,7 +558,7 @@ async function prepareCompleteExport(sqlite: Database.Database, srcFolder: strin
       }
     }
   }
-  const stage = await fs.promises.mkdtemp(path.join(opts.stageParent ?? os.tmpdir(), '.hologram-complete-export-'));
+  const stage = await fs.promises.mkdtemp(path.join(opts.stageParent ?? os.tmpdir(), '.dot-complete-export-'));
   const dispose = () => fs.promises.rm(stage, { recursive: true, force: true });
   try {
     // 書き手を再開する前にファイルを逐次コピーし、ZIP の遅延読み取りを実ライブラリから切り離す。
@@ -581,7 +581,7 @@ async function prepareCompleteExport(sqlite: Database.Database, srcFolder: strin
           totalBytes += buf.length;
           zip.addBuffer(buf, entry.entry);
         }
-        zip.addBuffer(Buffer.from(JSON.stringify({ app: 'Hologram', kind: 'complete', version: 2, source: 'db', includesTrash: !!opts.includeTrash, exportedAt: nowIso || new Date().toISOString(), fileCount }, null, 2)), 'hologram-export.json');
+        zip.addBuffer(Buffer.from(JSON.stringify({ app: 'dot', kind: 'complete', version: 2, source: 'db', includesTrash: !!opts.includeTrash, exportedAt: nowIso || new Date().toISOString(), fileCount }, null, 2)), 'dot-export.json');
         zip.end();
         await streamZipToFile(zip, outPath, onProgress ? (written) => onProgress(written, totalBytes) : undefined);
         return { fileCount };
@@ -641,7 +641,7 @@ async function writeImagesZip(srcFolder, outPath, onProgress?: (written: number,
 // 「書き出すものが在るか」を安く問い合わせる（readdir と stat だけで、ファイルは読まない）。
 // 空のライブラリで保存ダイアログが開かないようにするため。
 async function hasExportableFiles(srcFolder, imagesOnly) {
-  if ((await collectFiles(srcFolder, imagesOnly ? (n) => IMAGE_EXT.test(n) : (n) => !n.toLowerCase().endsWith('.json') && !/^hologram\.db(?:-(wal|shm))?$/i.test(n))).length) return true;
+  if ((await collectFiles(srcFolder, imagesOnly ? (n) => IMAGE_EXT.test(n) : (n) => !n.toLowerCase().endsWith('.json') && !/^dot\.db(?:-(wal|shm))?$/i.test(n))).length) return true;
   if (!imagesOnly && (await collectFiles(path.join(srcFolder, 'avatars'))).length) return true;
   if (!imagesOnly && (await collectFiles(path.join(srcFolder, 'emoji'))).length) return true;
   if ((await collectItemFiles(path.join(srcFolder, 'items'))).some((name) => !imagesOnly || IMAGE_EXT.test(name))) return true;
@@ -733,7 +733,7 @@ async function extractLibraryEntries(zipfile: ZipReader) {
     if (relPath.endsWith('/')) continue; // ディレクトリのエントリ（yauzl が持つ唯一の目印）
     const size = tally(relPath, entry);
 
-    if (relPath === 'hologram-export.json') {
+    if (relPath === 'dot-export.json') {
       isComplete = true;
       continue;
     }

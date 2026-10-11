@@ -13,7 +13,7 @@ import { domRescuedEssentials } from './extractor/dom-meta.ts';
 import { servedLocale } from './locale.ts';
 import type { SaveFailureKind } from './native-error.ts';
 
-export interface HologramI18nApi {
+export interface DotI18nApi {
   lang: string;
   resolved: string;
   getMessage: (key: string, subs?: ReadonlyArray<unknown>) => string;
@@ -74,8 +74,8 @@ export const MESSAGES = {
     // る。不一致という事実だけを述べる。挙動は一切変わらない。どちら
     // を更新すべきか率直に言う＝ユーザーにはどちらが古いか判断する手
     // 段がない（診断ページが両方のバージョンを並べて一覧する）。
-    bannerSavedHostOld: '保存しました。拡張機能とバージョンが一致していません。Hologram アプリを更新してください。',
-    bannerSavedExtensionOld: '保存しました。Hologram アプリとバージョンが一致していません。拡張機能を更新してください。',
+    bannerSavedHostOld: '保存しました。拡張機能とバージョンが一致していません。dot アプリを更新してください。',
+    bannerSavedExtensionOld: '保存しました。dot アプリとバージョンが一致していません。拡張機能を更新してください。',
     // $1 = 理由。既知の原因で保存が失敗したときに表示し、バナーが素の
     // 「失敗」ではなく理由を言えるようにする。
     // native host が見つからない（未登録、または登録済みだが Chrome
@@ -125,7 +125,7 @@ export const MESSAGES = {
     // 名前であって tooltip ではない: ここには画面に描かれるものが何も
     // ない（隅が視覚的には何も説明しない理由は overlay.ts の drawFace
     // を参照）ので、それぞれが単独で完結した文でなければならない。
-    cornerOpenSaved: '保存済みの投稿を Hologram で開く',
+    cornerOpenSaved: '保存済みの投稿を dot で開く',
     cornerSave: '投稿を保存',
     cornerSaveImage: 'この画像を保存',
     cornerSaveAll: '投稿の画像をすべて保存',
@@ -137,7 +137,7 @@ export const MESSAGES = {
     cornerRetry: '保存に失敗しました。押すと再試行します。',
 
     // bulk-capture.ts: chase モードの取り込みバナー（#362、#280 で X 以外にも一般化）
-    bulkIntro: 'ブックマークを Hologram に取り込みますか？',
+    bulkIntro: 'ブックマークを dot に取り込みますか？',
     bulkStart: '開始',
     bulkNeverShow: '今後表示しない',
     bulkCloseIntro: '今回の案内を閉じる',
@@ -188,8 +188,8 @@ export const MESSAGES = {
     // 色＝ページから読んだ数は丸められている（"1.2K"）が、API の数は
     // 正確だ。
     // ja の注記を参照: 保存は成功した。2つの半分がずれているだけだ。
-    bannerSavedHostOld: 'Saved — please update the Hologram app (it no longer matches this extension)',
-    bannerSavedExtensionOld: 'Saved — please update the extension (it no longer matches the Hologram app)',
+    bannerSavedHostOld: 'Saved — please update the dot app (it no longer matches this extension)',
+    bannerSavedExtensionOld: 'Saved — please update the extension (it no longer matches the dot app)',
     bannerHostMissing: "Can't connect to the app",
     bannerHostUnavailable: "Can't connect to the app",
     bannerOriginRejected: 'Check the save configuration',
@@ -207,7 +207,7 @@ export const MESSAGES = {
 
     // overlay.ts: 隅の操作の4つの面＝アクセシブルな名前であって
     // tooltip ではない（ja の注記を参照）。
-    cornerOpenSaved: 'Open saved post in Hologram',
+    cornerOpenSaved: 'Open saved post in dot',
     cornerSave: 'Save post',
     cornerSaveImage: 'Save this image',
     cornerSaveAll: 'Save all post images',
@@ -215,7 +215,7 @@ export const MESSAGES = {
     cornerRetry: 'Save failed. Press to retry',
 
     // bulk-capture.ts: chase モードの取り込みバナー（#362、#280 で X 以外にも一般化）
-    bulkIntro: 'Import your bookmarks into Hologram?',
+    bulkIntro: 'Import your bookmarks into dot?',
     bulkStart: 'Start importing',
     bulkNeverShow: 'Don’t show again',
     bulkCloseIntro: 'Dismiss this notice',
@@ -231,7 +231,7 @@ export const MESSAGES = {
   },
 };
 
-export function createI18n(): Promise<HologramI18nApi> {
+export function createI18n(): Promise<DotI18nApi> {
   return (async () => {
     // バナーはブラウザのロケールに従う。拡張機能はもう言語設定を保持
     // しない（表示側はデスクトップアプリへ移り、アプリは content

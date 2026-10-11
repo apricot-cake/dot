@@ -33,7 +33,7 @@ import { Agent, setGlobalDispatcher } from 'undici';
 // 同じことをしている。あちらの DiagnosticsChannel.md を参照）。購読者が居なければ流す
 // 処理は `hasSubscribers` の確認1つで済むので、何も要らない取り込みは何も払わない。
 // bridge.mts が購読し、失敗1件につき capture.log の行を1本書く。
-export const MEDIA_FAILURE_CHANNEL = 'hologram:media-download:failure';
+export const MEDIA_FAILURE_CHANNEL = 'dot:media-download:failure';
 type MediaFailureReason =
   // 要求を出す前
   | 'not-https' // 文字列でない、または https の URL でない

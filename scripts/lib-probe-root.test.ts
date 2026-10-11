@@ -8,7 +8,7 @@ const { assertSafeProbeRoot, resolveProbeRoot, validateProbeLabel } = require('.
 let temporaryRoot: string;
 
 beforeEach(() => {
-  temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-probe-root-'));
+  temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-probe-root-'));
 });
 
 afterEach(() => {

@@ -49,9 +49,9 @@ const { window } = dom;
 const sent: any[] = [];
 const savedAnswer: Record<string, string | null> = { 'https://www.pixiv.net/artworks/111': '1780000000000-aa' };
 
-const uiRoot = () => (window.document.querySelector('hologram-extension-ui') as any)?.shadowRoot;
-const banner = () => uiRoot()?.querySelector('[data-hologram-bulk-banner]') ?? null;
-const bannerText = () => uiRoot()?.querySelector('[data-hologram-bulk-label]')?.textContent || '';
+const uiRoot = () => (window.document.querySelector('dot-extension-ui') as any)?.shadowRoot;
+const banner = () => uiRoot()?.querySelector('[data-dot-bulk-banner]') ?? null;
+const bannerText = () => uiRoot()?.querySelector('[data-dot-bulk-label]')?.textContent || '';
 const settle = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 const savePostFor = (url: string) => sent.find((m) => m.type === 'savePost' && m.postUrl === url);
 

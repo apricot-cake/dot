@@ -7,7 +7,7 @@ import { Command, CommandInput, CommandList, CommandItem } from '@/components/ui
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import type { TagVocabRow } from '../../../main/ipc-payloads.ts';
 import type { TagAssignment } from '../../../shared/tag-classification.ts';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotIpc } from '../services/ipc.ts';
 import { onChange } from '../services/tags.ts';
 import { t } from '../_shared/i18n.ts';
 import { normalizeTagName, tagNameInputIsSafe } from '../../../../../native-host/tag-normalize.mts';
@@ -130,7 +130,7 @@ export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[
   useEffect(() => {
     let alive = true;
     const load = async () => {
-      const value = await hologramIpc.getClassifiedAssignments(postIds);
+      const value = await dotIpc.getClassifiedAssignments(postIds);
       if (alive) setAssignments(value);
     };
     void load().catch(() => {
@@ -157,9 +157,9 @@ export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[
     setBusy(true);
     setError(false);
     try {
-      const previous = await hologramIpc.getClassifiedAssignments(postIds);
+      const previous = await dotIpc.getClassifiedAssignments(postIds);
       const next = previous.map((a) => ({ ...a, tagIds: [...new Set(mutate(a.tagIds))] }));
-      await hologramIpc.setClassifiedAssignments(next);
+      await dotIpc.setClassifiedAssignments(next);
       setAssignments(next);
       setUndo(previous);
       setExtra(false);
@@ -248,7 +248,7 @@ export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[
             onClick={async () => {
               setBusy(true);
               try {
-                await hologramIpc.setClassifiedAssignments(undo);
+                await dotIpc.setClassifiedAssignments(undo);
                 setAssignments(undo);
                 setUndo(null);
               } catch {
@@ -287,11 +287,11 @@ export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[
                 setError(false);
                 try {
                   const existing = !edit.id ? rows.filter((row) => row.name === normalizeTypedTagName(edit.name) && (!row.category || row.category === 'general')) : [];
-                  const id = await hologramIpc.saveClassifiedTag({ ...edit, id: edit.id ?? (existing.length === 1 ? existing[0].id : undefined) });
+                  const id = await dotIpc.saveClassifiedTag({ ...edit, id: edit.id ?? (existing.length === 1 ? existing[0].id : undefined) });
                   if (!edit.id && edit.category !== 'general') {
-                    const prev = await hologramIpc.getClassifiedAssignments(postIds);
+                    const prev = await dotIpc.getClassifiedAssignments(postIds);
                     const next = prev.map((a) => ({ ...a, tagIds: [...new Set([...a.tagIds.filter((existingId) => !edit.replaceWorkId || (existingId !== edit.replaceWorkId && !characters.some((c) => c.id === existingId && c.workId === edit.replaceWorkId))), id])] }));
-                    await hologramIpc.setClassifiedAssignments(next);
+                    await dotIpc.setClassifiedAssignments(next);
                     setAssignments(next);
                     setUndo(prev);
                   }

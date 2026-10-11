@@ -211,7 +211,7 @@ describe('版のずれの案内（#205）', () => {
   test('どちらを更新すればよいかまで言う', async () => {
     setLanguage('ja-JP');
     const ja = await createI18n();
-    expect(ja.skewSaveText('host-old')).toContain('Hologram アプリを更新');
+    expect(ja.skewSaveText('host-old')).toContain('dot アプリを更新');
     expect(ja.skewSaveText('host-new')).toContain('拡張機能を更新');
   });
 
@@ -235,7 +235,7 @@ describe('版のずれの案内（#205）', () => {
   test('英語ロケールも同じ区別を持つ', async () => {
     setLanguage('en-US');
     const en = await createI18n();
-    expect(en.skewSaveText('host-old')).toContain('update the Hologram app');
+    expect(en.skewSaveText('host-old')).toContain('update the dot app');
     expect(en.skewSaveText('host-new')).toContain('update the extension');
     expect(en.skewSaveText('match')).toBeNull();
   });

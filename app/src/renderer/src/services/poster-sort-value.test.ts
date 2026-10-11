@@ -2,8 +2,8 @@ import { expect, test, vi } from 'vitest';
 import { posterSortValue } from './poster-sort-value.ts';
 
 vi.mock('./format.ts', () => ({ compactDate: (date: string) => date.slice(0, 10), formatCount: (count: number) => String(count) }));
-const user = { count: 3, followers: 124, localViewCount: 7, latest: '2026-01-01', lastCapture: '2026-02-01', lastViewedAt: '2026-03-01' } as HologramUserAgg;
-const tree = { op: 'and', children: [] } as unknown as HologramQueryGroup;
+const user = { count: 3, followers: 124, localViewCount: 7, latest: '2026-01-01', lastCapture: '2026-02-01', lastViewedAt: '2026-03-01' } as DotUserAgg;
+const tree = { op: 'and', children: [] } as unknown as DotQueryGroup;
 
 test.each([
   ['count', 'posts', '3'],

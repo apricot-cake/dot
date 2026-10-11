@@ -31,8 +31,8 @@ const { evalSource } = require('../../../scripts/lib-wait.cts');
 
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-tab-restart-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-tab-restart-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -146,7 +146,7 @@ const evalBoot1 = evalSource(
     let blob: Record<string, any> | null = null;
     const readBlob = async () => {
       try {
-        const data = await (window as any).hologram.getTabs();
+        const data = await (window as any).dot.getTabs();
         const t0 = data.tabs[0];
         const t1 = data.tabs[1];
         return {
@@ -235,9 +235,9 @@ const evalBoot2 = evalSource(
 function boot(evalJs: string): Promise<Record<string, any>> {
   const env = Object.assign({}, process.env, {
     APPDATA: tmp,
-    HOLOGRAM_CONFIG_DIR: configDir,
-    HOLOGRAM_SMOKE: '1',
-    HOLOGRAM_SMOKE_EVAL: evalJs,
+    DOT_CONFIG_DIR: configDir,
+    DOT_SMOKE: '1',
+    DOT_SMOKE_EVAL: evalJs,
   });
   return new Promise((resolve) => {
     const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

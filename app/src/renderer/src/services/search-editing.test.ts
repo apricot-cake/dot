@@ -4,17 +4,17 @@ import { makeSearchBox } from './search-box-builder';
 import { store } from './store';
 
 function fixture() {
-  const tree: HologramQueryGroup = { kind: 'group', op: 'and', neg: false, children: [] };
+  const tree: DotQueryGroup = { kind: 'group', op: 'and', neg: false, children: [] };
   let value = '';
   const deps = {
     getTree: () => tree,
-    treeLeaves: () => tree.children as HologramQueryLeaf[],
+    treeLeaves: () => tree.children as DotQueryLeaf[],
     addFilter: (leaf: any) => {
       const node = { kind: 'cond', ...leaf };
       tree.children.push(node);
       return node;
     },
-    removeNode: (node: HologramQueryLeaf) => {
+    removeNode: (node: DotQueryLeaf) => {
       tree.children = tree.children.filter((n) => n !== node);
     },
     searchQuery: () => value,

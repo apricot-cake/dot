@@ -19,7 +19,7 @@ import { readSavedPictures, postSavedState } from '../../extension/utils/overlay
 const roots: string[] = [];
 const handles: ReturnType<typeof openDatabase>[] = [];
 function library() {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-save-scope-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-save-scope-'));
   roots.push(folder);
   const handle = openDatabase(path.join(folder, 'test.db'));
   handles.push(handle);

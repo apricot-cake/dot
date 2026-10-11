@@ -20,17 +20,17 @@ import { isTypingTarget, registerShortcut, tryRun } from './shortcut-registry.ts
 import { store } from './store.ts';
 
 export interface SearchBoxDeps {
-  getTree(): HologramQueryGroup;
-  addFilter(leaf: { type: string; [k: string]: any }): HologramQueryLeaf | null;
-  removeNode(node: HologramQueryLeaf): void;
-  treeLeaves(tree: HologramQueryGroup): HologramQueryLeaf[];
+  getTree(): DotQueryGroup;
+  addFilter(leaf: { type: string; [k: string]: any }): DotQueryLeaf | null;
+  removeNode(node: DotQueryLeaf): void;
+  treeLeaves(tree: DotQueryGroup): DotQueryLeaf[];
   afterQueryChange(): void;
   renderPosts(): void;
   renderPosters(): void;
 }
 
 export function makeSearchBox(deps: SearchBoxDeps) {
-  // hologramStore の 'searchQuery' が検索値そのもの。searchbox コンポーネント
+  // dotStore の 'searchQuery' が検索値そのもの。searchbox コンポーネント
   // はそれを制御された Base UI Autocomplete 入力として描画する。入力時:
   // コンポーネント → ストア → 下の subscriber が即時の重い副作用を
   // 実行する。プログラムによる書き込み（リセット／タブ・履歴の復元／葉の

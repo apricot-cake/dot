@@ -4,44 +4,44 @@ import { hasVisualMedia, kindOf } from './query.ts';
 export const PF_ORDER = ['x', 'bluesky', 'pixiv'];
 
 export function makeFacets(deps: {
-  getFilteredPosts(excludeTypes?: string[]): HologramPost[];
+  getFilteredPosts(excludeTypes?: string[]): DotPost[];
   qHasValue(type: string, v: string): boolean;
   qHasTag(tagId: number | null, name: string): boolean;
   posterQHasValue(type: string, v: string): boolean;
   posterQHasTag(tagId: number | null, name: string): boolean;
-  allPosts(): HologramPost[];
-  tagGroupEntries(): HologramTagEntry[];
+  allPosts(): DotPost[];
+  tagGroupEntries(): DotTagEntry[];
   hostOf(url: string | null | undefined): string;
-  userKey(p: HologramPost): string;
+  userKey(p: DotPost): string;
   t: Translate;
   PF_NAME: Record<string, string>;
-  posterTagEntriesOf(key: string): HologramTagEntry[];
-  filteredPosters(): HologramUserAgg[];
-  posterFilterVocab(): HologramTagEntry[];
-  namedPosters(): HologramUserAgg[];
-  postFolders(): HologramFolder[];
-  buildUsers(): HologramUserAgg[];
+  posterTagEntriesOf(key: string): DotTagEntry[];
+  filteredPosters(): DotUserAgg[];
+  posterFilterVocab(): DotTagEntry[];
+  namedPosters(): DotUserAgg[];
+  postFolders(): DotFolder[];
+  buildUsers(): DotUserAgg[];
 }) {
   const { getFilteredPosts, qHasValue, qHasTag, posterQHasValue, posterQHasTag, allPosts, hostOf, userKey, t, PF_NAME, posterTagEntriesOf, filteredPosters, posterFilterVocab, namedPosters, postFolders, buildUsers } = deps;
-  const entryKey = (e: HologramTagEntry) => (e.id != null ? 'i:' + e.id : 'n:' + e.name);
-  function tagEntriesOf(p: HologramPost): HologramTagEntry[] {
+  const entryKey = (e: DotTagEntry) => (e.id != null ? 'i:' + e.id : 'n:' + e.name);
+  function tagEntriesOf(p: DotPost): DotTagEntry[] {
     return (p.tags || []).map((name, i) => ({ id: p.tagIds?.[i] ?? null, name, label: name }));
   }
 
-  function tagVocab(): HologramTagEntry[] {
-    const m = new Map<string, HologramTagEntry>();
+  function tagVocab(): DotTagEntry[] {
+    const m = new Map<string, DotTagEntry>();
     for (const e of deps.tagGroupEntries()) m.set(entryKey(e), e);
     for (const p of allPosts()) for (const e of tagEntriesOf(p)) if (!m.has(entryKey(e))) m.set(entryKey(e), e);
     return [...m.values()];
   }
-  const tagRow = (e: HologramTagEntry, cnt: Map<string, number>, extra?: Record<string, unknown>): HologramQfRow => ({ v: e.name, l: e.label, tagId: e.id ?? undefined, on: qHasTag(e.id, e.name), count: cnt.get(entryKey(e)) || 0, facetDim: true, ...extra });
-  const posterTagRow = (e: HologramTagEntry, cnt: Map<string, number>, extra?: Record<string, unknown>): HologramQfRow => ({ v: e.name, l: e.label, tagId: e.id ?? undefined, on: posterQHasTag(e.id, e.name), count: cnt.get(entryKey(e)) || 0, facetDim: true, ...extra });
-  const byTagCount = (a: HologramQfRow, b: HologramQfRow) => (b.count || 0) - (a.count || 0) || (a.l || '').localeCompare(b.l || '', 'ja');
+  const tagRow = (e: DotTagEntry, cnt: Map<string, number>, extra?: Record<string, unknown>): DotQfRow => ({ v: e.name, l: e.label, tagId: e.id ?? undefined, on: qHasTag(e.id, e.name), count: cnt.get(entryKey(e)) || 0, facetDim: true, ...extra });
+  const posterTagRow = (e: DotTagEntry, cnt: Map<string, number>, extra?: Record<string, unknown>): DotQfRow => ({ v: e.name, l: e.label, tagId: e.id ?? undefined, on: posterQHasTag(e.id, e.name), count: cnt.get(entryKey(e)) || 0, facetDim: true, ...extra });
+  const byTagCount = (a: DotQfRow, b: DotQfRow) => (b.count || 0) - (a.count || 0) || (a.l || '').localeCompare(b.l || '', 'ja');
   // 各画面の集計対象に存在するタグだけ表示する。選択中は解除できるよう残す。
-  const visibleTag = (row: HologramQfRow) => !!row.on || (row.count || 0) > 0;
+  const visibleTag = (row: DotQfRow) => !!row.on || (row.count || 0) > 0;
 
-  function facetCounts(keyFn: (p: HologramPost) => string | string[] | null | undefined): Map<string, number>;
-  function facetCounts<T extends HologramUserAgg>(keyFn: (p: T) => string | string[] | null | undefined, pool: T[]): Map<string, number>;
+  function facetCounts(keyFn: (p: DotPost) => string | string[] | null | undefined): Map<string, number>;
+  function facetCounts<T extends DotUserAgg>(keyFn: (p: T) => string | string[] | null | undefined, pool: T[]): Map<string, number>;
   function facetCounts(keyFn: (p: any) => string | string[] | null | undefined, pool?: any[]): Map<string, number> {
     const m = new Map<string, number>();
     for (const p of pool || getFilteredPosts()) {
@@ -54,10 +54,10 @@ export function makeFacets(deps: {
     return m;
   }
 
-  function qfValues(cat: string): HologramQfRow[] {
+  function qfValues(cat: string): DotQfRow[] {
     // ORで追加する候補の件数は、その項目自身の条件を外して集計する。
     const excludeTypes = cat === 'platform' ? ['platform', 'domain'] : ['kind', 'postType', 'media', 'aspectRatio', 'user'].includes(cat) ? [cat] : [];
-    let countPool: HologramPost[] | undefined;
+    let countPool: DotPost[] | undefined;
     const countForCategory = (keyFn: (p: any) => string | string[] | null | undefined, pool?: any[]) => {
       countPool ??= getFilteredPosts(excludeTypes);
       return facetCounts(keyFn, pool ?? countPool);
@@ -73,12 +73,12 @@ export function makeFacets(deps: {
       }
       case 'platform': {
         const pcnt = countForCategory((p) => p.platform);
-        const out: HologramQfRow[] = [];
+        const out: DotQfRow[] = [];
         for (const v of PF_ORDER) {
           out.push({ v, l: PF_NAME[v], on: act('platform', v), count: pcnt.get(v) || 0 });
         }
         const stripWww = (h: string) => h.replace(/^www\./, '');
-        const domainOf = (p: HologramPost): string => (p.platform ? '' : stripWww(hostOf(p.url)));
+        const domainOf = (p: DotPost): string => (p.platform ? '' : stripWww(hostOf(p.url)));
         const dcnt = countForCategory((p) => domainOf(p) || null);
         const domains = new Set<string>();
         for (const p of allPosts()) {
@@ -112,7 +112,7 @@ export function makeFacets(deps: {
       }
       case 'media': {
         const cnt = countForCategory((p) => p.mediaType);
-        const out: HologramQfRow[] = [
+        const out: DotQfRow[] = [
           ['image', t('qfImage')],
           ['video', t('qfVideo')],
           ['gif', t('qfGif')],
@@ -166,7 +166,7 @@ export function makeFacets(deps: {
       case 'folder': {
         const folders = postFolders();
         const byId = new Map(folders.map((f) => [f.id, f]));
-        const kidsOf = new Map<string | null, HologramFolder[]>();
+        const kidsOf = new Map<string | null, DotFolder[]>();
         for (const f of folders) {
           const p = f.parentId || null;
           const arr = kidsOf.get(p);
@@ -174,7 +174,7 @@ export function makeFacets(deps: {
           else kidsOf.set(p, [f]);
         }
         const deep = new Map<string, Set<string>>();
-        const itemsDeep = (f: HologramFolder): Set<string> => {
+        const itemsDeep = (f: DotFolder): Set<string> => {
           const hit = deep.get(f.id);
           if (hit) return hit;
           const s = new Set<string>(f.items || []);
@@ -182,10 +182,10 @@ export function makeFacets(deps: {
           for (const k of kidsOf.get(f.id) || []) for (const c of itemsDeep(k)) s.add(c);
           return s;
         };
-        const pathOf = (f: HologramFolder) => {
+        const pathOf = (f: DotFolder) => {
           const parts: string[] = [];
           const seen = new Set<string>();
-          let cur: HologramFolder | undefined = f;
+          let cur: DotFolder | undefined = f;
           while (cur && !seen.has(cur.id)) {
             seen.add(cur.id);
             parts.unshift(cur.name);

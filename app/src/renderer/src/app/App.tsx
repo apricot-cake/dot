@@ -72,7 +72,7 @@ function AppBoot() {
   return null;
 }
 
-// #37: マウント時に一度だけ hologramStore の 'libraryMissing'/'libraryMissingPath' に種を
+// #37: マウント時に一度だけ dotStore の 'libraryMissing'/'libraryMissingPath' に種を
 // 入れる。AppShell と LibraryMissingState が、ライブラリを見せるのか、なぜ届かないのかを
 // 説明するのかを判断できるようにするため。購読ではなく一度きりの取得＝get-library-status は
 // 呼ぶたびに statSync をやり直すし、プッシュの経路も無い（main/index.ts の
@@ -212,14 +212,14 @@ function SelectionContextMenu() {
   return null;
 }
 
-// 外部ストアと IPC の購読。hologramStore のキー（両方のグリッドの表示の軸と searchQuery）、
+// 外部ストアと IPC の購読。dotStore のキー（両方のグリッドの表示の軸と searchQuery）、
 // 検索モードの切り替え、共有フォルダの変更、そして fs 監視から来る posts-changed の合図。
 // subscribe() の登録は React が持つ（アプリの生涯で一度だけマウントされる）。ストアと検索
 // モードのハンドラは防ぎと動作のロジックで、今も orchestrator.ts にあり、live binding として
 // 直接 import する＝App.tsx 直下の他の effect や下の handleFolderChange/handlePostsChanged と
 // 同じ「切り出して繋ぎ直す」で、orchestrator.ts が本物の束縛として export していればブリッジ
-// は要らない。hologramStore の購読は unsubscribe を返すので（useSyncExternalStore と互換）
-// 片付けで呼ぶ。hologramFolders.onChange と hologramPosts.onPostsChanged は返さない
+// は要らない。dotStore の購読は unsubscribe を返すので（useSyncExternalStore と互換）
+// 片付けで呼ぶ。dotFolders.onChange と dotPosts.onPostsChanged は返さない
 // （subs.push と生の ipcRenderer.on）が、この単一ページのアプリでこの effect が実際に
 // アンマウントされることは無いので害は無い。
 function StoreSubscriptions() {
@@ -256,7 +256,7 @@ export function App() {
       <DetailDismiss />
       {/* 他のどのメニューもそのクリックを取らない場所での、選択テキストの右クリック（#167）。 */}
       <SelectionContextMenu />
-      {/* 外部ストアと IPC の購読（hologramStore のキー、qf-pop、検索モード、フォルダの変更、
+      {/* 外部ストアと IPC の購読（dotStore のキー、qf-pop、検索モード、フォルダの変更、
           fs 監視から来る posts-changed の合図）。 */}
       <StoreSubscriptions />
       {/* React が持つアプリのシェル。タブバー＋左のナビ＋コンテンツの inset＋右のインスペクタ

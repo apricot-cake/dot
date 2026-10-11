@@ -15,7 +15,7 @@ let sqlite: any;
 let writer: ReturnType<typeof createDbWriter>;
 
 beforeAll(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-db-write-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-db-write-'));
   ({ sqlite } = openDatabase(path.join(dir, 'test.db')));
   writer = createDbWriter(sqlite);
 
@@ -121,7 +121,7 @@ describe('ポスタータグの実体読み（#810）', () => {
   let pw: ReturnType<typeof createDbWriter>;
 
   beforeAll(() => {
-    pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-db-write-poster-'));
+    pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-db-write-poster-'));
     ({ sqlite: pdb } = openDatabase(path.join(pdir, 'test.db')));
     pw = createDbWriter(pdb);
   });
@@ -158,7 +158,7 @@ describe('タグ名の字形正規化（#197）', () => {
   let own: ReturnType<typeof createDbWriter>;
 
   beforeAll(() => {
-    ownDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-db-write-tagnorm-'));
+    ownDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-db-write-tagnorm-'));
     ({ sqlite: db } = openDatabase(path.join(ownDir, 'test.db')));
     own = createDbWriter(db);
     db.prepare("INSERT INTO posts (captureId, capturedAt, updatedAt) VALUES ('tn-post', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')").run();
@@ -232,7 +232,7 @@ describe('タグ名の保存', () => {
   let own: ReturnType<typeof createDbWriter>;
 
   beforeAll(() => {
-    ownDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-db-write-tag-names-'));
+    ownDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-db-write-tag-names-'));
     ({ sqlite: db } = openDatabase(path.join(ownDir, 'test.db')));
     own = createDbWriter(db);
     db.prepare("INSERT INTO posts (captureId, capturedAt, updatedAt) VALUES ('name-post', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')").run();
@@ -329,7 +329,7 @@ describe('削除→復元で整理した位置が戻る（#593）', () => {
 
   // このスイートは投稿とフォルダを消す（上の節が組み上げた状態を壊してしまう）ので、自分専用の DB を持つ。
   beforeAll(() => {
-    ownDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-restore-'));
+    ownDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-restore-'));
     ({ sqlite: db } = openDatabase(path.join(ownDir, 'test.db')));
     own = createDbWriter(db);
     db.prepare("INSERT INTO posts (captureId, capturedAt, updatedAt) VALUES ('p-1', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z'), ('p-2', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')").run();

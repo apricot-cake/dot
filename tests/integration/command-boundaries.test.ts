@@ -18,7 +18,7 @@ describe('通常検証とリリース操作の境界', () => {
 
   test('通常の Vitest 設定はバンドル依存テストを除外し、自動ビルドを持たない', () => {
     const config = fs.readFileSync(path.join(ROOT, 'vitest.config.ts'), 'utf8');
-    expect(config).toContain("exclude: ['**/*.extension-bundle.test.ts', '**/node_modules/**']");
+    expect(config).toContain("exclude: ['**/*.extension-bundle.test.ts', '**/node_modules/**', 'app/artifacts/**', 'app/dist/**']");
     expect(config).not.toContain('globalSetup');
     expect(config).not.toContain('ext:build');
   });

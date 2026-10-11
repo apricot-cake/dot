@@ -19,7 +19,7 @@ function mount() {
   if (mounted) return;
   mounted = true;
   const root = document.createElement('div');
-  root.id = 'hologramAppRoot';
+  root.id = 'dotAppRoot';
   document.body.appendChild(root);
   // ルートが1つということは、描画時のエラーを1つ拾い損ねただけでウィンドウ全体が空に
   // なるということ。だから境界はそのすぐ下に置く（#324＝ErrorBoundary.tsx を参照）。

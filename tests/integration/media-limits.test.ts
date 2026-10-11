@@ -60,7 +60,7 @@ function chunkedBody(url: string, chunks: number, opts: { breakAt?: number } = {
 }
 
 beforeAll(async () => {
-  dir = path.join(process.env.HOLOGRAM_CONFIG_DIR as string, 'saves');
+  dir = path.join(process.env.DOT_CONFIG_DIR as string, 'saves');
   fs.mkdirSync(dir, { recursive: true });
 
   global.fetch = (async (url: unknown) => {

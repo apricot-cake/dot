@@ -4,7 +4,7 @@ import { Plus, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { addTab, closeTab, closeTabByGesture, showTabMenu } from '../services/orchestrator.ts';
 
-// TabsHost が services/tabs.ts の hologramTabsSource から引く、帯のモデル。
+// TabsHost が services/tabs.ts の dotTabsSource から引く、帯のモデル。
 export interface TabModel {
   id: string;
   title: string;

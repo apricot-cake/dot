@@ -36,7 +36,7 @@ function dispatchClose() {
   if (onCloseTab) onCloseTab();
 }
 
-function get(): HologramImageTabModel | null {
+function get(): DotImageTabModel | null {
   const active = store.getState().activeImageTab;
   if (!active || !gallery || !labels) return null;
   const byId = byIdMap();
@@ -75,7 +75,7 @@ export function isActive(): boolean {
   return get() != null;
 }
 
-export const hologramImageTabSource = {
+export const dotImageTabSource = {
   configure(cfg: { gallery: Gallery; labels: Record<string, string>; onIndexChange: (i: number) => void; onCloseTab: () => void }) {
     gallery = cfg.gallery;
     labels = cfg.labels;

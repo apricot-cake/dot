@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { t } from '../_shared/i18n.ts';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotIpc } from '../services/ipc.ts';
 import { setTagGroup } from '../services/tags.ts';
 import { normalizeTagName, tagNameInputIsSafe } from '../../../../../native-host/tag-normalize.mts';
 import type { TagPickGroup } from './TagField.tsx';
@@ -35,7 +35,7 @@ export function CreateTagDialog({ groups, onAdd, onClose }: { groups: TagPickGro
             try {
               await onAdd(normalized);
               if (group) {
-                const matches = (await hologramIpc.getTagVocab()).filter((row) => row.name === normalized);
+                const matches = (await dotIpc.getTagVocab()).filter((row) => row.name === normalized);
                 if (matches.length !== 1) throw new Error('Ambiguous tag');
                 await setTagGroup(matches[0].id, group);
               }

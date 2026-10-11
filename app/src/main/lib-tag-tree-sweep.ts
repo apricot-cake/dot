@@ -134,7 +134,7 @@ function sweepFilterList(filters: unknown, remap: TagIdRemap): boolean {
   return changed;
 }
 
-// タブ1つ分の永続化された塊（tab-state.ts の HologramTabPersist。DB を裏に持つ `tabs` テーブルから
+// タブ1つ分の永続化された塊（tab-state.ts の DotTabPersist。DB を裏に持つ `tabs` テーブルから
 // 解析済みの JSON として読み戻す＝#298 が tabs.json をここへ移した）。state.view.tree（生きた
 // グリッドのスナップショット）と、'posts' / 'posters' の遷移履歴のエントリそれぞれの .tree を
 // 掃き寄せる（#144 がそれらをタブごとの戻る・進むのスタックにも載せた）。'image' のエントリは木を

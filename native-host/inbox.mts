@@ -1,5 +1,5 @@
 // 消えない取込キュー（#5 St6 / #299）。native-host はサイドカーの JSON ではなくここに
-// キャプチャを書き、hologram.db の読み書きはアプリのメインプロセスだけが行う
+// キャプチャを書き、dot.db の読み書きはアプリのメインプロセスだけが行う
 // （lib-db.ts の単一書き手の不変条件）。メインプロセスは起動時と変更時に、このキューを
 // DB へ送り出す。設計は確定済み＝issue #299 の 2026-07-25 のコメント（「ディスク上の
 // 形式」「native-host の公開手順」）。
@@ -9,7 +9,7 @@
 // 形式1つとアトミックな書き込みの実装1つを共有できる＝post-record.mts と
 // post-key.mts が既に果たしているのと同じ、境界をまたぐ役割だ。
 //
-// <saveFolder>/.hologram-inbox/ の下のディスク上の配置:
+// <saveFolder>/.dot-inbox/ の下のディスク上の配置:
 //   tmp/       書き込み中のもの。読み手もバックアップ処理も決して読まない。
 //   new/       キャプチャ1件につき JSON のエンベロープ1つ。取り込んだ後も残す
 //              （設計コメントが求める「retain」＝このファイルの読み手側の半分が持つ
@@ -32,8 +32,8 @@ import { z } from 'zod';
 import { PostRecordSchema, type PostRecordShape } from './post-schemas.mts';
 import { STORED_CAPTURE_ID_PATTERN } from './capture-id.mts';
 
-const INBOX_DIRNAME = '.hologram-inbox';
-const ENVELOPE_FORMAT = 'hologram-inbox';
+const INBOX_DIRNAME = '.dot-inbox';
+const ENVELOPE_FORMAT = 'dot-inbox';
 const ENVELOPE_VERSION = 1;
 
 // post.capture の eventId はレコードの captureId そのものだ（bridge.mts の uniqueBase の

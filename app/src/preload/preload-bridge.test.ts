@@ -1,4 +1,4 @@
-// app/src/preload/index.ts が contextBridge で公開する window.hologram の、境界そのものの
+// app/src/preload/index.ts が contextBridge で公開する window.dot の、境界そのものの
 // 単体テスト (#383)。`electron` を丸ごと差し替えて preload を素の Node で読み込み、
 // 「レンダラーへ渡すコールバックが Electron の生の IpcRendererEvent を受け取らない」
 // ことだけを見る。
@@ -79,7 +79,7 @@ beforeAll(async () => {
 });
 
 describe('公開APIの形', () => {
-  test('preload は window.hologram として1つの API を公開する', () => {
+  test('preload は window.dot として1つの API を公開する', () => {
     expect(Object.keys(stub.exposed).length).toBeGreaterThan(0);
   });
 

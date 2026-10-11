@@ -16,8 +16,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-export-reminder-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-export-reminder-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'library');
 for (const dir of [configDir, saveFolder]) fs.mkdirSync(dir, { recursive: true });
 
@@ -62,9 +62,9 @@ const evalJs = evalSource(async ({ waitFor }) => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 const child = spawn(resolveElectron(), ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
 let out = '';

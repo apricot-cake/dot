@@ -21,7 +21,7 @@
 // 発火させ、その結果の DOM 状態（インスペクタが開いた、ライトボックスが
 // マウントされた、画像ビューが有効）を検証する。
 // ブラックボックスの形。自前のサンドボックス化された Electron を起動する
-// （HOLOGRAM_SMOKE）。
+// （DOT_SMOKE）。
 //
 //   node e2e/harness/cases/test-app-click-model.cts
 
@@ -38,8 +38,8 @@ const electronPath = resolveElectron();
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-clickmodel-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-clickmodel-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -321,9 +321,9 @@ const evalJs = evalSource(async ({ waitFor, waitStable, neverHappens }) => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

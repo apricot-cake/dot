@@ -9,7 +9,7 @@ import { createArchiveStage } from './archive-stage-ownership';
 
 const folders: string[] = [];
 const temp = () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-publish-test-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-publish-test-'));
   folders.push(folder);
   return folder;
 };
@@ -19,7 +19,7 @@ afterEach(() => {
 
 test('完成した私有ファイルを非置換公開し、既存媒体を保持する', async () => {
   const folder = temp();
-  const executable = process.env.HOLOGRAM_ARCHIVE_PUBLISHER ?? path.resolve('app/vendor/avif/avif-validator.exe');
+  const executable = process.env.DOT_ARCHIVE_PUBLISHER ?? path.resolve('app/vendor/avif/avif-validator.exe');
   const publisher = createArchiveFilePublisher(executable);
   try {
     const source = path.join(folder, '入力.png'),
@@ -43,7 +43,7 @@ test('完成した私有ファイルを非置換公開し、既存媒体を保�
 test('中断後の journal 清掃は所有する途中ファイルだけを消し、既存媒体を保持する', async () => {
   const stage = temp(),
     destination = temp();
-  const partial = path.join(destination, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+  const partial = path.join(destination, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
   const original = path.join(destination, 'existing.png');
   fs.writeFileSync(partial, 'incomplete');
   fs.writeFileSync(original, 'original');
@@ -61,7 +61,7 @@ test('journal が所有領域外のファイルを指しても削除しない', 
   const stage = temp(),
     destination = temp(),
     outside = temp();
-  const file = path.join(outside, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+  const file = path.join(outside, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
   fs.writeFileSync(file, 'keep');
   const db = openDatabase(path.join(stage, 'prepared.sqlite')).sqlite;
   db.exec('CREATE TABLE media_publications(tmp TEXT PRIMARY KEY)');
@@ -76,7 +76,7 @@ test('二つのドットで始まる合法な子フォルダーでは登録済�
     destination = temp();
   const child = path.join(destination, '..media');
   fs.mkdirSync(child);
-  const file = path.join(child, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+  const file = path.join(child, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
   const original = path.join(child, 'media.png');
   fs.writeFileSync(file, 'partial');
   fs.writeFileSync(original, 'original');
@@ -93,7 +93,7 @@ test('journal の親が junction に変わった場合はリンク先の途中�
   const stage = temp(),
     destination = temp(),
     outside = temp();
-  const name = '.hologram-import-11111111-1111-4111-8111-111111111111.tmp';
+  const name = '.dot-import-11111111-1111-4111-8111-111111111111.tmp';
   fs.writeFileSync(path.join(outside, name), 'foreign');
   fs.symlinkSync(outside, path.join(destination, 'redirected'), process.platform === 'win32' ? 'junction' : 'dir');
   const db = openDatabase(path.join(stage, 'prepared.sqlite')).sqlite;
@@ -107,7 +107,7 @@ test('journal の親が junction に変わった場合はリンク先の途中�
 test('所有 tmp の名前でもディレクトリなら消さない', async () => {
   const stage = temp(),
     destination = temp();
-  const file = path.join(destination, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+  const file = path.join(destination, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
   fs.mkdirSync(file);
   fs.writeFileSync(path.join(file, 'foreign'), 'keep');
   const db = openDatabase(path.join(stage, 'prepared.sqlite')).sqlite;
@@ -122,12 +122,12 @@ test('runtime stage のライブラリ UUID が変わった場合は途中ファ
   const profile = temp(),
     destination = temp(),
     temporary = temp();
-  const library = openDatabase(path.join(destination, 'hologram.db')).sqlite;
+  const library = openDatabase(path.join(destination, 'dot.db')).sqlite;
   library.prepare('INSERT INTO store_state(key,value) VALUES(?,?)').run('libraryId', 'current-library');
   library.close();
   const owned = await createArchiveStage(profile, destination, 'old-library', temporary);
   try {
-    const file = path.join(destination, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+    const file = path.join(destination, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
     fs.writeFileSync(file, 'keep');
     const db = openDatabase(path.join(owned.stage, 'prepared.sqlite')).sqlite;
     db.exec('CREATE TABLE media_publications(tmp TEXT PRIMARY KEY)');
@@ -144,12 +144,12 @@ test.skipIf(process.platform !== 'win32')('Windows の大小文字が異なる�
   const profile = temp(),
     destination = temp(),
     temporary = temp();
-  const library = openDatabase(path.join(destination, 'hologram.db')).sqlite;
+  const library = openDatabase(path.join(destination, 'dot.db')).sqlite;
   library.prepare('INSERT INTO store_state(key,value) VALUES(?,?)').run('libraryId', 'same-library');
   library.close();
   const owned = await createArchiveStage(profile, destination, 'same-library', temporary);
   try {
-    const file = path.join(destination, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+    const file = path.join(destination, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
     const original = path.join(destination, 'existing.png');
     fs.writeFileSync(file, 'partial');
     fs.writeFileSync(original, 'keep');
@@ -175,7 +175,7 @@ async function compactionFixture() {
   const owned = await createArchiveStage(profile, destination, 'retained-library', temporary);
   fs.mkdirSync(path.join(owned.stage, 'library'));
   fs.writeFileSync(path.join(owned.stage, 'library', 'expanded.bin'), Buffer.alloc(1024 * 1024, 81));
-  const file = path.join(destination, '.hologram-import-11111111-1111-4111-8111-111111111111.tmp');
+  const file = path.join(destination, '.dot-import-11111111-1111-4111-8111-111111111111.tmp');
   fs.writeFileSync(file, 'foreign destination remains');
   const db = openDatabase(path.join(owned.stage, 'prepared.sqlite')).sqlite;
   db.exec('CREATE TABLE media_publications(tmp TEXT PRIMARY KEY); CREATE TABLE archive_records(captureId TEXT,json TEXT)');

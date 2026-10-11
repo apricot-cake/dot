@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('ソート候補をマウスとキーボードで強調する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('ソート候補をマウスとキーボードで強調する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   for (const mode of ['ホーム', '投稿者']) {
     await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: mode }).press('Enter');
     await page.getByRole('button', { name: '表示', exact: true }).press('Enter');

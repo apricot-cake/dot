@@ -2,14 +2,14 @@ import { refreshInspector, requestDetailOptions, type DetailOptions } from './in
 import { matchingPreviousName, previousNames } from './poster-names.ts';
 import type { Translate } from './translation.ts';
 import { userKey } from './query.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { posterProfileUrl } from './profile-url.ts';
 import { formatCount, localeDate } from './format.ts';
 import { setOpen as panelSetOpen } from './inspector-panel.ts';
 import { open as menuOpen } from './menu.ts';
 import { monoHue } from './records.ts';
 import { setPosterTags } from './tags.ts';
-import { hologramPosterGridSource } from './grid.ts';
+import { dotPosterGridSource } from './grid.ts';
 import { store } from './store.ts';
 import { posterSortValue } from './poster-sort-value.ts';
 import { posterAvatarThumbnailWidth } from './asset-src.ts';
@@ -21,21 +21,21 @@ export interface PosterGridBuilderDeps {
   fileSrc(file: string, w?: number): string;
   pushUndo(changes: readonly UndoChange[]): (() => void) | null;
   showTagGroupMenu(tag: string, x: number, y: number, onChange: () => void, entityId?: number | null): void;
-  openImageEntry(g: HologramPostGroup): void;
-  showPostDetail(g: HologramPostGroup): void;
+  openImageEntry(g: DotPostGroup): void;
+  showPostDetail(g: DotPostGroup): void;
   posterTagsOf(key: string): string[];
   // #810: 投稿者フィルタが提示する実体の語彙＝名前ごとではなく tags テーブルの
   // 行ごとに1エントリ。
-  posterFilterVocab(): HologramTagEntry[];
+  posterFilterVocab(): DotTagEntry[];
   inspectorTagPickerData(tags: string[], recordsForSource: any[], kind: string): any;
-  filteredPosters(): HologramUserAgg[];
-  buildUsers(): HologramUserAgg[];
-  getAllPosts(): HologramPost[];
-  groupRecords(posts: HologramPost[]): HologramPostGroup[];
-  posterQBGetTree(): HologramQueryGroup;
+  filteredPosters(): DotUserAgg[];
+  buildUsers(): DotUserAgg[];
+  getAllPosts(): DotPost[];
+  groupRecords(posts: DotPost[]): DotPostGroup[];
+  posterQBGetTree(): DotQueryGroup;
   posterQBResetTree(): void;
   posterQBRemoveByLeaf(type: string, value: string): void;
-  posterQBRemoveCondsMatching(pred: (c: HologramQueryLeaf) => boolean): boolean;
+  posterQBRemoveCondsMatching(pred: (c: DotQueryLeaf) => boolean): boolean;
   posterQBSyncShadow(): void;
   postQBResetTree(): void;
   addFilter(filter: { type: string; [k: string]: any }): void;
@@ -50,7 +50,7 @@ export interface PosterGridBuilderDeps {
 }
 
 export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
-  let posterList: HologramUserAgg[] = [];
+  let posterList: DotUserAgg[] = [];
   function getPosterList() {
     return posterList;
   }
@@ -85,7 +85,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
     posterList = deps.filteredPosters();
     // 件数とリセットは、ツールバーの絞り込みバーが 'posterGroups'/
     // 'posterQueryTree'/'searchQuery' から自己導出する（下の
-    // hologramStore.set('posterGroups', …) を購読している）。
+    // dotStore.set('posterGroups', …) を購読している）。
     // 表示: ここではセルがどう描かれるかは何も決めない。形は masonic の
     // モデルに乗り（services/grid.ts がポスターの表示キーからそれを導出
     // する）、各セルはそこから自分でレイアウトする＝どのコンテナにも density
@@ -106,17 +106,17 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
     if (!keepLimit) deps.onPosterRendered(); // タブごとの履歴記録＋永続化（#144＝posters のエントリも同じスタックに乗る）
   }
 
-  // React がポスターのセル（仮想化＝hologramPosterGridSource）とその上の
+  // React がポスターのセル（仮想化＝dotPosterGridSource）とその上の
   // すべてのジェスチャー（orchestrator.ts の configureActions）を持つ。
   // このモジュールが持つのは posterList と件数バッジ。検査中のハイライトは
-  // このモデルの一部ではない＝コンポーネントは hologramStore の
+  // このモデルの一部ではない＝コンポーネントは dotStore の
   // 'inspectedKey'（useSyncExternalStore）から、生のアイテムの `.key` を
   // キーにして自分のリングを導出する。modelOf/keyOf は描画のたびに意味の
   // ある形で identity が変わることはないので、（post 側の source が
   // cardModel を巻き上げているのと同様に）renderPosters() のたびに作り直す
   // のではなく一度だけ設定する。
-  hologramPosterGridSource.configure({
-    modelOf: (u: HologramUserAgg, i: number, columnWidth?: number) => {
+  dotPosterGridSource.configure({
+    modelOf: (u: DotUserAgg, i: number, columnWidth?: number) => {
       const hasName = !!u.displayName;
       const s = (u.displayName || u.screenName || '').trim();
       return {
@@ -132,7 +132,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
         sortValue: posterSortValue(u, store.getState().sortPoster, deps.posterQBGetTree()),
       };
     },
-    keyOf: (u: HologramUserAgg, i: number) => (u && u.key != null ? 'p:' + u.key : i),
+    keyOf: (u: DotUserAgg, i: number) => (u && u.key != null ? 'p:' + u.key : i),
   });
 
   // ポスターからその投稿へ移る: posts モード＋この投稿者だけの単一 user
@@ -141,7 +141,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
   // media／検索）を全部落とす＝そうしないと、無関係な残り
   // フィルタが AND で絞り込んでしまい、利用者が見えるはずと思っている投稿を
   // 隠してしまう。
-  function openPosterPosts(u: HologramUserAgg) {
+  function openPosterPosts(u: DotUserAgg) {
     if (!u) return;
     deps.postQBResetTree();
     // （resetAllFilters と同じ: ここで空にする日付 の入力欄は、
@@ -157,7 +157,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
   // 投稿者インスペクタの作品はライブラリの投稿を開く操作。投稿者ビューを背面に
   // 残したまま画像だけを重ねると、左ナビゲーションが「投稿者」のままになり、
   // 現在地と操作結果が食い違う。先に投稿モードへ移し、その投稿の画像ビューを開く。
-  function openPosterWork(g: HologramPostGroup) {
+  function openPosterWork(g: DotPostGroup) {
     deps.setBrowseMode('posts');
     deps.openImageEntry(g);
   }
@@ -166,7 +166,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
   // 切り替えてその投稿者のインスペクタを開く。SNS の投稿だけが buildUsers()
   // に投稿者を持つ（url を持たない Eagle 移行データは持たない）ので、
   // 呼び出し元はこれを提示する前に存在をガードする。
-  function jumpToPoster(p: HologramPost) {
+  function jumpToPoster(p: DotPost) {
     if (!p || !p.url) return;
     const u = deps.buildUsers().find((x) => x.key === userKey(p));
     if (!u) return;
@@ -213,16 +213,16 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
   // 右クリックメニューの「タグを編集」で、ポスターカード自身の 🏷 ボタン
   // （P2⑦）の後継。閉じたパネルを開くのはその経路の仕事であって、その経路
   // だけの仕事＝そちらの注記を参照。
-  function showPosterDetail(u: HologramUserAgg, opts?: { focusTags?: boolean; deferHistorySync?: boolean }) {
+  function showPosterDetail(u: DotUserAgg, opts?: { focusTags?: boolean; deferHistorySync?: boolean }) {
     if (!u) return;
     if (opts && opts.focusTags) panelSetOpen(true);
     store.setState({ selectedPosterKey: u.key });
     requestDetailOptions(opts);
-    hologramPosterGridSource.reveal('p:' + u.key);
+    dotPosterGridSource.reveal('p:' + u.key);
     if (!opts?.deferHistorySync) deps.onPosterInspected();
   }
 
-  function buildPosterModel(u: HologramUserAgg, opts: DetailOptions = {}): Omit<HologramInspectorModel, 'openId'> {
+  function buildPosterModel(u: DotUserAgg, opts: DetailOptions = {}): Omit<DotInspectorModel, 'openId'> {
     const pfName = u.platform ? deps.PF_NAME[u.platform] || u.platform : '';
     const avatarSrc = u.avatarFile ? deps.fileSrc(u.avatarFile, 64) : null;
     const bannerSrc = u.bannerFile ? deps.fileSrc(u.bannerFile) : null;
@@ -231,8 +231,8 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
     // 先頭画像をプレビューする。クリック → その作品をギャラリーで開く
     // （インスペクタの上に）。
     posterWorkGroups = deps
-      .groupRecords(deps.getAllPosts().filter((p: HologramPost) => userKey(p) === u.key))
-      .sort((a: HologramPostGroup, b: HologramPostGroup) => String(b.rep.date || '').localeCompare(String(a.rep.date || '')))
+      .groupRecords(deps.getAllPosts().filter((p: DotPost) => userKey(p) === u.key))
+      .sort((a: DotPostGroup, b: DotPostGroup) => String(b.rep.date || '').localeCompare(String(a.rep.date || '')))
       .slice(0, 6);
     const works = posterWorkGroups.map((g) => {
       const f = (g.files && g.files[0]) || '';
@@ -287,7 +287,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
         tagsEmpty: deps.t('tagsEmpty'),
         editTags: deps.t('tipEditTags'),
       },
-      onOpenProfile: profileUrl ? () => hologramIpc.openExternal(profileUrl) : null,
+      onOpenProfile: profileUrl ? () => dotIpc.openExternal(profileUrl) : null,
       onTagContextMenu: (tag: string, x: number, y: number) => {
         deps.showTagGroupMenu(tag, x, y, () => refreshPosterTagFields(u.key));
       },
@@ -298,7 +298,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
   function restorePosterSelection(key: string | null) {
     const u = deps.buildUsers().find((item) => item.key === key);
     store.setState({ selectedPosterKey: u?.key ?? null });
-    if (u) hologramPosterGridSource.reveal('p:' + u.key);
+    if (u) dotPosterGridSource.reveal('p:' + u.key);
   }
 
   // ポスターの右クリックメニュー: 投稿一覧への移動とタグの編集。
@@ -308,10 +308,10 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
     const items = [
       { label: deps.t('posterViewPosts'), act: 'posts' },
       { label: deps.t('ctxEditTags'), act: 'tags' },
-    ] as HologramMenuItem[];
+    ] as DotMenuItem[];
     return items;
   }
-  function onPosterMenuPick(u: HologramUserAgg, item: HologramMenuItem) {
+  function onPosterMenuPick(u: DotUserAgg, item: DotMenuItem) {
     if (item.act === 'posts') {
       openPosterPosts(u);
       return;
@@ -321,7 +321,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
       return;
     } // 閉じる
   }
-  function showPosterMenu(u: HologramUserAgg, x: number, y: number) {
+  function showPosterMenu(u: DotUserAgg, x: number, y: number) {
     menuOpen({ items: posterMenuItems(), x, y }, (item) => onPosterMenuPick(u, item));
   }
 

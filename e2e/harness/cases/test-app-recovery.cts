@@ -21,8 +21,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const electronPath = resolveElectron();
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-rec-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-rec-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'lib');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -32,7 +32,7 @@ fs.writeFileSync(CONFIG, JSON.stringify({ saveFolder, extensionId: 'x' }));
 
 function launch(evalJs) {
   return new Promise<any>((resolve) => {
-    const env = Object.assign({}, process.env, { APPDATA: tmp, HOLOGRAM_CONFIG_DIR: path.join(tmp, 'Hologram'), HOLOGRAM_SMOKE: '1', HOLOGRAM_SMOKE_EVAL: evalJs });
+    const env = Object.assign({}, process.env, { APPDATA: tmp, DOT_CONFIG_DIR: path.join(tmp, 'dot'), DOT_SMOKE: '1', DOT_SMOKE_EVAL: evalJs });
     const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
     let out = '';
     child.stdout.on('data', (d) => {
@@ -57,7 +57,7 @@ const getCfgEval = evalSource(async ({ waitFor }) => {
   // 復旧は main の中で、config が答えられるようになる前に起きる。フォルダを
   // 名指す config こそが、それが観測可能な終わり方。当てずっぽうの400msの後に
   // そこにあるものを読むのは、負けたと言う手段の無い同じ賭けでしかなかった。
-  const cfg = () => (window as any).hologram.getConfig();
+  const cfg = () => (window as any).dot.getConfig();
   await waitFor('復旧した config が保存フォルダを名指すこと', async () => !!(await cfg())?.saveFolder);
   const c = await cfg();
   return { saveFolder: c && c.saveFolder };

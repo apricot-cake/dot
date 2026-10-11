@@ -10,8 +10,8 @@ describe('公開リポジトリへ追加するファイルの検査', () => {
   test('実ライブラリと検証成果物を拒否する', () => {
     expect(violationFor('tmp/ui.jpg')).toBeTruthy();
     expect(violationFor('captures/home.png')).toBeTruthy();
-    expect(violationFor('backup/hologram.library/items/a.png')).toBeTruthy();
-    expect(violationFor('library/hologram.db')).toBeTruthy();
+    expect(violationFor('backup/dot.library/items/a.png')).toBeTruthy();
+    expect(violationFor('library/dot.db')).toBeTruthy();
   });
 
   test('許可された製品素材と visual baseline は通す', () => {
@@ -26,7 +26,7 @@ describe('公開リポジトリへ追加するファイルの検査', () => {
   });
 
   test('Git が引用する非 ASCII 名のメディアも拒否する', () => {
-    const repository = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-content-guard-'));
+    const repository = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-content-guard-'));
     const guard = path.resolve(__dirname, 'guard-repository-content.cts');
     try {
       cp.execFileSync('git', ['init', '--quiet'], { cwd: repository });

@@ -67,8 +67,8 @@ function segmentFiles(saveFolder: string): string[] {
 
 describe('compactInbox', () => {
   test(`${COMPACT_THRESHOLD}件未満では発火しない`, async () => {
-    const saveFolder = mkTempDir('hologram-inbox-compact-under-');
-    const handle = openDatabase(path.join(mkTempDir('hologram-inbox-compact-under-db-'), 'test.db'));
+    const saveFolder = mkTempDir('dot-inbox-compact-under-');
+    const handle = openDatabase(path.join(mkTempDir('dot-inbox-compact-under-db-'), 'test.db'));
     await seedEvents(saveFolder, COMPACT_THRESHOLD - 1);
     drainInbox(saveFolder, handle.sqlite);
 
@@ -81,8 +81,8 @@ describe('compactInbox', () => {
   }, 20000);
 
   test(`ちょうど ${SEGMENT_EVENT_CAP} 件で1 segment へ束ね、loose を削除する`, async () => {
-    const saveFolder = mkTempDir('hologram-inbox-compact-exact-');
-    const handle = openDatabase(path.join(mkTempDir('hologram-inbox-compact-exact-db-'), 'test.db'));
+    const saveFolder = mkTempDir('dot-inbox-compact-exact-');
+    const handle = openDatabase(path.join(mkTempDir('dot-inbox-compact-exact-db-'), 'test.db'));
     await seedEvents(saveFolder, SEGMENT_EVENT_CAP);
     drainInbox(saveFolder, handle.sqlite);
 
@@ -100,7 +100,7 @@ describe('compactInbox', () => {
       .split('\n')
       .filter(Boolean);
     expect(lines).toHaveLength(SEGMENT_EVENT_CAP);
-    expect(JSON.parse(lines[0])).toMatchObject({ format: 'hologram-inbox', version: 1 });
+    expect(JSON.parse(lines[0])).toMatchObject({ format: 'dot-inbox', version: 1 });
 
     // inbox_events.sourceSegment が埋まっている
     const row = handle.sqlite.prepare('SELECT sourceSegment FROM inbox_events WHERE eventId = ?').get(`${BASE_EPOCH}-aaaa`) as any;
@@ -111,8 +111,8 @@ describe('compactInbox', () => {
   }, 20000);
 
   test('オーファン loose（segment 発行後・削除前に落ちた想定）は次回呼び出しで一掃される', async () => {
-    const saveFolder = mkTempDir('hologram-inbox-compact-orphan-');
-    const handle = openDatabase(path.join(mkTempDir('hologram-inbox-compact-orphan-db-'), 'test.db'));
+    const saveFolder = mkTempDir('dot-inbox-compact-orphan-');
+    const handle = openDatabase(path.join(mkTempDir('dot-inbox-compact-orphan-db-'), 'test.db'));
     await seedEvents(saveFolder, SEGMENT_EVENT_CAP);
     drainInbox(saveFolder, handle.sqlite);
     compactInbox(saveFolder, handle.sqlite); // まず通常の経路で1回コンパクションする
@@ -136,8 +136,8 @@ describe('1,500 event: コンパクション後の loose 上限と、空 DB へ�
   let compactedSegmentId: string;
 
   beforeAll(async () => {
-    saveFolder = mkTempDir('hologram-inbox-1500-');
-    const handle = openDatabase(path.join(mkTempDir('hologram-inbox-1500-db-'), 'test.db'));
+    saveFolder = mkTempDir('dot-inbox-1500-');
+    const handle = openDatabase(path.join(mkTempDir('dot-inbox-1500-db-'), 'test.db'));
     await seedEvents(saveFolder, 1500);
     const drainReport = drainInbox(saveFolder, handle.sqlite);
     expect(drainReport.applied).toHaveLength(1500);
@@ -154,7 +154,7 @@ describe('1,500 event: コンパクション後の loose 上限と、空 DB へ�
   });
 
   test('空 DB へ loose+segment を replay すると 1,500 件を完全に再構成できる', () => {
-    const freshHandle = openDatabase(path.join(mkTempDir('hologram-inbox-1500-restore-db-'), 'test.db'));
+    const freshHandle = openDatabase(path.join(mkTempDir('dot-inbox-1500-restore-db-'), 'test.db'));
 
     const report = drainInbox(saveFolder, freshHandle.sqlite);
 
@@ -170,7 +170,7 @@ describe('1,500 event: コンパクション後の loose 上限と、空 DB へ�
   }, 20000);
 
   test('replay 済みの DB へ再度 drain しても増殖しない（segment receipt を見て中身を開かない）', () => {
-    const handle = openDatabase(path.join(mkTempDir('hologram-inbox-1500-idempotent-db-'), 'test.db'));
+    const handle = openDatabase(path.join(mkTempDir('dot-inbox-1500-idempotent-db-'), 'test.db'));
     drainInbox(saveFolder, handle.sqlite);
 
     const report2 = drainInbox(saveFolder, handle.sqlite);

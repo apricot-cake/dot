@@ -1,10 +1,10 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('ホームと投稿者で閲覧数の補足を表示し、閲覧日を独立して選べる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('ホームと投稿者で閲覧数の補足を表示し、閲覧日を独立して選べる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="post-card"]').first().click();
-  await expect.poll(async () => page.evaluate(async () => (await window.hologram.listPosts()).posts.some((p) => !!p.lastViewedAt))).toBe(true);
-  const before = await page.evaluate(async () => (await window.hologram.listPosts()).posts.reduce((sum, p) => sum + p.localViewCount, 0));
+  await expect.poll(async () => page.evaluate(async () => (await window.dot.listPosts()).posts.some((p) => !!p.lastViewedAt))).toBe(true);
+  const before = await page.evaluate(async () => (await window.dot.listPosts()).posts.reduce((sum, p) => sum + p.localViewCount, 0));
   for (const mode of ['ホーム', '投稿者']) {
     await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: mode }).press('Enter');
     await page.getByRole('button', { name: '表示', exact: true }).press('Enter');
@@ -37,6 +37,6 @@ test('ホームと投稿者で閲覧数の補足を表示し、閲覧日を独�
     await expect(select).toHaveCount(0);
   }
   await page.locator('[data-slot="poster-card"]').first().click();
-  const after = await page.evaluate(async () => (await window.hologram.listPosts()).posts.reduce((sum, p) => sum + p.localViewCount, 0));
+  const after = await page.evaluate(async () => (await window.dot.listPosts()).posts.reduce((sum, p) => sum + p.localViewCount, 0));
   expect(after).toBe(before);
 });

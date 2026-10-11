@@ -15,8 +15,8 @@ describe('配布版（app.isPackaged === true）', () => {
   });
 
   test('マーカーが有っても無くても warn しない', () => {
-    expect(shouldWarnMissingDebugPort(['C:\\Hologram.exe'], true)).toBe(false);
-    expect(shouldWarnMissingDebugPort(['C:\\Hologram.exe', '--remote-debugging-port=9222'], true)).toBe(false);
+    expect(shouldWarnMissingDebugPort(['C:\\dot.exe'], true)).toBe(false);
+    expect(shouldWarnMissingDebugPort(['C:\\dot.exe', '--remote-debugging-port=9222'], true)).toBe(false);
   });
 });
 

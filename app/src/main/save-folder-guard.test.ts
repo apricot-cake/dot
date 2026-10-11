@@ -62,19 +62,19 @@ describe('環境変数からの検出', () => {
   });
 
   test('別の場所を指す env 変数では当たらない', () => {
-    expect(cloudSyncProviderOf(at('Hologram', 'library'), { OneDrive: at('CloudStuff') })).toBeNull();
+    expect(cloudSyncProviderOf(at('dot', 'library'), { OneDrive: at('CloudStuff') })).toBeNull();
   });
 
   test('空・空白だけの env 変数は無視する', () => {
-    expect(cloudSyncProviderOf(at('Hologram', 'library'), { OneDrive: '' })).toBeNull();
-    expect(cloudSyncProviderOf(at('Hologram', 'library'), { OneDrive: '   ' })).toBeNull();
+    expect(cloudSyncProviderOf(at('dot', 'library'), { OneDrive: '' })).toBeNull();
+    expect(cloudSyncProviderOf(at('dot', 'library'), { OneDrive: '   ' })).toBeNull();
   });
 });
 
 // ここで防いでいるのは、まさに誤検出の代償
 describe('普通のフォルダでは黙る', () => {
   test('既定のライブラリ位置', () => {
-    expect(cloudSyncProviderOf(at('Hologram', 'library'), NO_ENV)).toBeNull();
+    expect(cloudSyncProviderOf(at('dot', 'library'), NO_ENV)).toBeNull();
   });
 
   test.each([[at('Projects', 'dropbox-clone', 'lib')], [at('my-onedrive-backup', 'lib')], [at('Pictures', 'GoogleDriveExports')]])('紛らわしい部分文字列では反応しない（セグメント一致であって部分文字列一致ではない）: %s', (p) => {

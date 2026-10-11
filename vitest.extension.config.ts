@@ -3,7 +3,7 @@ import { type Plugin, transformWithOxc } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 const ctsAsTypeScript = (): Plugin => ({
-  name: 'hologram:cts-as-typescript',
+  name: 'dot:cts-as-typescript',
   async transform(code, id) {
     if (!id.endsWith('.cts')) return null;
     const { code: js, map } = await transformWithOxc(code, id, { lang: 'ts' });

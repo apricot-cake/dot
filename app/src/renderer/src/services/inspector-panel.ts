@@ -23,10 +23,10 @@
 // 実際に出ているかについて言い分がある。かつてこの式は AppShell だけにあり、React の外の
 // レンダラーのモジュールは、DOM から #postDetail.hidden を読んで同じ問いに答えていた
 // （P2⑦ / #153: 境界越しに DOM を嗅がない）。今は両方がこの1つの写しを読む。
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { isHidden as panelsAreHidden, subscribe as panelsSubscribe } from './panels.ts';
 
-const KEY = 'hologram-inspector-open';
+const KEY = 'dot-inspector-open';
 const DEFAULT_OPEN = true;
 
 function readCache(): boolean | null {
@@ -82,7 +82,7 @@ export function setOpen(next: boolean): void {
   chosen = true;
   writeCache(next);
   try {
-    hologramIpc.setPref('inspectorOpen', next);
+    dotIpc.setPref('inspectorOpen', next);
   } catch {
     /* 無視する */
   }
@@ -121,7 +121,7 @@ export function subscribeVisible(cb: () => void): () => void {
 // いないことを意味するので、キャッシュの推測（または DEFAULT_OPEN）がそのまま通る。
 export async function load(): Promise<void> {
   try {
-    const prefs = hologramIpc.getPrefs ? await hologramIpc.getPrefs() : null;
+    const prefs = dotIpc.getPrefs ? await dotIpc.getPrefs() : null;
     const saved = prefs ? prefs.inspectorOpen : null;
     if (chosen || typeof saved !== 'boolean' || saved === open) return;
     open = saved;

@@ -52,8 +52,8 @@ async function waitForPopupAnimation(page: Page, slot = 'dialog-content') {
 }
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`${theme}: 設定の開閉でネイティブ背景色を変更しない`, async ({ launchHologram }) => {
-    const { page, app } = await launchHologram({ theme });
+  test(`${theme}: 設定の開閉でネイティブ背景色を変更しない`, async ({ launchDot }) => {
+    const { page, app } = await launchDot({ theme });
     const calls = await recordTitlebarColors(app);
     const dimmed = { symbolColor: theme === 'light' ? '#101112' : '#737477' };
     const normal = { symbolColor: theme === 'light' ? '#202124' : '#e6e8ed' };
@@ -70,8 +70,8 @@ for (const theme of ['light', 'dark'] as const) {
   });
 }
 
-test('確認ダイアログを重ねてもネイティブ背景色を変更しない', async ({ launchHologram }) => {
-  const { page, app } = await launchHologram();
+test('確認ダイアログを重ねてもネイティブ背景色を変更しない', async ({ launchDot }) => {
+  const { page, app } = await launchDot();
   const calls = await recordTitlebarColors(app);
   await page.getByRole('button', { name: '設定', exact: true }).click();
   await waitForPopupAnimation(page);
@@ -90,8 +90,8 @@ test('確認ダイアログを重ねてもネイティブ背景色を変更し�
   expect(await calls()).toEqual([{ symbolColor: '#101112' }, { symbolColor: '#080809' }, { symbolColor: '#101112' }, { symbolColor: '#202124' }]);
 });
 
-test('記号色の IPC を処理しなくても暗幕はタイトルバー全幅を覆う', async ({ launchHologram }) => {
-  const { page, app } = await launchHologram();
+test('記号色の IPC を処理しなくても暗幕はタイトルバー全幅を覆う', async ({ launchDot }) => {
+  const { page, app } = await launchDot();
   const calls = await recordTitlebarColors(app);
   await app.evaluate(({ ipcMain }) => {
     ipcMain.removeHandler('set-titlebar-symbol-dim');

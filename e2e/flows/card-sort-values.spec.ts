@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('カード右下の値がソートに連動し、補足は候補だけに表示される', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('カード右下の値がソートに連動し、補足は候補だけに表示される', async ({ launchDot }) => {
+  const { page } = await launchDot();
   for (const mode of ['ホーム', '投稿者']) {
     await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: mode }).press('Enter');
     await page.getByRole('button', { name: '表示', exact: true }).press('Enter');

@@ -83,7 +83,7 @@ function createOwner(dependencies: any = {}): any {
     }
     if (name === 'marker') {
       const worker = await workerFor(context);
-      return worker.evaluate(async () => (globalThis as any).chrome.tabs.create({ url: `data:text/html;charset=utf-8,${encodeURIComponent('<title>Hologram 開発プロファイル</title><main>Hologram 開発プロファイル</main>')}`, active: false }));
+      return worker.evaluate(async () => (globalThis as any).chrome.tabs.create({ url: `data:text/html;charset=utf-8,${encodeURIComponent('<title>dot 開発プロファイル</title><main>dot 開発プロファイル</main>')}`, active: false }));
     }
     if (name === 'run') {
       const callback = (dependencies.load || require)(args.modulePath);

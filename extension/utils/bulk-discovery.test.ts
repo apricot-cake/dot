@@ -42,7 +42,7 @@ afterEach(() => {
 });
 async function show() {
   cleanup = startBulkDiscovery();
-  await vi.waitFor(() => expect(document.querySelector('[data-hologram-bulk-discovery]')).not.toBeNull());
+  await vi.waitFor(() => expect(document.querySelector('[data-dot-bulk-discovery]')).not.toBeNull());
 }
 function click(text: string) {
   const button = [...document.querySelectorAll('button')].find((el) => el.textContent === text || el.getAttribute('aria-label') === text)!;
@@ -58,7 +58,7 @@ it('履歴URLでもブックマークの案内と二つの操作を表示する'
 it('閉じる操作では永続的な非表示設定を変更しない', async () => {
   await show();
   click('bulkCloseIntro');
-  expect(document.querySelector('[data-hologram-bulk-discovery]')).toBeNull();
+  expect(document.querySelector('[data-dot-bulk-discovery]')).toBeNull();
   expect(mocks.set).not.toHaveBeenCalled();
 });
 it('今後表示しないを保存する', async () => {
@@ -87,7 +87,7 @@ it('開始操作が競合しても一つの予約だけを起動する', async (
   const firstCleanup = cleanup;
   if (!firstCleanup) throw new Error('最初の discovery cleanup が設定されていません');
   cleanup = startBulkDiscovery();
-  await vi.waitFor(() => expect(document.querySelectorAll('[data-hologram-bulk-discovery]')).toHaveLength(2));
+  await vi.waitFor(() => expect(document.querySelectorAll('[data-dot-bulk-discovery]')).toHaveLength(2));
   const reservation = { owner: Symbol('test'), cancel: vi.fn() };
   mocks.reserve.mockReturnValueOnce(reservation).mockReturnValue(undefined);
   const starts = [...document.querySelectorAll('button')].filter((el) => el.textContent === 'bulkStart');

@@ -12,10 +12,10 @@ afterEach(() => {
 });
 
 function libraries() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-relocation-lifecycle-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-relocation-lifecycle-'));
   roots.push(root);
-  const oldInbox = path.join(root, 'old', '.hologram-inbox', 'new');
-  const newInbox = path.join(root, 'new', '.hologram-inbox', 'new');
+  const oldInbox = path.join(root, 'old', '.dot-inbox', 'new');
+  const newInbox = path.join(root, 'new', '.dot-inbox', 'new');
   fs.mkdirSync(oldInbox, { recursive: true });
   fs.mkdirSync(newInbox, { recursive: true });
   return { oldInbox, newInbox };

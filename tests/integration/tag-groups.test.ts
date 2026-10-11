@@ -47,7 +47,7 @@ describe('完全ZIPの取り込みが tag-groups.json を合流させる', () =>
   let handle: any;
 
   beforeAll(async () => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-taggroups-'));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-taggroups-'));
     const dest = path.join(root, 'lib');
     fs.mkdirSync(dest, { recursive: true });
     handle = openDatabase(path.join(root, 'test.db'));

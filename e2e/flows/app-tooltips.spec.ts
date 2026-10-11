@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('標準チップを共通チップに置き換え、操作を保つ', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('標準チップを共通チップに置き換え、操作を保つ', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const hint = (text: string) => page.locator('[data-slot="tooltip-content"][data-open]').filter({ hasText: text });
   await page.getByRole('button', { name: '表示', exact: true }).press('Enter');
   await page.locator('[data-slot="select-trigger"]').press('Space');

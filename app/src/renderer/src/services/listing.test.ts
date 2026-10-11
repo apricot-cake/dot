@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { makeListing, sortPosts } from './listing';
 
 test('閲覧順は新旧を切り替え、日時なしは常に末尾に置く', () => {
-  const entries = [{ captureId: 'unknown' }, { captureId: 'older', lastViewedAt: '2026-09-01T00:00:00.000Z' }, { captureId: 'newer', lastViewedAt: '2026-09-02T00:00:00.000Z' }] as HologramPost[];
+  const entries = [{ captureId: 'unknown' }, { captureId: 'older', lastViewedAt: '2026-09-01T00:00:00.000Z' }, { captureId: 'newer', lastViewedAt: '2026-09-02T00:00:00.000Z' }] as DotPost[];
   for (const [sort, expected] of [
     ['last-viewed-desc', ['newer', 'older', 'unknown']],
     ['last-viewed-asc', ['older', 'newer', 'unknown']],

@@ -22,7 +22,7 @@ let itemDir: string;
 let trashDir: string;
 
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-delete-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-delete-'));
   ({ sqlite } = openDatabase(path.join(dir, 'library.db')));
   writer = createDbWriter(sqlite);
   itemDir = itemDirectoryAbsolute(dir, captureId);

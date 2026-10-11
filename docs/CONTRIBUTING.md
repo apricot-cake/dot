@@ -47,7 +47,7 @@ npm run lint:typos
 npm start
 ```
 
-このコマンドは、すでに配備された `app/out/` を起動します。初回、またはソースを変更した後は、先に `npm run app:deploy` を実行してください。`scripts/start-hologram.cmd` も同じ起動を行います。PowerToys のコマンドパレットなどから起動する場合は、この `.cmd` ファイルをそのまま登録してください。すでに開発版が起動している場合は、新しいウィンドウを作らず既存のウィンドウを前面に出します。
+このコマンドは、すでに配備された `app/out/` を起動します。初回、またはソースを変更した後は、先に `npm run app:deploy` を実行してください。`scripts/start-dot.cmd` も同じ起動を行います。PowerToys のコマンドパレットなどから起動する場合は、この `.cmd` ファイルをそのまま登録してください。すでに開発版が起動している場合は、新しいウィンドウを作らず既存のウィンドウを前面に出します。
 
 開発版を起動して CDP 接続も確認する場合は、次を使います。
 
@@ -57,7 +57,7 @@ npm run app:debug
 
 このコマンドは普段のライブラリを使い、`http://127.0.0.1:9222` を開発用の CDP 接続先として公開します。実ライブラリを扱うため、検証用データを保存する操作には使わないでください。
 
-CDP で画面を撮る場合は `node scripts/cdp-verify.cts shot` を使います。画像は既定で `%LOCALAPPDATA%\Hologram\verification` に保存されます。リポジトリ内を出力先には指定できません。実ライブラリを表示したキャプチャは、公開物へ添付しないでください。
+CDP で画面を撮る場合は `node scripts/cdp-verify.cts shot` を使います。画像は既定で `%LOCALAPPDATA%\dot\verification` に保存されます。リポジトリ内を出力先には指定できません。実ライブラリを表示したキャプチャは、公開物へ添付しないでください。
 
 画面を継続的に調整し、レンダラーの HMR を使う場合だけは次を実行します。
 
@@ -192,7 +192,7 @@ Windows 向けの配布物は Electron Forge で作ります。
 npm run app:make
 ```
 
-Squirrel.Windows のインストーラー `HologramSetup.exe` が `app/artifacts/` 以下に出力されます。GitHub Releases の下書きまで作る場合は、次を実行します。
+Squirrel.Windows のインストーラー `dotSetup.exe` が `app/artifacts/` 以下に出力されます。GitHub Releases の下書きまで作る場合は、次を実行します。
 
 ```powershell
 npm run app:publish
@@ -202,7 +202,7 @@ npm run app:publish
 
 ## 保存に失敗したとき
 
-まず、拡張機能とアプリが想定した環境を使っていることを確認します。その後、通常版の `%APPDATA%\Hologram` と開発用の `%APPDATA%\Hologram-Dev` のログを確認します。
+まず、拡張機能とアプリが想定した環境を使っていることを確認します。その後、通常版の `%APPDATA%\dot` と開発用の `%APPDATA%\dot-Dev` のログを確認します。
 
 1. 拡張機能の診断ページでホストへ接続できているかを確認します。
 2. アプリのログで取り込みキューと SQLite への取り込みに失敗していないかを確認します。

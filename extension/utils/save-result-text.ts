@@ -1,7 +1,7 @@
-import type { HologramI18nApi } from './i18n.ts';
+import type { DotI18nApi } from './i18n.ts';
 import type { SaveResponse } from './messages.ts';
 
-export function saveResultText(result: Extract<SaveResponse, { ok: true }>, t: HologramI18nApi['getMessage']) {
+export function saveResultText(result: Extract<SaveResponse, { ok: true }>, t: DotI18nApi['getMessage']) {
   const scopes = new Set(result.acquisitionIssues?.map((issue) => issue.scope));
   if (result.mediaMissing) scopes.add('media');
   if (!scopes.size && result.metaOk === false) scopes.add('post');

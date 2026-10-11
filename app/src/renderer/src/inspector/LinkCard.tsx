@@ -6,12 +6,12 @@
 // （サムネイルの横にタイトル・説明・ドメイン）を描くため。
 //
 // 常にクリックできる（m.onOpen が欠けることはない＝globals.d.ts の
-// HologramLinkCardModel のコメントを参照）。リンクカードの要点は行き先そのものなので、
+// DotLinkCardModel のコメントを参照）。リンクカードの要点は行き先そのものなので、
 // QuotedPostCard が時々取るクリックできない状態（url を持たないサブレコード）と違い、
 // こちらは常に外部で開く。
 import { Link as LinkIcon } from 'lucide-react';
 
-export function LinkCard({ m }: { m: HologramLinkCardModel }) {
+export function LinkCard({ m }: { m: DotLinkCardModel }) {
   return (
     <div
       data-slot="link-card"

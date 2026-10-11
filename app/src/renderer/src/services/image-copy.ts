@@ -1,4 +1,4 @@
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { t } from '../_shared/i18n.ts';
 import { notify } from './ui.ts';
 
@@ -18,7 +18,7 @@ function publish(files: string[] | null) {
 }
 export const close = () => publish(null);
 export async function copyImage(file: string) {
-  const ok = await hologramIpc.copyImage(file).catch(() => false);
+  const ok = await dotIpc.copyImage(file).catch(() => false);
   notify(t(ok ? 'imageCopied' : 'imageCopyFailed'));
   return ok;
 }

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { hologramIpc } from '../../services/ipc';
+import { dotIpc } from '../../services/ipc';
 
 const backdrops = new Map<HTMLElement, number>();
 
@@ -10,7 +10,7 @@ export function combinedDim(amounts: Iterable<number>): number {
 }
 
 function syncDim() {
-  void hologramIpc.setTitlebarSymbolDim(combinedDim(backdrops.values())).catch(console.error);
+  void dotIpc.setTitlebarSymbolDim(combinedDim(backdrops.values())).catch(console.error);
 }
 
 // ネイティブの記号色だけを暗くする。背景は Backdrop 自身が描く。

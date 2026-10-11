@@ -12,7 +12,7 @@ test('再読み込みは常駐対象ページだけを選ぶ', () => {
 });
 
 test('共有ビルドを二度読み込み、worker の chrome.storage.local で設定と読み返しを行う', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-profile-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-profile-test-'));
   fs.writeFileSync(path.join(dir, 'manifest.json'), '{}');
   const saved: Record<string, unknown> = {};
   const scope = globalThis as any;
@@ -34,7 +34,7 @@ test('共有ビルドを二度読み込み、worker の chrome.storage.local で
 });
 
 test('ロード先 ID が違えば storage を変更せず CDP セッションを解放する', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-profile-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-profile-test-'));
   fs.writeFileSync(path.join(dir, 'manifest.json'), '{}');
   const workers = vi.fn();
   const detach = vi.fn();
@@ -49,7 +49,7 @@ test('ロード先 ID が違えば storage を変更せず CDP セッション�
 });
 
 test('対象ページだけを背面で再読み込みし、部分失敗を呼び出し側へ返す', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-profile-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-profile-test-'));
   fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ content_scripts: [{ matches: ['https://x.com/*'] }] }));
   const reload = vi.fn(async () => {
     throw new Error('navigation failed');

@@ -1,4 +1,4 @@
-// Hologram のページレベル UI のすべてが中に描かれる、唯一の ShadowRoot
+// dot のページレベル UI のすべてが中に描かれる、唯一の ShadowRoot
 // （#44。#154 が定めて #270 が先送りにした境界を実行に移すもの）。
 //
 // なぜ Shadow Root なのか。この拡張機能が描くものはすべて他人のページの
@@ -28,12 +28,12 @@ import { markUiLanguage } from './locale.ts';
 import { ensureTokens, withCurrentTokenSheet } from './tokens.ts';
 import componentsCss from './components.css?inline';
 
-const HOST_TAG = 'hologram-extension-ui';
+const HOST_TAG = 'dot-extension-ui';
 
 // ホスト要素自身の箱。インライン !important として書いているのは、これ
 // がホストページから見えて対象にできる唯一の要素だからだ＝それ以外はす
 // べて shadow の境界の裏にある。インライン !important はカスケードの頂
-// 点なので、悪意ある `hologram-extension-ui { display: none !important }`
+// 点なので、悪意ある `dot-extension-ui { display: none !important }`
 // でも負けない。
 const HOST_STYLE: Record<string, string> = {
   position: 'fixed',
@@ -56,7 +56,7 @@ const HOST_STYLE: Record<string, string> = {
   opacity: '1',
 };
 
-const COMPONENTS_STATE = Symbol.for('hologram.components-stylesheet');
+const COMPONENTS_STATE = Symbol.for('dot.components-stylesheet');
 interface ComponentsState {
   css: string;
   sheet: CSSStyleSheet | null;

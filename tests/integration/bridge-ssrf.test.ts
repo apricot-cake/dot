@@ -24,7 +24,7 @@ const fetched: string[] = []; // 実際に fetch へ渡された URL
 
 // 取得はディスクへ流し込むので、着地先のサンドボックスのディレクトリを1つ用意する(#389)。
 // 書かれたファイルと書かれていないファイルを取り違えないよう、stem はケースごとに変える。
-const dir = path.join(process.env.HOLOGRAM_CONFIG_DIR as string, 'ssrf');
+const dir = path.join(process.env.DOT_CONFIG_DIR as string, 'ssrf');
 let stemSeq = 0;
 const fetchStill = (url: string, referer?: unknown) => saveStillImage(url, referer, dir, `img-${stemSeq++}`);
 

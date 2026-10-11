@@ -28,8 +28,8 @@ const { evalSource } = require('../../../scripts/lib-wait.cts');
 
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-replaces-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-replaces-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -55,7 +55,7 @@ async function saveViaInbox(id: string, extra: Record<string, unknown>) {
 // まさにその掃引と競合してしまう。
 const evalJs = evalSource(
   async ({ waitFor }, args) => {
-    const list = async () => (await (window as any).hologram.listPosts()).posts || [];
+    const list = async () => (await (window as any).dot.listPosts()).posts || [];
     const replaced = await waitFor(
       '置換した側のキャプチャだけが唯一の投稿として残ること',
       async () => {
@@ -72,7 +72,7 @@ const evalJs = evalSource(
   { newId: NEW_ID },
 );
 
-const env = Object.assign({}, process.env, { APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir, HOLOGRAM_SMOKE: '1', HOLOGRAM_SMOKE_EVAL: evalJs });
+const env = Object.assign({}, process.env, { APPDATA: tmp, DOT_CONFIG_DIR: configDir, DOT_SMOKE: '1', DOT_SMOKE_EVAL: evalJs });
 
 (async () => {
   // どちらのキャプチャも、アプリが一度も動いていない間に着地する — アプリが

@@ -10,7 +10,7 @@ import { processImageRequest, validateImageMetadata } from './image-processing-w
 
 let directory: string;
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'hologram-image-worker-'));
+  directory = await mkdtemp(join(tmpdir(), 'dot-image-worker-'));
 });
 afterEach(async () => {
   await rm(directory, { recursive: true, force: true });

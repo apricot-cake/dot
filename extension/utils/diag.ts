@@ -59,7 +59,7 @@ export function startDiagnostics(): void {
   let lastOut: Record<string, unknown> | null = null;
   function renderOut(out: Record<string, unknown>) {
     lastOut = out;
-    window.__hologramDiag = out; // ページのコンソールから読める
+    window.__dotDiag = out; // ページのコンソールから読める
     const outEl = document.getElementById('out');
     if (outEl) outEl.textContent = JSON.stringify(out, null, 2);
   }

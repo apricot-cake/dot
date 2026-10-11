@@ -3,7 +3,7 @@
 // テスト・検証用の使い捨てダミーライブラリを生成する（#175）。
 //
 // プレースホルダのメディアを任意のフォルダ（リポジトリの外＝実ライブラリとは別）に
-// 書き出し、合成レコードを持つ hologram.db も添える。これにより、機能・設計・
+// 書き出し、合成レコードを持つ dot.db も添える。これにより、機能・設計・
 // 検索/照合のキャリブレーション（#164/#165）・#5 の性能計測を、実データに触れずに
 // 量とバリエーションの面で試せる。
 //
@@ -15,11 +15,11 @@
 //   --years N       投稿日時を過去 N 年に散らす（既定 4）
 //   --seed N        PRNG シード（既定 1）＝出力は (seed,count,args) ごとにバイト単位で決定的
 //   --corpus FILE   組み込みプールの代わりに FILE（1行1フラグメント）から投稿文を取る
-//   --db FILE       データベースの書き出し先（既定 <outDir>/hologram.db）
+//   --db FILE       データベースの書き出し先（既定 <outDir>/dot.db）
 //   --force         <outDir> が空でなくても上書きする（既定: 既存データ保護のため中止）
 //
-// これが生成したものにアプリを向けるには: HOLOGRAM_CONFIG_DIR をスクラッチディレクトリに
-// 設定し、生成された hologram.db をそこへ置き、その config の saveFolder を <outDir> に
+// これが生成したものにアプリを向けるには: DOT_CONFIG_DIR をスクラッチディレクトリに
+// 設定し、生成された dot.db をそこへ置き、その config の saveFolder を <outDir> に
 // 設定する。レコードはデータベースへ直接入る＝ライブラリがレコードを保持する場所が
 // そこだから（#302）＝メディアの隣に投稿ごとの JSON を書いても、誰も読まないファイルが
 // できるだけ。
@@ -370,7 +370,7 @@ function main() {
   fs.mkdirSync(avatarDir, { recursive: true });
 
   // 実行1回につきデータベース1つ: レコードはここに着地し、メディアは outDir に残る。
-  const dbFile = path.resolve(opts.db || path.join(outDir, 'hologram.db'));
+  const dbFile = path.resolve(opts.db || path.join(outDir, 'dot.db'));
   for (const suffix of ['', '-wal', '-shm']) fs.rmSync(dbFile + suffix, { force: true });
   const handle = openDatabase(dbFile);
   const stmts = preparePostStmts(handle.sqlite);

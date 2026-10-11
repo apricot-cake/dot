@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('日付プリセットと期間指定の確定を分ける', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('日付プリセットと期間指定の確定を分ける', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: '投稿者' }).press('Enter');
   await page.getByRole('button', { name: 'フィルタ', exact: true }).press('Enter');
   await page.getByRole('menuitem', { name: '日付', exact: true }).hover();

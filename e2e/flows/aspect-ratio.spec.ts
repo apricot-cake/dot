@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 import { FIXTURE_POSTS } from '../lib/library.ts';
 
-test('縦横比の5段階をOR選択し、再読み込み後も保持する', async ({ launchHologram }) => {
+test('縦横比の5段階をOR選択し、再読み込み後も保持する', async ({ launchDot }) => {
   const sizes = [
     [400, 600],
     [450, 500],
@@ -9,7 +9,7 @@ test('縦横比の5段階をOR選択し、再読み込み後も保持する', as
     [500, 450],
     [600, 400],
   ];
-  const { page } = await launchHologram({ posts: sizes.map(([width, height], i) => ({ ...FIXTURE_POSTS[0], captureId: `ratio-${i}`, width, height })) });
+  const { page } = await launchDot({ posts: sizes.map(([width, height], i) => ({ ...FIXTURE_POSTS[0], captureId: `ratio-${i}`, width, height })) });
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   await expect(cards).toHaveCount(5);
   await page.getByRole('button', { name: 'フィルタ', exact: true }).click();

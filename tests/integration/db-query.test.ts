@@ -99,7 +99,7 @@ beforeAll(async () => {
     updatedAt: '2026-01-03T00:00:00Z',
   });
 
-  handle = openDatabase(path.join(mkTempDir('hologram-db-query-db-'), 'test.db'));
+  handle = openDatabase(path.join(mkTempDir('dot-db-query-db-'), 'test.db'));
   const stmts = preparePostStmts(handle.sqlite);
   const resolveTagId = makeTagResolver(handle.sqlite);
   for (const rec of records) writePost(stmts, resolveTagId, rec);
@@ -241,7 +241,7 @@ describe('postsFromDb: 形と並び', () => {
     expect(cap2.poll).toBeNull();
   });
   test.each([{ choices: Array.from({ length: 101 }, () => ({ text: '選択肢', votes: 0 })) }, { choices: [{ text: 'a'.repeat(1001), votes: 0 }] }])('旧DBの過大な投票を画面へ渡さず、本文・メディア・DBの原文を保持する: %#', async ({ choices }) => {
-    const local = openDatabase(path.join(mkTempDir('hologram-poll-query-'), 'test.db'));
+    const local = openDatabase(path.join(mkTempDir('dot-poll-query-'), 'test.db'));
     try {
       writePost(preparePostStmts(local.sqlite), makeTagResolver(local.sqlite), { captureId: 'poll-old', text: '本文を保持', image: 'keep.jpg', media: [{ file: 'keep.jpg', url: 'https://example.com/keep.jpg' }] });
       const raw = JSON.stringify({ choices, multiple: false, expiresAt: null });

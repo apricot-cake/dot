@@ -142,7 +142,7 @@ async function validateAvif(inputPath: string): Promise<z.infer<typeof NativeRes
 async function getSharpProcess(): Promise<UtilityProcess> {
   if (sharpIdleTimer) clearTimeout(sharpIdleTimer);
   sharpProcess ??= new Promise<UtilityProcess>((resolve, reject) => {
-    const worker = utilityProcess.fork(path.join(directory, 'image-processing-worker.js'), [], { serviceName: 'Hologram image processing', stdio: 'ignore' });
+    const worker = utilityProcess.fork(path.join(directory, 'image-processing-worker.js'), [], { serviceName: 'dot image processing', stdio: 'ignore' });
     sharpWorker = worker;
     const timer = setTimeout(() => {
       worker.kill();

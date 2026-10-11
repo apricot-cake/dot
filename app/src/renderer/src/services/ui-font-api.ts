@@ -19,7 +19,7 @@
 // 最初の描画より前に着く必要が無く、このモジュールが読み込まれた時点で適用する。他の、
 // 描画のちらつきに関わらない設定（inspectorWidth、gridSize、…）と同じ。
 
-const KEY = 'hologram-ui-font';
+const KEY = 'dot-ui-font';
 let family = '';
 let cachedDefaultStack: string | null = null;
 
@@ -66,9 +66,9 @@ export function set(name: string, persist?: boolean): string {
   } catch (_e) {
     /* 無視する */
   }
-  if (persist !== false && window.hologram && window.hologram.setPref) {
+  if (persist !== false && window.dot && window.dot.setPref) {
     try {
-      window.hologram.setPref('uiFontFamily', family);
+      window.dot.setPref('uiFontFamily', family);
     } catch (_e) {
       /* 無視する */
     }
@@ -86,8 +86,8 @@ try {
 }
 apply(initial);
 
-if (window.hologram && window.hologram.getPrefs) {
-  window.hologram
+if (window.dot && window.dot.getPrefs) {
+  window.dot
     .getPrefs()
     .then(function (p) {
       const v = typeof p?.uiFontFamily === 'string' ? p.uiFontFamily : '';

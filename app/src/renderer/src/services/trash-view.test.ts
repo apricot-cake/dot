@@ -49,7 +49,7 @@ import * as trashView from './trash-view';
 
 const groupRecords = makeGroupRecords({ manualGroups: () => [], ungrouped: () => new Set<string>() });
 let sort = 'date-desc';
-const sortRecords = (records: HologramPost[]) => sortPosts(records, { sortValue: () => sort, shuffleSeed: () => 'test', percentileFn: () => () => null });
+const sortRecords = (records: DotPost[]) => sortPosts(records, { sortValue: () => sort, shuffleSeed: () => 'test', percentileFn: () => () => null });
 trashView.configure({
   t: (key: string) => key,
   groupRecords,

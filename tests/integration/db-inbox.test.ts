@@ -1,6 +1,6 @@
 // 壊れない取込キューの消費側 app/src/main/lib-db-inbox.ts (#5 St6 / #299) の単体テスト。
 // 合成した saveFolder を作り（native-host/inbox.mts の buildEnvelope/writeInboxEvent で
-// 本物のエンベロープを .hologram-inbox/new へ書く）、drainInbox でそれを本物の SQLite
+// 本物のエンベロープを .dot-inbox/new へ書く）、drainInbox でそれを本物の SQLite
 //（app/src/main/lib-db.ts 経由）へ取り込み、確定した設計の何度実行しても同じという性質と
 // 衝突の規則を直に確かめる。
 //   - 新しい event はちょうど1回だけ posts 行になり、受領記録が付く
@@ -11,7 +11,7 @@
 //   - captureId がすでにあり URL/media が一致すれば受領記録だけ足す（上書きしない）
 //   - 必須のメディアが無ければ受領記録を付けず、次回へ持ち越す。他の event はそれに堰き止められない
 //   - 上のどの飛ばし方でも DB に行が増えない（トランザクションの境界の間接的な証拠）
-//   - apply が例外を投げたエンベロープ (#920) は飛ばして .hologram-inbox/failed/ へ隔離する
+//   - apply が例外を投げたエンベロープ (#920) は飛ばして .dot-inbox/failed/ へ隔離する
 //     ＝残りの drain はそのまま着地し、次の drain も同じところで転ばない（loose ファイルでも
 //     セグメントの行でも同じ）
 
@@ -27,7 +27,7 @@ import { drainInbox } from '../../app/src/main/lib-db-inbox';
 const dirs: string[] = [];
 
 test('一部保存の再試行は同じ投稿を更新し、本文とタグを維持する', async () => {
-  const folder = mkTempDir('hologram-retry-');
+  const folder = mkTempDir('dot-retry-');
   const db = openDatabase(path.join(folder, 'library.db'));
   try {
     const original = normalizePostRecord({ captureId: '1700000000800-ab01', url: 'https://x.com/a/status/123456', text: '既存の本文', tags: ['手動タグ'], saveIncomplete: true });
@@ -46,7 +46,7 @@ test('一部保存の再試行は同じ投稿を更新し、本文とタグを�
   }
 });
 test('一般ページの再試行は同じ媒体だけを更新し、別の媒体への差し替えは拒否する', async () => {
-  const folder = mkTempDir('hologram-web-retry-');
+  const folder = mkTempDir('dot-web-retry-');
   const db = openDatabase(path.join(folder, 'library.db'));
   try {
     fs.writeFileSync(path.join(folder, 'image.jpg'), 'test');
@@ -67,7 +67,7 @@ test('一般ページの再試行は同じ媒体だけを更新し、別の媒�
 });
 
 test('DB 復元ではハッシュ順で先に現れた再試行を元投稿のセグメント後に適用する', () => {
-  const folder = mkTempDir('hologram-retry-segment-replay-');
+  const folder = mkTempDir('dot-retry-segment-replay-');
   const db = openDatabase(path.join(folder, 'library.db'));
   try {
     const original = normalizePostRecord({ captureId: '1700000000950-ad01', url: 'https://x.com/a/status/654321', saveIncomplete: true });
@@ -125,8 +125,8 @@ async function seedEnvelope(overrides: Record<string, unknown>, mediaFiles: stri
 
 describe('drainInbox', () => {
   beforeAll(() => {
-    saveFolder = mkTempDir('hologram-db-inbox-save-');
-    handle = openDatabase(path.join(mkTempDir('hologram-db-inbox-db-'), 'test.db'));
+    saveFolder = mkTempDir('dot-db-inbox-save-');
+    handle = openDatabase(path.join(mkTempDir('dot-db-inbox-db-'), 'test.db'));
   });
 
   describe('新規 event', () => {

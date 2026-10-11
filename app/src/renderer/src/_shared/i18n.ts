@@ -1,11 +1,11 @@
-import { hologramI18n, type HologramI18nApi } from '../services/i18n.ts';
+import { dotI18n, type DotI18nApi } from '../services/i18n.ts';
 import type { Translate } from '../services/translation.ts';
 
-let api: HologramI18nApi | null = null;
+let api: DotI18nApi | null = null;
 
-export async function initI18n(): Promise<HologramI18nApi | null> {
+export async function initI18n(): Promise<DotI18nApi | null> {
   try {
-    api = await hologramI18n;
+    api = await dotI18n;
   } catch {
     api = null; // i18n が使えない＝t() は生のキーへ退避する
   }

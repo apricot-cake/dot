@@ -12,8 +12,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 
 const appDir = path.join(__dirname, '../../../app');
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-filter-menus-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-filter-menus-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -34,7 +34,7 @@ seedLibrary(configDir, posts);
 async function main() {
   let app: import('playwright').ElectronApplication | undefined;
   try {
-    const launched = await _electron.launch({ executablePath: resolveElectron(), args: ['.'], cwd: appDir, env: { ...process.env, APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir } });
+    const launched = await _electron.launch({ executablePath: resolveElectron(), args: ['.'], cwd: appDir, env: { ...process.env, APPDATA: tmp, DOT_CONFIG_DIR: configDir } });
     app = launched;
     const page = await launched.firstWindow();
     const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');

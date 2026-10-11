@@ -15,8 +15,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const electronPath = resolveElectron();
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-logging-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-logging-'));
+const configDir = path.join(tmp, 'dot');
 const logPath = path.join(configDir, 'logs', 'main.log');
 
 // throwはインラインで発生させるのではなくスケジュールする: 検証対象は
@@ -35,9 +35,9 @@ const evalJs = evalSource(
 const env = {
   ...process.env,
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 };
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: 'pipe' });
@@ -53,7 +53,7 @@ child.on('close', (code) => {
   try {
     const log = fs.readFileSync(logPath, 'utf8');
     if (code !== 0) throw new Error(`Electronが終了しました ${code}\n${output}`);
-    if (!log.includes('Starting Hologram')) throw new Error(`mainの起動ログがありません\n${log}`);
+    if (!log.includes('Starting dot')) throw new Error(`mainの起動ログがありません\n${log}`);
     if (!log.includes('renderer-log-smoke')) throw new Error(`レンダラーのエラーログがありません\n${log}`);
     // #1004: このspawnは（迷ったスタートメニューのショートカット起動と
     // 同じく）--remote-debugging-portを持たないので、startup-debug-port.tsの

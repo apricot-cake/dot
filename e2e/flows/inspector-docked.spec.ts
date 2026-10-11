@@ -6,8 +6,8 @@
 import { expect, test } from '../lib/harness.ts';
 import { WIDE_MIN_PX, justBelow } from '../lib/viewport.ts';
 
-test('詳細の開閉でも検索欄と三つの操作は動かず、画像ビューアでも同じ位置に残る', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('詳細の開閉でも検索欄と三つの操作は動かず、画像ビューアでも同じ位置に残る', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const toggle = page.locator('[data-slot="inspector-toggle"]');
   const inspector = page.locator('[data-slot="inspector"]');
   await expect(toggle).toHaveText('詳細');
@@ -64,8 +64,8 @@ test('詳細の開閉でも検索欄と三つの操作は動かず、画像ビ�
   expect(await toggle.boundingBox()).toEqual(buttonBox);
 });
 
-test('狭幅でもインスペクタは常設カラムのままグリッドを覆わない（#975）', async ({ launchHologram }) => {
-  const { app, page } = await launchHologram();
+test('狭幅でもインスペクタは常設カラムのままグリッドを覆わない（#975）', async ({ launchDot }) => {
+  const { app, page } = await launchDot();
   const narrow = justBelow(WIDE_MIN_PX);
   await app.evaluate(({ BrowserWindow }, w) => BrowserWindow.getAllWindows()[0].setContentSize(w, 800), narrow);
   // レイアウトが答えるのはリサイズそのものであって、その要求ではない: アプリが

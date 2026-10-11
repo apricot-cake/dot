@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('一覧最上部のカードと選択枠がスクロール領域内に収まる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('一覧最上部のカードと選択枠がスクロール領域内に収まる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const card = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').first();
   await card.click();
   await expect(card).toHaveAttribute('data-selected', 'true');

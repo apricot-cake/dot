@@ -17,14 +17,14 @@ const FOLDERS = [{ id: 'f-a', name: '資料', kind: 'static', created: 1, parent
 function seedFolder({ saveFolder }: { saveFolder: string }) {
   const { openDatabase } = require(path.join(appDir, 'src', 'main', 'lib-db.ts'));
   const { createDbWriter } = require(path.join(appDir, 'src', 'main', 'lib-db-write.ts'));
-  // #176: hologram.dbは今、configDirではなく保存フォルダの中にある。
-  const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+  // #176: dot.dbは今、configDirではなく保存フォルダの中にある。
+  const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
   createDbWriter(sqlite).setFolders({ folders: FOLDERS, activeId: null });
   sqlite.close();
 }
 
-test('初回起動はラベル付きレール（#678 受け入れ条件1・2）', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('初回起動はラベル付きレール（#678 受け入れ条件1・2）', async ({ launchDot }) => {
+  const { page } = await launchDot();
 
   await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute('data-state', 'collapsed');
 
@@ -58,8 +58,8 @@ test('初回起動はラベル付きレール（#678 受け入れ条件1・2）'
   await expect(page.locator('[data-slot="menu-label"]')).toHaveText(Object.values(expectedLabels));
 });
 
-test('フォルダ一覧はフライアウトを開くまで表示されない', async ({ launchHologram }) => {
-  const { page } = await launchHologram({ seed: seedFolder });
+test('フォルダ一覧はフライアウトを開くまで表示されない', async ({ launchDot }) => {
+  const { page } = await launchDot({ seed: seedFolder });
 
   // #678はこれらの行をCSSスイッチの裏に隠し、展開カラムがそれをオフにしていた。カラムが
   // 無くなった今（#981）は、フライアウトが開くまで一切描画されない――だからここでは
@@ -70,8 +70,8 @@ test('フォルダ一覧はフライアウトを開くまで表示されない',
 });
 
 // レールのフォルダボタンから一覧を開き、フォルダを選んで絞り込む。
-test('レールのフォルダ行はフライアウトでツリーを出し、選ぶと適用して閉じる（#965）', async ({ launchHologram }) => {
-  const { page } = await launchHologram({ seed: seedFolder });
+test('レールのフォルダ行はフライアウトでツリーを出し、選ぶと適用して閉じる（#965）', async ({ launchDot }) => {
+  const { page } = await launchDot({ seed: seedFolder });
   const sidebar = page.locator('[data-slot="sidebar"]');
   const flyout = page.locator('[data-slot="popover-content"]');
   // ボタンではなくラベルを通して特定する＝Base UIのTriggerは自分が描画するものに
@@ -107,8 +107,8 @@ test('レールのフォルダ行はフライアウトでツリーを出し、�
 // フライアウトはピッカーであるだけでなく管理者でもなければならない（#41の確定判断D＝
 // ツリーそのものが管理者であり、その裏にモーダルは無い）――さもなければカラムを畳んだ
 // ことで、作成・改名・削除まで黙って一緒に失われてしまう。
-test('フライアウトからフォルダを作れる（#965 / #41 確定D）', async ({ launchHologram }) => {
-  const { page } = await launchHologram({ seed: seedFolder });
+test('フライアウトからフォルダを作れる（#965 / #41 確定D）', async ({ launchDot }) => {
+  const { page } = await launchDot({ seed: seedFolder });
   const flyout = page.locator('[data-slot="popover-content"]');
 
   await page.locator('[data-slot="menu-label"]', { hasText: /^フォルダ$/ }).click();
@@ -120,13 +120,13 @@ test('フライアウトからフォルダを作れる（#965 / #41 確定D）',
   await dialog.locator('input').fill('新しい入れ物');
   await dialog.getByRole('button', { name: 'OK' }).click();
 
-  await expect.poll(async () => (await page.evaluate(async () => (await window.hologram.getFolders()).folders.map((f) => f.name))).includes('新しい入れ物')).toBe(true);
+  await expect.poll(async () => (await page.evaluate(async () => (await window.dot.getFolders()).folders.map((f) => f.name))).includes('新しい入れ物')).toBe(true);
 });
 
 // #981の受け入れ条件を、旧来の経路が無いことという形で述べる。1つのケースとして
 // 書くのは、これらが1つの主張だからだ――どんな手段でも、たどり着ける第二の形は無い。
-test('展開する手段が無い（#981）', async ({ launchHologram }) => {
-  const { app, page } = await launchHologram();
+test('展開する手段が無い（#981）', async ({ launchDot }) => {
+  const { app, page } = await launchDot();
   const sidebar = page.locator('[data-slot="sidebar"]');
   const railWidth = () => page.locator('[data-slot="sidebar-container"]').evaluate((el) => el.getBoundingClientRect().width);
 
@@ -154,8 +154,8 @@ test('展開する手段が無い（#981）', async ({ launchHologram }) => {
   expect(await railWidth()).toBe(width);
 });
 
-test('行き先を押すとそのビューのフィルタがリセットされる（#812）', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('行き先を押すとそのビューのフィルタがリセットされる（#812）', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const postCards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   const posterCards = page.locator('[data-slot="poster-grid"] [data-slot="poster-card"]');
   const chips = page.locator('[data-slot="filter-chip"]');

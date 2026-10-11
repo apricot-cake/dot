@@ -10,7 +10,7 @@
 //      メッセージングのフレーミングが動くことを証明する（ping＋save＋sidecar書き込み）。
 //   2. config.jsonが解析できる（解決された保存フォルダを報告する）。
 //   3. 保存フォルダ（またはその最も近い実在する祖先）が書き込み可能。
-//   4. （win32）設定ディレクトリ（%APPDATA%\Hologram）下のネイティブホストのMANIFESTが
+//   4. （win32）設定ディレクトリ（%APPDATA%\dot）下のネイティブホストのMANIFESTが
 //      解決できる（ランチャーが存在し、拡張機能のオリジンを許可している）。HKCUポインタは
 //      INFOとしてのみ報告する――コンテナ内の`reg query`は仮想ハイブを読むので信用できない。
 //   5. デプロイされたブリッジ（configDir/bridge.js）がビルド済みバンドルと一致する――
@@ -71,13 +71,13 @@ function resolveSaveFolder() {
 // --- チェック1: サンドボックス往復（ping + save） ---
 function sandboxRoundTrip() {
   return new Promise<any>((resolve) => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-selftest-'));
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-selftest-'));
     const saveFolder = path.join(tmp, 'saves');
-    fs.mkdirSync(path.join(tmp, 'Hologram'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, 'Hologram', 'config.json'), JSON.stringify({ saveFolder }));
+    fs.mkdirSync(path.join(tmp, 'dot'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 'dot', 'config.json'), JSON.stringify({ saveFolder }));
     const captureId = '1717500000000-beef';
-    // HOLOGRAM_CONFIG_DIR経由でconfigDirをサンドボックスに隔離する。
-    const env = Object.assign({}, process.env, { APPDATA: tmp, HOLOGRAM_CONFIG_DIR: path.join(tmp, 'Hologram') });
+    // DOT_CONFIG_DIR経由でconfigDirをサンドボックスに隔離する。
+    const env = Object.assign({}, process.env, { APPDATA: tmp, DOT_CONFIG_DIR: path.join(tmp, 'dot') });
     const child = spawn(process.execPath, [REPO_BRIDGE], { env, stdio: ['pipe', 'pipe', 'ignore'] });
     let out = Buffer.alloc(0);
     child.stdout.on('data', (d) => {
@@ -94,7 +94,7 @@ function sandboxRoundTrip() {
       const jpgOk = fs.existsSync(path.join(saveFolder, 'items', captureId, `${captureId}.jpg`));
       // 保存のうちレコード側は取込エンベロープ（#5 St6 / #299）であり、画像の隣にある
       // ファイルではない――アプリがデータベースを所有し、キューをdrainする。
-      const envelopeOk = fs.existsSync(path.join(saveFolder, '.hologram-inbox', 'new', `${captureId}.json`));
+      const envelopeOk = fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', `${captureId}.json`));
       fs.rmSync(tmp, { recursive: true, force: true });
       const ok = pong && saved && jpgOk && envelopeOk;
       resolve({
@@ -136,7 +136,7 @@ function checkWritable() {
 }
 
 // --- チェック4: ネイティブホストの登録（win32） ---
-// configDir()（Windows: %APPDATA%\Hologram）下のMANIFESTファイルをハードチェックする。
+// configDir()（Windows: %APPDATA%\dot）下のMANIFESTファイルをハードチェックする。
 // HKCUポインタは別枠で、ハード失敗にはせずソフトなINFO行として報告する
 // （checkRegistryPointer）。元々の理由は2026-08-06（#1003）に無くなった＝MSIXの
 // コンテナ下のシェルはかつて仮想ハイブを読んでいて、`reg query`の結果は何であれ意味を
@@ -144,7 +144,7 @@ function checkWritable() {
 // ハードチェックに昇格させられる。ホストを一度も登録したことのないマシン（新しい
 // worktreeなど）で誤発火しないと誰かが確認するまでは、ソフトのままにしておく。
 // 「キャプチャは動いているか」の権威ある兆候は、実際のChromeでのキャプチャと、
-// 設定ディレクトリのbridge.log / capture.log（Windows: %APPDATA%\Hologram）のままだ。
+// 設定ディレクトリのbridge.log / capture.log（Windows: %APPDATA%\dot）のままだ。
 function checkRegistration() {
   if (process.platform !== 'win32') return { name: 'ホスト登録', ok: true, soft: true, detail: 'スキップ（非win32）' };
   const manifestPath = path.join(configDir(), `${install.HOST_NAME}.json`);

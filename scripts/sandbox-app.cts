@@ -23,10 +23,10 @@
 // 運んでいるので、そのスクリーンショットは公開物（PR/Issue）へ絶対に貼ってはならない。
 //
 // 隔離のモデル（issue #283 参照）:
-//   - HOLOGRAM_CONFIG_DIR → <tree>/.sandbox/config: userData は config ディレクトリに
+//   - DOT_CONFIG_DIR → <tree>/.sandbox/config: userData は config ディレクトリに
 //     固定され、Electron のシングルインスタンスロックは userData をキーにするので、
 //     このインスタンスは実アプリと共存できる。
-//   - HOLOGRAM_SANDBOX=1 → app/src/main/index.ts は native host の登録をスキップする
+//   - DOT_SANDBOX=1 → app/src/main/index.ts は native host の登録をスキップする
 //     （HKCU への書き込みも共有 config ディレクトリへのコピーも無し）。
 //   - config.json は必ず最初の起動より前に書かれ、saveFolder をサンドボックスの
 //     ライブラリへ向ける＝未設定のまま起動すると、代わりに実際の既定ライブラリ
@@ -136,8 +136,8 @@ function readSeed(): any | null {
 }
 
 function libraryIsSeeded(): boolean {
-  // #176: hologram.db は今は configDir ではなく保存フォルダの中にある。
-  if (fs.existsSync(path.join(saveFolder, 'hologram.db'))) return true;
+  // #176: dot.db は今は configDir ではなく保存フォルダの中にある。
+  if (fs.existsSync(path.join(saveFolder, 'dot.db'))) return true;
   try {
     return fs.readdirSync(saveFolder).length > 0;
   } catch {
@@ -147,7 +147,7 @@ function libraryIsSeeded(): boolean {
 
 // --reseed: サンドボックスは意図的に使い捨てなので、2つのシードをマージしようと
 // せず、シード済みの状態（ライブラリ・データベース・config）をまるごと落とす。
-// #176: hologram.db（+ -wal/-shm）は今は saveFolder の「中」にあるので、
+// #176: dot.db（+ -wal/-shm）は今は saveFolder の「中」にあるので、
 // 下の再帰的な削除で既に取り除かれる＝個別の db 削除は不要。
 function wipeSeed() {
   wipeSandboxSeed({ receiptPath: realSeedReceiptFile, library: saveFolder, config: path.join(configDir, 'config.json'), marker: seedFile });
@@ -158,7 +158,7 @@ function wipeSeed() {
 // スタックトレースではなく、理由を添えて失敗しなければならない＝#175 の
 // 生成ダミーライブラリがそこでの代役になる。
 function resolveRealLibrary(): { configDir: string; saveFolder: string } {
-  if (process.env.HOLOGRAM_CONFIG_DIR) throw new Error('HOLOGRAM_CONFIG_DIR が設定されています＝既に隔離済みの config ディレクトリを実ライブラリとして扱うことを拒否します');
+  if (process.env.DOT_CONFIG_DIR) throw new Error('DOT_CONFIG_DIR が設定されています＝既に隔離済みの config ディレクトリを実ライブラリとして扱うことを拒否します');
   const dir = realConfigDir();
   const configPath = path.join(dir, 'config.json');
   let folder = '';
@@ -168,8 +168,8 @@ function resolveRealLibrary(): { configDir: string; saveFolder: string } {
     /* 既定値へフォールスルー */
   }
   if (!folder) folder = defaultLibraryDir();
-  // #176: hologram.db は今は configDir ではなく保存フォルダの中にある。
-  if (!fs.existsSync(path.join(folder, 'hologram.db'))) throw new Error(`この機体に実ライブラリがありません（${path.join(folder, 'hologram.db')} が見つかりません）。フィクスチャシードを使うか、scripts/gen-dummy-library.cts で生成してください`);
+  // #176: dot.db は今は configDir ではなく保存フォルダの中にある。
+  if (!fs.existsSync(path.join(folder, 'dot.db'))) throw new Error(`この機体に実ライブラリがありません（${path.join(folder, 'dot.db')} が見つかりません）。フィクスチャシードを使うか、scripts/gen-dummy-library.cts で生成してください`);
   return { configDir: dir, saveFolder: folder };
 }
 
@@ -295,16 +295,16 @@ async function start(opts: StartOptions) {
   fs.cpSync(path.join(appDir, 'vendor'), path.join(sandboxRoot, 'vendor'), { recursive: true });
   const env = Object.assign({}, process.env, {
     APPDATA: appData,
-    HOLOGRAM_CONFIG_DIR: configDir,
-    HOLOGRAM_SANDBOX: '1',
-    HOLOGRAM_APP_BUILD_OUT: sandboxOutput,
+    DOT_CONFIG_DIR: configDir,
+    DOT_SANDBOX: '1',
+    DOT_APP_BUILD_OUT: sandboxOutput,
     ELECTRON_ENTRY: sandboxRoot,
     REMOTE_DEBUGGING_PORT: String(port),
     // 検証インスタンスはキーボードの前の人ではなくセッションが起動する: それが
     // その人の作業からフォアグラウンドを奪ってはいけない。手で操作したい稀な実行
-    // には HOLOGRAM_START_INACTIVE=0 を設定する。
-    HOLOGRAM_START_INACTIVE: process.env.HOLOGRAM_START_INACTIVE || '1',
-    ...(notice ? { HOLOGRAM_SANDBOX_NOTICE: notice } : {}),
+    // には DOT_START_INACTIVE=0 を設定する。
+    DOT_START_INACTIVE: process.env.DOT_START_INACTIVE || '1',
+    ...(notice ? { DOT_SANDBOX_NOTICE: notice } : {}),
   });
   // `npm run app:dev` と同じ前処理を済ませてから electron-vite を起動する。Windows の
   // npm.cmd は Node の detached spawn では起動できないため、npm を子にせず、同じ

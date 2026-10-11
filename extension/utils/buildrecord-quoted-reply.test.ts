@@ -69,8 +69,8 @@ describe('quotedPost/replyToPost/poll が buildRecord から bridge.mts まで�
   const linkCard = { url: 'https://example.com/article', title: 'A great article', description: 'It explains things.', thumbnail: null };
 
   beforeAll(async () => {
-    quoteTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-test-quote-'));
-    const configDir = path.join(quoteTmp, 'Hologram');
+    quoteTmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-test-quote-'));
+    const configDir = path.join(quoteTmp, 'dot');
     quoteSaveFolder = path.join(quoteTmp, 'saves');
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder: quoteSaveFolder }));
@@ -87,7 +87,7 @@ describe('quotedPost/replyToPost/poll が buildRecord から bridge.mts まで�
     header.writeUInt32LE(msg.length, 0);
 
     const child = spawn(process.execPath, [path.join(import.meta.dirname, '../../native-host/bridge.mts')], {
-      env: { ...process.env, APPDATA: quoteTmp, HOLOGRAM_CONFIG_DIR: configDir },
+      env: { ...process.env, APPDATA: quoteTmp, DOT_CONFIG_DIR: configDir },
       stdio: ['pipe', 'pipe', 'inherit'],
     });
     let out = Buffer.alloc(0);
@@ -110,18 +110,18 @@ describe('quotedPost/replyToPost/poll が buildRecord から bridge.mts まで�
   });
 
   test('エンベロープの record.quotedPost/replyToPost に抽出器のサブレコードがそのまま乗る', () => {
-    const envelope = JSON.parse(fs.readFileSync(path.join(quoteSaveFolder, '.hologram-inbox', 'new', `${quoteCaptureId}.json`), 'utf8'));
+    const envelope = JSON.parse(fs.readFileSync(path.join(quoteSaveFolder, '.dot-inbox', 'new', `${quoteCaptureId}.json`), 'utf8'));
     expect(envelope.record.quotedPost).toMatchObject(quotedPost);
     expect(envelope.record.replyToPost).toMatchObject(replyToPost);
   });
 
   test('エンベロープの record.poll に抽出器のアンケートがそのまま乗る（#179）', () => {
-    const envelope = JSON.parse(fs.readFileSync(path.join(quoteSaveFolder, '.hologram-inbox', 'new', `${quoteCaptureId}.json`), 'utf8'));
+    const envelope = JSON.parse(fs.readFileSync(path.join(quoteSaveFolder, '.dot-inbox', 'new', `${quoteCaptureId}.json`), 'utf8'));
     expect(envelope.record.poll).toEqual(poll);
   });
 
   test('エンベロープの record.linkCard に抽出器のリンクカードが url/title/description ごと乗る（#181）', () => {
-    const envelope = JSON.parse(fs.readFileSync(path.join(quoteSaveFolder, '.hologram-inbox', 'new', `${quoteCaptureId}.json`), 'utf8'));
+    const envelope = JSON.parse(fs.readFileSync(path.join(quoteSaveFolder, '.dot-inbox', 'new', `${quoteCaptureId}.json`), 'utf8'));
     expect(envelope.record.linkCard).toEqual({ url: linkCard.url, title: linkCard.title, description: linkCard.description, thumbnailFile: null });
   });
 });

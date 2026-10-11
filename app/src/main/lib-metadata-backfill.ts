@@ -61,7 +61,7 @@ export function mergeBackfill(record: any, metadata: any, fetchedAt: string) {
 }
 
 export function applyCachedMetadata(sqlite: Database.Database, folder: string, key: string) {
-  const root = path.join(folder, '.hologram-metadata-backfill');
+  const root = path.join(folder, '.dot-metadata-backfill');
   const hash = createHash('sha256').update(key).digest('hex');
   const receiptKey = `metadata-backfill:${hash}`;
   const receipt = sqlite.prepare('SELECT value FROM store_state WHERE key = ?').get(receiptKey) as { value: string } | undefined;

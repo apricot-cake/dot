@@ -29,21 +29,21 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 
 /** コンテンツ領域が何を出しているか。ゲートは normalizeBrowseMode（orchestrator.ts）。 */
-export type HologramBrowseMode = 'posts' | 'posters' | 'trash';
+export type DotBrowseMode = 'posts' | 'posters' | 'trash';
 /** 投稿グリッドと投稿者グリッドが共有する密度の軸。 */
 
 /** 画像ビューの身元＝属するタブ、そのレコード、そのどこにいるか。 */
-export interface HologramActiveImageTab {
+export interface DotActiveImageTab {
   id: string;
   recs: string[];
   idx: number;
 }
 
-export interface HologramStoreState {
+export interface DotStoreState {
   // --- 何を閲覧しているか -----------------------------------------------------
-  browseMode: HologramBrowseMode;
+  browseMode: DotBrowseMode;
   /** null なら画像ビューは出ていない＝コンテンツ列はグリッドのもの。 */
-  activeImageTab: HologramActiveImageTab | null;
+  activeImageTab: DotActiveImageTab | null;
   /** 表示対象から導出したカードのキー。書き込みは inspector-controller に集約する。 */
   inspectedKey: string | null;
   /** 投稿者一覧の選択。インスペクタの表示とは独立して保持する。 */
@@ -56,17 +56,17 @@ export interface HologramStoreState {
   activeFolderId: string | null;
 
   // --- タブと移動 -------------------------------------------------------------
-  tabs: HologramTab[];
+  tabs: DotTab[];
   activeTabId: string | null;
   navCanBack: boolean;
   navCanForward: boolean;
 
   // --- 今のクエリ -------------------------------------------------------------
   // クエリビルダーが木を一度も公開していない間は undefined。
-  postQueryTree: HologramQueryGroup | undefined;
-  posterQueryTree: HologramQueryGroup | undefined;
+  postQueryTree: DotQueryGroup | undefined;
+  posterQueryTree: DotQueryGroup | undefined;
   /** ゴミ箱の絞り込みは、ホームのタブ状態と共有しない。 */
-  trashQueryTree: HologramQueryGroup | undefined;
+  trashQueryTree: DotQueryGroup | undefined;
   multiOnly: boolean;
   sortPost: string;
   sortPoster: string;
@@ -81,11 +81,11 @@ export interface HologramStoreState {
   // （まだ読み込み中＝LibraryLoading が受け持つ）。null は走った結果、何も出なかった
   // （空だと確定した＝EmptyState が受け持つ）。2つを畳むと、読み込み中に「ライブラリが
   // 空です」を出してしまう。
-  postGroups: HologramPostGroup[] | null | undefined;
+  postGroups: DotPostGroup[] | null | undefined;
   /** #47: postGroups の中の月セクションの範囲。並び順に日付の軸が無ければ null。 */
   /** ここに null の番兵は無い＝renderPosters() が一度でも走れば、必ず配列になる。 */
-  posterGroups: HologramUserAgg[] | undefined;
-  trashGroups: HologramPostGroup[] | null;
+  posterGroups: DotUserAgg[] | undefined;
+  trashGroups: DotPostGroup[] | null;
 
   // --- 表示の軸（起動時に設定から写し、その後は利用者が動かす） ---------------
   showInfo: boolean;
@@ -104,7 +104,7 @@ export interface HologramStoreState {
   allUsersCount: number;
 }
 
-const INITIAL: HologramStoreState = {
+const INITIAL: DotStoreState = {
   browseMode: 'posts',
   activeImageTab: null,
   inspectedKey: null,
@@ -146,13 +146,13 @@ const INITIAL: HologramStoreState = {
   allUsersCount: 0,
 };
 
-export const store = createStore<HologramStoreState>()(subscribeWithSelector(() => INITIAL));
+export const store = createStore<DotStoreState>()(subscribeWithSelector(() => INITIAL));
 
 /**
  * キー1つを購読する。この薄いラッパーがあるのは、命令的な層が名前で購読する（キーの一覧を
  * 回すことも多い）ためで、呼び出し側ごとにセレクタを書くと読みにくくなる。
  */
-export function subscribeKey<K extends keyof HologramStoreState>(key: K, cb: () => void): HologramUnsubscribe {
+export function subscribeKey<K extends keyof DotStoreState>(key: K, cb: () => void): DotUnsubscribe {
   return store.subscribe((s) => s[key], cb);
 }
 
@@ -166,6 +166,6 @@ export function subscribeKey<K extends keyof HologramStoreState>(key: K, cb: () 
  * なる＝読み手がキーごとにモデルを組み直し、途中の結果を配ってしまう。（#1054 を書いている
  * 最中に store-batch.test.ts が、まさにそこで検査している倍の回数で捕まえた。）
  */
-export function subscribeKeys(keys: readonly (keyof HologramStoreState)[], cb: () => void): HologramUnsubscribe {
+export function subscribeKeys(keys: readonly (keyof DotStoreState)[], cb: () => void): DotUnsubscribe {
   return store.subscribe((s) => keys.map((k) => s[k]), cb, { equalityFn: shallow });
 }

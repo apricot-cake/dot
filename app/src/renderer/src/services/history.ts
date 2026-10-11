@@ -4,7 +4,7 @@
 // 参照）。読み取り／削除／全消去は main のキーセットページングクエリを
 // そのまま通す。実体は本物の ES モジュール（named exports）で、
 // tabs-builder.ts と history-panel.ts から利用する。
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import type { HistoryQueryOptions, HistoryQueryResult } from '../../../main/ipc-payloads.ts';
 
 // このレンダラー内のすべてのタブにわたる、最後に記録された u――#145 の
@@ -21,23 +21,23 @@ let lastU: string | null = null;
  * / imageTabTitleOf ／固定の「posters」ラベル）――このモジュール自身は
  * ラベルを一切生成しない。
  */
-export function recordPush(entry: HologramNavEntry, title: string): void {
+export function recordPush(entry: DotNavEntry, title: string): void {
   if (entry.u === lastU) return;
   lastU = entry.u;
-  hologramIpc.appendHistory({ ts: Date.now(), u: entry.u, kind: entry.kind, title, state: entry.state }).catch(() => {
+  dotIpc.appendHistory({ ts: Date.now(), u: entry.u, kind: entry.kind, title, state: entry.state }).catch(() => {
     /* できる範囲で――落ちた履歴行1つは表に出すほどのものではない */
   });
 }
 
 export function queryHistory(opts: HistoryQueryOptions): Promise<HistoryQueryResult> {
-  return hologramIpc.queryHistory(opts);
+  return dotIpc.queryHistory(opts);
 }
 
 export function deleteHistoryRow(id: number): Promise<void> {
-  return hologramIpc.deleteHistoryRow(id).then(() => undefined);
+  return dotIpc.deleteHistoryRow(id).then(() => undefined);
 }
 
 export function clearHistory(): Promise<void> {
   lastU = null;
-  return hologramIpc.clearHistory().then(() => undefined);
+  return dotIpc.clearHistory().then(() => undefined);
 }

@@ -46,7 +46,7 @@ it.each(['page', 'i18n'] as const)('discovery teardownは待機中%s setupをcan
     mocks.i18n.mockResolvedValueOnce({ getMessage: (key: string) => key }).mockReturnValueOnce(new Promise((resolve) => (finishSetup = () => resolve({ getMessage: (key: string) => key }))));
   }
   const cleanup = startBulkDiscovery();
-  await vi.waitFor(() => expect(document.querySelector('[data-hologram-bulk-discovery]')).not.toBeNull());
+  await vi.waitFor(() => expect(document.querySelector('[data-dot-bulk-discovery]')).not.toBeNull());
   const start = [...document.querySelectorAll('button')].find((button) => button.textContent === 'bulkStart');
   if (!start) throw new Error('開始ボタンがありません');
   start.onclick?.call(start, { isTrusted: true, preventDefault() {}, stopPropagation() {} } as unknown as PointerEvent);

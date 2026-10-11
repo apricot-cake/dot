@@ -3,7 +3,7 @@ import { deletePosts } from './post-deletion.ts';
 import { createTranslator } from './translation.ts';
 
 vi.mock('./ui.ts', () => ({ notify: vi.fn() }));
-vi.mock('./i18n.ts', () => ({ hologramI18n: Promise.resolve(null) }));
+vi.mock('./i18n.ts', () => ({ dotI18n: Promise.resolve(null) }));
 import { createFolderStore } from './folders.ts';
 
 function deferred<T>() {

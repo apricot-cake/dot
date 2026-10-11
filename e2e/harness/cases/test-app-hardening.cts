@@ -1,6 +1,6 @@
 'use strict';
 
-// app/main.js の堅牢化に対する回帰テスト。HOLOGRAM_SMOKE ハーネス経由で
+// app/main.js の堅牢化に対する回帰テスト。DOT_SMOKE ハーネス経由で
 // 実際の IPC ハンドラを通して駆動する。独立した2つの修正をカバーする:
 //
 //   件1: 投稿を削除しても共有 avatars/ の投稿者アバターは残る。
@@ -23,8 +23,8 @@ const electronPath = resolveElectron();
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-harden-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-harden-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -78,7 +78,7 @@ const evalJs = evalSource(
     const dragPrevented = dragEvt.defaultPrevented;
 
     // 件1: 投稿を削除する → そのファイルが .trash/ へ移る。
-    await (window as any).hologram.deletePost(`${args.post}.jpg`);
+    await (window as any).dot.deletePost(`${args.post}.jpg`);
 
     return { openDenied, dropPrevented, dragPrevented };
   },
@@ -87,9 +87,9 @@ const evalJs = evalSource(
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: path.join(tmp, 'Hologram'),
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: path.join(tmp, 'dot'),
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

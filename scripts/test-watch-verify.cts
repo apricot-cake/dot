@@ -42,9 +42,9 @@ const { configDir, defaultLibraryDir } = require('../native-host/paths.mts');
 const POLL_MS = 2000;
 
 // 読み取り専用ハンドル: 稼働中のアプリから書き込み手の役割を絶対に奪わない。
-// #176: hologram.db は今は configDir ではなく保存フォルダの中にある。
+// #176: dot.db は今は configDir ではなく保存フォルダの中にある。
 function openReadOnly() {
-  const file = path.join(saveFolder(), 'hologram.db');
+  const file = path.join(saveFolder(), 'dot.db');
   if (!fs.existsSync(file)) {
     console.error('ライブラリのデータベースが見つかりません: ' + file);
     process.exit(1);
@@ -243,7 +243,7 @@ if (require.main === module) {
       process.exit(okAll ? 0 : 1);
     }
 
-    console.log(`監視中: ${path.join(saveFolder(), 'hologram.db')}`);
+    console.log(`監視中: ${path.join(saveFolder(), 'dot.db')}`);
     console.log('キャプチャすると自動で検証します（Ctrl+C で終了）\n');
     const seen = new Set(readRecords(db, 1000).map((r: any) => r.captureId));
     setInterval(async () => {

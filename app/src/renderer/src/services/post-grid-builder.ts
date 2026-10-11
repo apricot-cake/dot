@@ -23,12 +23,12 @@ import { densityImage, postIdKey, makeGroupRecords, makeCardModel, percentileFn,
 // ラベルできる。完全なゲート（拡張子＋マジックバイト）はクリック時に main
 // 側で改めて走る。
 import type { DisplayShape } from './display.ts';
-import { hologramPostGridSource } from './grid.ts';
+import { dotPostGridSource } from './grid.ts';
 import { listPostsDelta, deletePost, clearAll } from './posts.ts';
 import { deletePosts } from './post-deletion.ts';
 import { applyPostsDeltaToCache } from './post-delta-cache.ts';
 import { refresh as trashRefresh } from './trash-view.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { sync as syncPostsData, getQuotedPost } from './posts-data.ts';
 import { store } from './store.ts';
 import { userKey } from './query.ts';
@@ -43,21 +43,21 @@ export interface PostGridBuilderDeps {
   gridThumbW(): number;
   sortValue(): string;
   postShadow(): { type: string; value?: string }[];
-  getFilteredPosts(): HologramPost[];
-  buildUsers(): HologramUserAgg[];
+  getFilteredPosts(): DotPost[];
+  buildUsers(): DotUserAgg[];
   snapshotState(): unknown;
   syncTitleAndPersist(): void;
   renderPosters(keepLimit?: boolean): void;
   onPostsLoaded(profiles: Array<Record<string, any>>): void;
-  showDetail(g: HologramPostGroup, opts?: { openPanel?: boolean; focusTags?: boolean; showReplies?: boolean }): void;
-  jumpToPoster(post: HologramPost): void;
-  addImageTab(g: HologramPostGroup): void;
+  showDetail(g: DotPostGroup, opts?: { openPanel?: boolean; focusTags?: boolean; showReplies?: boolean }): void;
+  jumpToPoster(post: DotPost): void;
+  addImageTab(g: DotPostGroup): void;
   // 選択テキストの行（#167）。カードグリッドは同じクリックですでにメニューを
   // 持っていた唯一の画面なので、2つ目を開くのではなくその行をこれに継ぎ足す。
   // services/selection-menu.ts がその行と挙動の両方を持つ。
   selectionMenu: {
-    items(): HologramMenuItem[];
-    pick(text: string, item: HologramMenuItem): boolean;
+    items(): DotMenuItem[];
+    pick(text: string, item: DotMenuItem): boolean;
   };
 }
 
@@ -74,7 +74,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   }
   function setSkipDeleteConfirm(v: boolean) {
     skipDeleteConfirm = v;
-    hologramIpc.setPref('skipDeleteConfirm', v);
+    dotIpc.setPref('skipDeleteConfirm', v);
   }
   // 保存済みの設定を復元するときは、それをそのまま永続化し直すべきではない
   // （grid-density-builder.ts の restorePrefs を鏡写しにしている。あちらも
@@ -84,7 +84,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   }
 
   // --- 正本となる投稿キャッシュ（allPosts の所有権） -------------------------
-  let allPosts: HologramPost[] = [];
+  let allPosts: DotPost[] = [];
   let _allPostsGeneration = 0; // allPosts を置き換えるたびに上げる。サイドバーのキャッシュを無効化する
   // その場での編集（タグの追加／削除、単体削除）は配列を置き換えずに allPosts
   // のレコードを変更するので、世代カウンタは自動では進まない。これはサイドバーの
@@ -92,7 +92,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // 側は必ずこれを呼ぶ必要がある＝そうしないと、renderPosts がグリッドと
   // フライアウトを再描画しても、新しく追加されたタグはサイドバーの行に決して
   // 届かない（削除された投稿者／インスタンスも居残ったままになる）。
-  // この同じゲートは、allPosts.length を hologramStore（post-empty-state の
+  // この同じゲートは、allPosts.length を dotStore（post-empty-state の
   // セレクタの入力）へも反映し、購読可能な posts-data サービス
   // （services/posts-data.ts）とも同期する＝allPosts へのあらゆる変更
   // （置き換えでも、その場の編集でも）が、あちこちに散った push ではなく
@@ -125,7 +125,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // 約9千件のレコード全体を IPC で再シリアライズしなくてよくなった。allPosts
   // はこのマップから作り直す。順序は無関係＝getFilteredPosts() が常に
   // ソートし直すため。
-  let _postsById = new Map<string, HologramPost>();
+  let _postsById = new Map<string, DotPost>();
   let _haveBaseline = false; // 完全なスナップショットを持つまでは false（リロード時にもリセットされる＝新しいモジュール状態）
   let _loadPostsInFlight = false;
   let _loadPostsPending = false;
@@ -217,8 +217,8 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     return stickyRecs;
   }
 
-  let viewGroups: HologramPostGroup[] = []; // 現在の描画結果: [{ key, records, rep, files }]
-  let visibleLikesPercentiles = new Map<HologramPost, number | null>(); // 現在の絞り込み結果内の SNS 内人気度
+  let viewGroups: DotPostGroup[] = []; // 現在の描画結果: [{ key, records, rep, files }]
+  let visibleLikesPercentiles = new Map<DotPost, number | null>(); // 現在の絞り込み結果内の SNS 内人気度
   function getViewGroups() {
     return viewGroups;
   }
@@ -230,7 +230,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // ならない、このガードの唯一の断片。
   let lastRenderedState: any = null;
   let _lastRenderGen = -1; // 直近の完全なグリッド構築時の _allPostsGeneration（高速なカード追加のガード）
-  let _lastViewGroups: HologramPostGroup[] | null = null; // 直近の完全な構築によるグループ。純粋な追加読み込みで再利用する（再フィルタ／再グループ無し）
+  let _lastViewGroups: DotPostGroup[] | null = null; // 直近の完全な構築によるグループ。純粋な追加読み込みで再利用する（再フィルタ／再グループ無し）
   let _lastStickySize = 0; // その構築時の stickyRecs.size ＝グループ再利用の署名の一部
   function setLastRenderedState(sig: string) {
     lastRenderedState = sig;
@@ -252,14 +252,14 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // 落ち着き・ガタつきが無く、先読みも不要。
   let imgAspect: Record<string, string> = {};
   try {
-    imgAspect = JSON.parse(localStorage.getItem('hologram.imgAspect') || '{}') || {};
+    imgAspect = JSON.parse(localStorage.getItem('dot.imgAspect') || '{}') || {};
   } catch (_e) {}
   let _aspectT: any = null;
   function persistAspect() {
     clearTimeout(_aspectT);
     _aspectT = setTimeout(() => {
       try {
-        localStorage.setItem('hologram.imgAspect', JSON.stringify(imgAspect));
+        localStorage.setItem('dot.imgAspect', JSON.stringify(imgAspect));
       } catch (_e) {}
     }, 1000);
   }
@@ -276,9 +276,9 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // 1つのグループを、プレーンで完全に整形済みのカードモデルへ解決する: 画像の
   // src、整形済みの件数／日付、選択、アスペクト比＝マークアップがプリミティブと
   // して必要とするものすべて。グリッドコンポーネントは共有の PostCard
-  // コンポーネント（hologramPostGridSource 経由の生きた React セル）でこれを
+  // コンポーネント（dotPostGridSource 経由の生きた React セル）でこれを
   // 描画する。選択状態は注入しない＝グリッドコンポーネントの Cell が
-  // hologramStore の 'selectedSet' から .selected を導出する。
+  // dotStore の 'selectedSet' から .selected を導出する。
   const cardModel = makeCardModel({
     t: deps.t,
     formatCount,
@@ -298,9 +298,9 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   });
   // modelOf/keyOf/onAspect は描画のたびに意味のある形で identity が変わることは
   // ない（変わるのは items/layout だけで、それらは source 自身が
-  // hologramStore から導出する）＝renderPosts() のたびに作り直して push する
+  // dotStore から導出する）＝renderPosts() のたびに作り直して push する
   // のではなく、一度だけ設定する。
-  hologramPostGridSource.configure({
+  dotPostGridSource.configure({
     modelOf: cardModel,
     keyOf: (g) => postIdKey(g.rep),
     onAspect: onCardAspect,
@@ -332,7 +332,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     // 食い違えば新規構築へフォールバックする。
     const canReuseGroups = inPlace && _lastViewGroups !== null && lastRenderedState !== null && stateSig === lastRenderedState && _allPostsGeneration === _lastRenderGen && stickyRecs.size === _lastStickySize;
     if (canReuseGroups) {
-      viewGroups = _lastViewGroups as HologramPostGroup[];
+      viewGroups = _lastViewGroups as DotPostGroup[];
     } else {
       const filteredPosts = deps.getFilteredPosts();
       if (sortOption(deps.sortValue()) === 'likes-pct') {
@@ -348,7 +348,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     if (viewGroups.length === 0) {
       // 'postGroups'=null を push する（空配列ではなく＝services/grid.ts の
       // computeModel 参照）ことで、グリッドコンポーネントのセルを同期的に
-      // アンマウントする（hologramStore.set の notify ループは同期的で、
+      // アンマウントする（dotStore.set の notify ループは同期的で、
       // コンポーネントの subscriber は flushSync でアンマウントし、自分の
       // ホスト div を取り除く＝古い render(null) 呼び出しが与えていたのと同じ
       // 保証）。EmptyState コンポーネントはこの同じキー＋'allPostsCount'＋
@@ -370,7 +370,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // （menu.ts）。項目とアクションは viewer が持つ。フォルダ行は所属をトグルして
   // 「閉じる」（旧 foldMenu もトグルのたびに隠れていた＝それを踏襲）。カード
   // メニューと一括「フォルダへ追加」ボタンから開く。
-  function foldMenuItems(g: HologramPostGroup) {
+  function foldMenuItems(g: DotPostGroup) {
     const list = CF() ? CF().staticFolders() : []; // 行き先のみ＝保存済み検索は投稿を持たない
     const rep = g.rep.captureId;
     // 入れ子のフォルダはパスでラベル付けされる（#41）: ここ、木から離れた
@@ -378,10 +378,10 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     // 見分けがつかない。チェックマークが答えるのは「これはこのフォルダに
     // 入っているか」であって、「その下のどこかに入っているか」では決してない
     // ＝投稿はサブツリーではなく1つのフォルダへ入れる。
-    const items = list.map((f) => ({ label: CF().pathOf(f.id), act: 'fold', fid: f.id, checked: CF().has(f.id, rep) })) as HologramMenuItem[];
+    const items = list.map((f) => ({ label: CF().pathOf(f.id), act: 'fold', fid: f.id, checked: CF().has(f.id, rep) })) as DotMenuItem[];
     return items;
   }
-  function onFoldMenuPick(g: HologramPostGroup, item: HologramMenuItem) {
+  function onFoldMenuPick(g: DotPostGroup, item: DotMenuItem) {
     if (!CF()) return;
     if (item.act === 'fold') {
       keepCurrentVisible();
@@ -395,8 +395,8 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     }
   }
   // `at` はカードメニューのフォルダ行ではカーソル位置、選択バーのそれではクリック
-  // されたボタン＝HologramMenuAnchor を参照。そのまま素通しする。計算はしない。
-  function showFoldMenu(g: HologramPostGroup, at: HologramMenuAnchor) {
+  // されたボタン＝DotMenuAnchor を参照。そのまま素通しする。計算はしない。
+  function showFoldMenu(g: DotPostGroup, at: DotMenuAnchor) {
     if (!CF()) return;
     menuOpen({ items: foldMenuItems(g), ...at }, (item) => onFoldMenuPick(g, item));
   }
@@ -419,7 +419,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // 項目とアクションは viewer が持つ。'folder' は同じ位置に（別の）フォルダ
   // ピッカーを開く＝ブリッジの遷移ガードが、それを閉じるのではなく開いた
   // ままにする。
-  function cardMenuItems(g: HologramPostGroup, selText = '') {
+  function cardMenuItems(g: DotPostGroup, selText = '') {
     // SNS の投稿はポスタービューに投稿者を持つ（buildUsers は url を持たない
     // 移行データを飛ばす）。
     const canPoster = !!(g.rep.url && deps.buildUsers().some((u) => u.key === userKey(g.rep)));
@@ -447,11 +447,11 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     items.push({ label: deps.t('tipDelete'), act: 'delete', icon: CM_IC.del, danger: true });
     return items;
   }
-  function onCardMenuPick(g: HologramPostGroup, x: number, y: number, item: HologramMenuItem, selText = '') {
+  function onCardMenuPick(g: DotPostGroup, x: number, y: number, item: DotMenuItem, selText = '') {
     if (deps.selectionMenu.pick(selText, item)) return; // 継ぎ足されたテキスト行（#167）
     const act = item.act;
     if (act === 'open') {
-      if (g.rep.url) hologramIpc.openExternal(g.rep.url);
+      if (g.rep.url) dotIpc.openExternal(g.rep.url);
     } else if (act === 'newtab') {
       deps.addImageTab(g); // background, browser-like
     } else if (act === 'folder') {
@@ -463,23 +463,23 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
     else if (act === 'poster') deps.jumpToPoster(g.rep);
     else if (act === 'reveal') {
       const file = densityImage(g.rep) || g.rep.image;
-      if (file && hologramIpc.showInFolder) hologramIpc.showInFolder(file);
+      if (file && dotIpc.showInFolder) dotIpc.showInFolder(file);
     } else if (act === 'copyImage') {
       const selected = selection.selectedGroups(viewGroups, postIdKey);
       void copyGroupsImage(selected.some((s) => s.key === g.key) ? selected : [g]);
     } else if (act === 'delete') requestDeleteGroup(g);
   }
 
-  function copyGroupsImage(groups: HologramPostGroup[]) {
+  function copyGroupsImage(groups: DotPostGroup[]) {
     requestImageCopy(groups.flatMap((g) => g.files));
   }
 
-  function showCardMenu(g: HologramPostGroup, x: number, y: number, selText = '') {
+  function showCardMenu(g: DotPostGroup, x: number, y: number, selText = '') {
     const items = cardMenuItems(g, selText);
     menuOpen({ items, x, y }, (item) => onCardMenuPick(g, x, y, item, selText));
   }
 
-  function requestDeleteGroup(g: HologramPostGroup) {
+  function requestDeleteGroup(g: DotPostGroup) {
     if (getSkipDeleteConfirm()) {
       executeDeleteGroup(g);
       return;
@@ -535,7 +535,7 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // 全消去、インポートの置き換え）を、対象を取り残したまま自由にしていた。
   // 代わりに inspector-builder.ts が posts-data.ts の消失を監視する＝それら
   // すべてに対する1つの答えで、下の markPostsMutated() を通して届く。
-  async function executeDeleteGroup(g: HologramPostGroup) {
+  async function executeDeleteGroup(g: DotPostGroup) {
     await deletePosts(g.records, { deletePost, removePosts, refreshTrash: trashRefresh, loadPosts, notify, t: deps.t });
   }
 

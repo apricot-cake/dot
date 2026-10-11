@@ -33,7 +33,7 @@ function _insMedia(postId: string, file: string, seq = 0) {
 }
 
 beforeEach(() => {
-  handle = openDatabase(path.join(mkTempDir('hologram-db-tag-vocab-'), 'test.db'));
+  handle = openDatabase(path.join(mkTempDir('dot-db-tag-vocab-'), 'test.db'));
 });
 afterEach(() => {
   handle.sqlite.close();

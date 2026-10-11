@@ -9,8 +9,8 @@ const send = (value: unknown) => (port ? port.postMessage(value) : process.send?
 let job: { id: string; stage: string; prepared: boolean; executable: string } | null = null;
 let busy = false;
 let lastProgress = 0;
-const actorStage = process.argv.find((value) => value.startsWith('--hologram-archive-stage='))?.slice('--hologram-archive-stage='.length);
-const actorId = process.argv.find((value) => value.startsWith('--hologram-archive-actor='))?.slice('--hologram-archive-actor='.length);
+const actorStage = process.argv.find((value) => value.startsWith('--dot-archive-stage='))?.slice('--dot-archive-stage='.length);
+const actorId = process.argv.find((value) => value.startsWith('--dot-archive-actor='))?.slice('--dot-archive-actor='.length);
 // OS lease はプロセスの寿命まで保持する。取得失敗も request error として返し、stageを開かない。
 const actorLease =
   actorStage && actorId
@@ -48,7 +48,7 @@ async function receive(value: unknown) {
     } else {
       const preparedJob = job;
       if (!preparedJob) throw new Error('missing-archive-import-job');
-      const db = openDatabase(path.join(request.destination, 'hologram.db')).sqlite;
+      const db = openDatabase(path.join(request.destination, 'dot.db')).sqlite;
       let result: Awaited<ReturnType<typeof applyArchiveImport>>;
       try {
         result = await applyArchiveImport(db, preparedJob.stage, request.destination, progress, preparedJob.executable);

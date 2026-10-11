@@ -36,7 +36,7 @@ function saveFolder() {
   } catch {
     /* no config */
   }
-  return path.join(os.homedir(), 'Hologram');
+  return path.join(os.homedir(), 'dot');
 }
 
 // レコードにアバター URL はあるがローカルファイルが無い場合、投稿者アバターを
@@ -58,8 +58,8 @@ async function ensureAvatarFile(folder, avatarUrl, referer) {
   const folder = saveFolder();
   const all = process.argv.includes('--all');
   const avatarsOnly = process.argv.includes('--avatars');
-  // #176: hologram.db は今や configDir ではなく保存フォルダの中にある。
-  const dbFile = path.join(folder, 'hologram.db');
+  // #176: dot.db は今や configDir ではなく保存フォルダの中にある。
+  const dbFile = path.join(folder, 'dot.db');
   if (!fs.existsSync(dbFile)) {
     console.log('データベースが無い:', dbFile);
     return;

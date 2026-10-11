@@ -42,7 +42,7 @@ beforeEach(async () => {
   vi.resetModules();
   vi.clearAllMocks();
   Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-  mocks.root = await fs.mkdtemp(path.join(os.tmpdir(), 'hologram-processing-parent-'));
+  mocks.root = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-processing-parent-'));
   workers = [];
   nativeChildren = [];
   supervisors = [];

@@ -14,7 +14,7 @@ export async function acquireExactRequestLock(folder: string, requestId: string)
   const realFolder = fs.realpathSync(folder);
   const identity = process.platform === 'win32' ? [realFolder.toLowerCase(), requestId.toLowerCase()] : [realFolder, requestId];
   const key = createHash('sha256').update(JSON.stringify(identity)).digest('hex');
-  const address = process.platform === 'win32' ? `\\\\.\\pipe\\hologram-request-${key}` : `\0hologram-request-${key}`;
+  const address = process.platform === 'win32' ? `\\\\.\\pipe\\dot-request-${key}` : `\0dot-request-${key}`;
   const server = net.createServer((socket) => socket.destroy());
   await new Promise<void>((resolve, reject) => {
     server.once('error', (error: NodeJS.ErrnoException) => {

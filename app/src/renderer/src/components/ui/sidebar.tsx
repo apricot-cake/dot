@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 // 上流からのフォーク（#981）: サイドバーが取る形はちょうど1つ＝ラベル付きのレール。
 //
 // 上流の Sidebar は展開と畳みの対になっている。`open` の状態、それを保つ cookie、開閉の
-// ボタン、Ctrl+B、そしてモバイル用の Sheet。Hologram もそのすべてを持っていた（レンダラーは
+// ボタン、Ctrl+B、そしてモバイル用の Sheet。dot もそのすべてを持っていた（レンダラーは
 // Next.js のサーバーが配信するものではないので、#149 は状態を cookie ではなく config.json へ
 // 置いた）。その後 #678 がレールを既定にし、#965 が利用者の育てたどのグループにもレールから
 // 開く飛び出しを与えた。その時点で、展開した列にできてレールにできないことは無くなった。
@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 // レールのスタイルそのものなので、フォークはそれ以外のどの点でも上流に近いままでいる。
 //
 // 上流からのフォーク（#678）: 上流のアイコンのレールはアイコンだけの正方形（16px のグリフを
-// 中央に置くには 48px で足りる）。Hologram のレールはラベル付き＝Material Design 3 の
+// 中央に置くには 48px で足りる）。dot のレールはラベル付き＝Material Design 3 の
 // 「Navigation rail」（https://m3.material.io/components/navigation-rail/guidelines）。
 // 項目はどれもアイコンの下に一語の短いラベルが付く形で、アイコン単独にはしない＝アイコン
 // だけのレールは読めない（「設定のアイコンみたいなのは見れば分かるけど、ビューのグリッドや

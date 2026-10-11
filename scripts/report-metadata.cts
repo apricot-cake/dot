@@ -5,9 +5,9 @@ const { DatabaseSync } = require('node:sqlite');
 const { configDir } = require('../native-host/paths.mts');
 
 const folder = JSON.parse(fs.readFileSync(path.join(configDir(), 'config.json'), 'utf8')).saveFolder;
-const root = path.join(folder, '.hologram-metadata-backfill');
+const root = path.join(folder, '.dot-metadata-backfill');
 const state = JSON.parse(fs.readFileSync(path.join(root, 'progress.json'), 'utf8'));
-const db = new DatabaseSync(path.join(folder, 'hologram.db'), { readOnly: true });
+const db = new DatabaseSync(path.join(folder, 'dot.db'), { readOnly: true });
 const reasons = {
   protected: '非公開',
   deleted: '削除済み',

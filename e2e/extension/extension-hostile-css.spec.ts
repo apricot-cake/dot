@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 const { launchOverlayBrowser } = require('../lib/overlay-browser.cts');
 
 const POST_ID = '1999999999999999996';
-const POST_URL = `https://x.com/hologram/status/${POST_ID}`;
+const POST_URL = `https://x.com/dot/status/${POST_ID}`;
 const CSS_URL = 'https://x.com/hostile.css';
 const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 
@@ -20,7 +20,7 @@ const PAGE_CSS = `
     position: static !important;
     background: #ff00ff !important;
   }
-  hologram-extension-ui, [data-hologram-overlay] {
+  dot-extension-ui, [data-dot-overlay] {
     display: none !important;
     position: static !important;
     opacity: 0 !important;
@@ -33,12 +33,12 @@ const PAGE_CSS = `
 
 const POST_HTML = `<!doctype html>
 <html lang="ja">
-<head><meta charset="utf-8"><title>Hologram hostile-CSS fixture</title><link rel="stylesheet" href="${CSS_URL}"></head>
+<head><meta charset="utf-8"><title>dot hostile-CSS fixture</title><link rel="stylesheet" href="${CSS_URL}"></head>
 <body>
   <article id="post" data-testid="tweet">
-    <a href="/hologram/status/${POST_ID}"><time datetime="2026-07-29T00:00:00.000Z">2026-07-29</time></a>
+    <a href="/dot/status/${POST_ID}"><time datetime="2026-07-29T00:00:00.000Z">2026-07-29</time></a>
     <p>Hostile CSS fixture post</p>
-    <a id="media-link" href="/hologram/status/${POST_ID}/photo/1"><div class="media" data-testid="tweetPhoto"><img src="https://pbs.twimg.com/media/HOSTILE.jpg" alt="fixture"></div></a>
+    <a id="media-link" href="/dot/status/${POST_ID}/photo/1"><div class="media" data-testid="tweetPhoto"><img src="https://pbs.twimg.com/media/HOSTILE.jpg" alt="fixture"></div></a>
     <div id="host-impostor" class="surface"><span class="badge">x</span></div>
   </article>
 </body>
@@ -54,7 +54,7 @@ test('保存済みの印を再生成してもページが測る overflow は変�
       else await route.abort();
     });
     await page.goto(POST_URL, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('[data-hologram-overlay]')).toHaveCount(1);
+    await expect(page.locator('[data-dot-overlay]')).toHaveCount(1);
     await expect
       .poll(async () => {
         await overlay.browser.serviceWorkers()[0].evaluate((url: string) => {
@@ -68,13 +68,13 @@ test('保存済みの印を再生成してもページが測る overflow は変�
       })
       .toBe(true);
     const samples = await page.evaluate(async () => {
-      const host = document.querySelector('[data-hologram-overlay]') as HTMLElement;
+      const host = document.querySelector('[data-dot-overlay]') as HTMLElement;
       const baseline = { width: host.scrollWidth, height: host.scrollHeight };
       host.remove();
       const frames: Array<{ width: number; height: number }> = [];
       for (let i = 0; i < 60; i++) {
         await new Promise((resolve) => requestAnimationFrame(resolve));
-        const current = document.querySelector('[data-hologram-overlay]') as HTMLElement | null;
+        const current = document.querySelector('[data-dot-overlay]') as HTMLElement | null;
         if (current) frames.push({ width: current.scrollWidth, height: current.scrollHeight });
       }
       return { baseline, frames };
@@ -115,7 +115,7 @@ test('extension-hostile-css', async () => {
       .toBe(1);
 
     const pageMeasured = await page.evaluate(() => {
-      const host = document.querySelector('[data-hologram-overlay]') as HTMLElement | null;
+      const host = document.querySelector('[data-dot-overlay]') as HTMLElement | null;
       const box = document.querySelector('.media') as HTMLElement;
       const impostor = document.getElementById('host-impostor') as HTMLElement;
       if (!host) return null;
@@ -126,7 +126,7 @@ test('extension-hostile-css', async () => {
         hostPosition: hostStyle.position,
         hostPointerEvents: hostStyle.pointerEvents,
         shadowRootExposed: host.shadowRoot !== null,
-        faceExposed: host.hasAttribute('data-hologram-face'),
+        faceExposed: host.hasAttribute('data-dot-face'),
         boxRect: { x: boxRect.x, y: boxRect.y },
         impostorBackground: getComputedStyle(impostor).backgroundColor,
       };
@@ -155,7 +155,7 @@ test('extension-hostile-css', async () => {
     // hit target はページのリンクなので、内部 button の cursor 値は表示カーソル
     // 復元の証拠として扱わない。
     const controlCenter = { x: measured.rect.x + measured.rect.width / 2, y: measured.rect.y + measured.rect.height / 2 };
-    const publicStyleBeforeHover = await page.evaluate(() => document.querySelector('[data-hologram-overlay]')?.getAttribute('style'));
+    const publicStyleBeforeHover = await page.evaluate(() => document.querySelector('[data-dot-overlay]')?.getAttribute('style'));
     await page.mouse.move(controlCenter.x, controlCenter.y);
     await expect
       .poll(async () => {
@@ -163,7 +163,7 @@ test('extension-hostile-css', async () => {
         return hovered ? { transform: hovered.transform, glowed: hovered.shadow !== measured.shadow } : null;
       })
       .toEqual({ transform: 'matrix(1.04, 0, 0, 1.04, 0, 0)', glowed: true });
-    if ((await page.evaluate(() => document.querySelector('[data-hologram-overlay]')?.getAttribute('style'))) !== publicStyleBeforeHover) fail('hover が公開 host の style を変更した');
+    if ((await page.evaluate(() => document.querySelector('[data-dot-overlay]')?.getAttribute('style'))) !== publicStyleBeforeHover) fail('hover が公開 host の style を変更した');
     if ((await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('a')?.id, controlCenter)) !== 'media-link') fail('pointer-events:none の操作面が実 hit target を奪った');
 
     // Mutation による paint は同じ save 面の基礎 style/handler を初期化する。
@@ -249,7 +249,7 @@ test('extension-hostile-css', async () => {
     await page.mouse.move(controlCenter.x, controlCenter.y);
     await page.mouse.down();
     await page.locator('#post a:has(time)').evaluate((link: HTMLAnchorElement) => {
-      link.href = '/hologram/status/1999999999999999988';
+      link.href = '/dot/status/1999999999999999988';
     });
     await page.mouse.up();
     if ((await overlay.overlaySnapshot(page)).saveStarts !== 0) fail('押下中に入れ替わった投稿を保存した');
@@ -366,7 +366,7 @@ test('extension-hostile-css', async () => {
         article.setAttribute('data-testid', 'tweet');
         place(article, 720, 80 + index * 180, 320, 140);
         const permalink = document.createElement('a');
-        permalink.href = `/hologram/status/${postId.slice(0, -1)}${index}`;
+        permalink.href = `/dot/status/${postId.slice(0, -1)}${index}`;
         const time = document.createElement('time');
         time.dateTime = '2026-07-29T00:00:00.000Z';
         permalink.append(time);
@@ -378,7 +378,7 @@ test('extension-hostile-css', async () => {
         const wrapper = kind === 'profile' ? document.createElement('a') : kind === 'button' ? document.createElement('button') : document.createElement('div');
         wrapper.id = `page-${kind}`;
         if (wrapper instanceof HTMLAnchorElement) {
-          wrapper.href = `/hologram-${kind}`;
+          wrapper.href = `/dot-${kind}`;
           wrapper.setAttribute('role', 'link');
         }
         if (kind === 'role-button') wrapper.setAttribute('role', 'button');

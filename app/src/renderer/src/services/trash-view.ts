@@ -13,7 +13,7 @@ import type { Translate } from './translation.ts';
 // 構造によってそれを真であり続けさせている。
 //
 // カードのモデルはライブラリ自身のもの（post-grid-builder の cardModel を
-// hologramTrashGridSource に渡す）で、ゴミ箱に入った投稿がグリッドにいた
+// dotTrashGridSource に渡す）で、ゴミ箱に入った投稿がグリッドにいた
 // ときとまったく同じに見えるようにしている。グルーピング関数も同じ理由で
 // ここに注入されている――1枚のカードとして削除された複数画像の投稿は、
 // 1枚のカードとして戻ってくる。
@@ -34,11 +34,11 @@ import { notify } from './ui.ts';
 export interface TrashViewDeps {
   t: Translate;
   /** post-grid-builder の groupRecords――ライブラリグリッドが使うのと同じグルーピング。 */
-  groupRecords(list: HologramPost[]): HologramPostGroup[];
+  groupRecords(list: DotPost[]): DotPostGroup[];
   /** 通常の投稿フィルタとゴミ箱内検索を、削除済みレコードへ適用する。 */
-  matches(post: HologramPost, excludeTypes?: string[]): boolean;
+  matches(post: DotPost, excludeTypes?: string[]): boolean;
   /** 通常一覧と同じ基準で、表示対象を並べ替える。 */
-  sortRecords(records: HologramPost[]): HologramPost[];
+  sortRecords(records: DotPost[]): DotPost[];
 }
 
 let deps: TrashViewDeps | null = null;
@@ -46,8 +46,8 @@ export function configure(d: TrashViewDeps) {
   deps = d;
 }
 
-let groups: HologramPostGroup[] = [];
-let records: HologramPost[] = [];
+let groups: DotPostGroup[] = [];
+let records: DotPost[] = [];
 let count = 0; // ゴミ箱内の capture 数（カード数ではない）＝サイドバーバッジが示すもの
 let selected = new Set<string>(); // グループのキー（カードの代表レコードの postIdKey）
 let anchor: string | null = null; // shift 範囲選択のアンカー
@@ -57,7 +57,7 @@ let retryPending = false;
 let version = 0;
 
 export interface TrashViewSnapshot {
-  groups: HologramPostGroup[];
+  groups: DotPostGroup[];
   selected: ReadonlySet<string>;
   count: number;
   busy: boolean;
@@ -88,7 +88,7 @@ export function getCount(): number {
   return count;
 }
 /** フィルタ候補の母集団。ホームのレコードを混ぜない。 */
-export function getRecords(): HologramPost[] {
+export function getRecords(): DotPost[] {
   return records;
 }
 /** ゴミ箱用の投稿者集計キャッシュを無効化する世代。 */
@@ -96,13 +96,13 @@ export function getVersion(): number {
   return version;
 }
 
-export function getFilteredRecords(excludeTypes: string[] = []): HologramPost[] {
+export function getFilteredRecords(excludeTypes: string[] = []): DotPost[] {
   const currentDeps = deps;
   if (!currentDeps) return [];
   return currentDeps.sortRecords(records.filter((record) => currentDeps.matches(record, excludeTypes)).map(stampPost));
 }
 
-const keyOfGroup = (g: HologramPostGroup) => postIdKey(g.rep);
+const keyOfGroup = (g: DotPostGroup) => postIdKey(g.rep);
 
 function rebuildGroups() {
   groups = deps ? deps.groupRecords(getFilteredRecords()) : [];
@@ -118,9 +118,9 @@ function rebuildGroups() {
 // ついて決して食い違わない。
 export async function refresh(): Promise<void> {
   if (!deps) return; // orchestrator がこれを配線する前に呼ばれた（コンポーネントが先にマウントした）
-  let nextRecords: HologramPost[];
+  let nextRecords: DotPost[];
   try {
-    nextRecords = ((await listTrash()) || []) as HologramPost[];
+    nextRecords = ((await listTrash()) || []) as DotPost[];
   } catch {
     // relocation の admission 拒否は「空のゴミ箱」ではない。最後に確認できた表示を保持し、
     // resume の posts-changed で再試行する。初回なら loaded も立てず、偽の空を確定しない。
@@ -187,10 +187,10 @@ export function selectAll() {
 }
 
 // --- コマンド ------------------------------------------------------------
-function selectedGroups(): HologramPostGroup[] {
+function selectedGroups(): DotPostGroup[] {
   return groups.filter((g) => selected.has(keyOfGroup(g)));
 }
-function removeGroupsNow(picked: HologramPostGroup[]) {
+function removeGroupsNow(picked: DotPostGroup[]) {
   const removed = new Set(picked.flatMap((g) => g.records).map((record) => record.captureId));
   records = records.filter((record) => !removed.has(record.captureId));
   count = Math.max(0, count - picked.reduce((sum, g) => sum + g.records.length, 0));

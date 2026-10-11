@@ -20,7 +20,7 @@ import type { ExportReminderState, IntegrityStatus, SaveFolderProgress } from '.
 
 // ブリッジが無い状態での呼び出しは例外を投げ、呼び出し側の try/catch に落ちる。型の無い
 // 元のコードと同じ＝{} の代わりは、素の開発サーバーのためだけに存在する。
-const hologram = (): HologramPreload => window.hologram || ({} as HologramPreload);
+const dot = (): DotPreload => window.dot || ({} as DotPreload);
 const reloadPosts = () => {
   if (loadPosts) loadPosts();
 };
@@ -42,12 +42,12 @@ function wireIpcOnce() {
   try {
     onSaveFolderProgress((p) => progressSubs.forEach((cb) => cb(p)));
   } catch {
-    /* 素の開発サーバー: hologramPosts の裏に preload のブリッジが無い */
+    /* 素の開発サーバー: dotPosts の裏に preload のブリッジが無い */
   }
   try {
     onIntegrityCheckDone((s: IntegrityStatus) => integritySubs.forEach((cb) => cb(s)));
   } catch {
-    /* 素の開発サーバー: hologramBackup の裏に preload のブリッジが無い */
+    /* 素の開発サーバー: dotBackup の裏に preload のブリッジが無い */
   }
 }
 
@@ -103,7 +103,7 @@ export function Data() {
 
   // モーダルは開くたびに載せ直るので、現在の状態をその都度読む。
   useEffect(() => {
-    Promise.resolve(hologram().getConfig ? hologram().getConfig() : null)
+    Promise.resolve(dot().getConfig ? dot().getConfig() : null)
       .then((cfg) => setSaveFolder((cfg && cfg.saveFolder) || ''))
       .catch(() => {});
     Promise.resolve(getExportReminder())
@@ -202,7 +202,7 @@ export function Data() {
     // 貼り付いたままの読み込み中のトーストが、ディスクへ流し込んだ百分率を実時間で見せる
     // （main の 'export-progress' を onExportProgress 経由で受ける）。保存ダイアログの
     // 待ち時間もこれで覆う。
-    const id = 'hologram-export';
+    const id = 'dot-export';
     toast.loading(t('exporting'), { id, description: '0%' });
     const off = onExportProgress((p) => {
       if (!p || p.done) return;

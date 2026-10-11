@@ -176,7 +176,7 @@ async function runPlatform(overlay: any, name: string): Promise<void> {
       // コントロールを引き継ぐことは無く、もし引き継ぐクローンなら2つ目の
       // コントロールを残してしまい、この検証はコードではなくフィクスチャを
       // 測ることになる。
-      for (const stale of fresh.querySelectorAll('[data-hologram-overlay]')) stale.remove();
+      for (const stale of fresh.querySelectorAll('[data-dot-overlay]')) stale.remove();
       box.replaceWith(fresh);
     }, spec.image);
     // コントロールを待つのではなく観測窓: 検証は「コントロールは1つで、
@@ -198,7 +198,7 @@ async function runPlatform(overlay: any, name: string): Promise<void> {
       const box = document.querySelectorAll(selector)[1];
       if (!box) return;
       const fresh = box.cloneNode(true) as Element;
-      for (const stale of fresh.querySelectorAll('[data-hologram-overlay]')) stale.remove();
+      for (const stale of fresh.querySelectorAll('[data-dot-overlay]')) stale.remove();
       box.replaceWith(fresh);
     }, spec.image);
     await sleep(SETTLE_MS + 400);

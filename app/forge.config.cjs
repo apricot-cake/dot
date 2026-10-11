@@ -17,12 +17,13 @@ module.exports = {
     {
       name: '@electron-forge/maker-squirrel',
       config: {
-        name: 'Hologram',
+        name: 'dot',
+        title: 'dot',
         authors: 'apricot-cake',
-        description: 'Hologram desktop viewer',
-        exe: 'Hologram.exe',
+        description: 'dot desktop viewer',
+        exe: 'dot.exe',
         noMsi: true,
-        setupExe: 'HologramSetup.exe',
+        setupExe: 'dotSetup.exe',
         setupIcon: path.join(root, 'assets', 'icon.ico'),
       },
     },
@@ -33,7 +34,7 @@ module.exports = {
       config: {
         repository: {
           owner: 'apricot-cake',
-          name: 'hologram',
+          name: 'dot',
         },
         draft: true,
       },

@@ -73,7 +73,7 @@ function ageMtime(ms: number) {
 }
 
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-cfgcache-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-cfgcache-'));
   env.dir = dir;
   configPath = path.join(dir, 'config.json');
   reads = 0;

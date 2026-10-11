@@ -24,12 +24,12 @@ async function main(dependencies: any = {}): Promise<void> {
   try {
     if (fs.existsSync(`${options.output}/manifest.json`)) {
       const configured = await session.configure(options.output);
-      console.log(`[hologram] 共有リリースビルドを読み込み直しました: ${configured.path}`);
+      console.log(`[dot] 共有リリースビルドを読み込み直しました: ${configured.path}`);
       if (process.argv.includes('--marker')) await session.marker();
     } else throw new Error(`共有リリースビルドがありません。先に npm run ext:deploy を実行してください: ${options.output}`);
-    console.log('[hologram] 開発用 Chrome: 既存 Default、管理された pipe、Native Host: com.hologram.host.dev');
+    console.log('[dot] 開発用 Chrome: 既存 Default、管理された pipe、Native Host: com.dot.host.dev');
     if (process.argv.includes('--keep-open')) {
-      console.log('[hologram] 開発用 Chrome を保持しています。Ctrl+C で通常終了します');
+      console.log('[dot] 開発用 Chrome を保持しています。Ctrl+C で通常終了します');
       await waitForInterrupt();
     }
   } finally {

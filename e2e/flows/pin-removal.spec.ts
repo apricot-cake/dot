@@ -1,8 +1,8 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('画像とタブのピン留め操作を表示しない', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
-  expect(await page.evaluate(() => 'pinSend' in window.hologram)).toBe(false);
+test('画像とタブのピン留め操作を表示しない', async ({ launchDot }) => {
+  const { page } = await launchDot();
+  expect(await page.evaluate(() => 'pinSend' in window.dot)).toBe(false);
   const card = page.locator('[data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' });
   await card.click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: /ピン/ })).toHaveCount(0);

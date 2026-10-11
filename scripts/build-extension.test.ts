@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 function releaseOutput(): string {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-release-guard-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-release-guard-'));
   directories.push(directory);
   const config = fs.readFileSync(path.join(ROOT, 'extension', 'wxt.config.ts'), 'utf8');
   const key = config.match(/key: '([^']+)'/)?.[1];
@@ -21,7 +21,7 @@ function releaseOutput(): string {
   fs.writeFileSync(path.join(directory, 'manifest.json'), JSON.stringify({ manifest_version: 3, key, permissions: ['nativeMessaging'], background: { service_worker: 'background.js' } }));
   fs.mkdirSync(path.join(directory, 'content-scripts'));
   for (const file of ['bulk.js', 'content-scripts/resident.js', 'diag.html']) fs.writeFileSync(path.join(directory, file), 'release resource');
-  fs.writeFileSync(path.join(directory, 'background.js'), 'com.hologram.host com.hologram.host.dev nativeHost.profile.v1');
+  fs.writeFileSync(path.join(directory, 'background.js'), 'com.dot.host com.dot.host.dev nativeHost.profile.v1');
   return directory;
 }
 
@@ -35,7 +35,7 @@ describe('開発専用の応答収集とリリース出力の境界', () => {
     const directory = releaseOutput();
     const file = path.join(directory, relative);
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.appendFileSync(file, '\nHOLOGRAM_DEV_API_RESPONSE_CAPTURE_V1');
-    expect(() => verifyOutput('chrome', undefined, directory)).toThrow('HOLOGRAM_DEV_API_RESPONSE_CAPTURE_V1');
+    fs.appendFileSync(file, '\nDOT_DEV_API_RESPONSE_CAPTURE_V1');
+    expect(() => verifyOutput('chrome', undefined, directory)).toThrow('DOT_DEV_API_RESPONSE_CAPTURE_V1');
   });
 });

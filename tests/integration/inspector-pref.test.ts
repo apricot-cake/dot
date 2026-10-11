@@ -10,7 +10,7 @@
 // 両端を1本の線でつなぐ。
 //
 // つなぎ方: `electron` を差し替えて本物の ipc-config.ts を登録し、その `set-pref` /
-// `get-prefs` のハンドラをそのまま window.hologram の差し替えへ配線する。偽物は IPC の
+// `get-prefs` のハンドラをそのまま window.dot の差し替えへ配線する。偽物は IPC の
 // 運び屋だけで、許可リスト・既定値の解決・キャッシュの突き合わせは、どれも製品のコードが
 // そのまま動いている。
 //
@@ -54,7 +54,7 @@ registerConfigIpc(ctx);
 const setPref = (key: string, value: unknown) => stub.handlers.get('set-pref')?.(trustedIpcEvent(), key, value);
 const getPrefs = () => stub.handlers.get('get-prefs')?.(trustedIpcEvent());
 
-// --- localStorage / window.hologram の代役 ---------------------------------------
+// --- localStorage / window.dot の代役 ---------------------------------------
 const cache = new Map<string, string>();
 const localStorageStub = {
   getItem: (k: string) => (cache.has(k) ? (cache.get(k) as string) : null),
@@ -89,7 +89,7 @@ beforeEach(() => {
   mediaListener = null;
   mediaMatches = true;
   (globalThis as any).localStorage = localStorageStub;
-  (globalThis as any).window = { hologram: bridge };
+  (globalThis as any).window = { dot: bridge };
   (globalThis as any).matchMedia = () => ({
     get matches() {
       return mediaMatches;
@@ -110,7 +110,7 @@ afterEach(() => {
 type PanelModule = typeof import('../../app/src/renderer/src/services/inspector-panel');
 const freshPanel = (): Promise<PanelModule> => import('../../app/src/renderer/src/services/inspector-panel');
 
-const CACHE_KEY = 'hologram-inspector-open';
+const CACHE_KEY = 'dot-inspector-open';
 
 describe('main: 許可キーと get-prefs', () => {
   test('inspectorOpen は受け付けられ config.json へ書かれる', () => {

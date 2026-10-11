@@ -69,7 +69,7 @@ test('overlay-visual', async () => {
     // #44: 失敗バナーは共有の ShadowRoot の中にある。Playwright の CSS
     // セレクタは開いた shadow root を貫通するが、page.evaluate の
     // querySelector はしない。
-    await page.waitForSelector('[data-hologram-save-banner]', { timeout: 5000 });
+    await page.waitForSelector('[data-dot-save-banner]', { timeout: 5000 });
     // バナーは Web Animation を伴って現れる（status-surface.ts の frames():
     // translateY(-14px) scale(0.96) → none）ので、以下で読むすべての数値は
     // getBoundingClientRect。その途中で計測すると、レイアウトの数値ではなく
@@ -77,7 +77,7 @@ test('overlay-visual', async () => {
     // （一度も動いていない `top: 12px` に対して top=11.02、#818）。固定の
     // sleep では確率が動くだけなので、アニメーション自体を待つ。
     await page.evaluate(async () => {
-      const banner = document.querySelector('hologram-extension-ui')?.shadowRoot?.querySelector('[data-hologram-save-banner]');
+      const banner = document.querySelector('dot-extension-ui')?.shadowRoot?.querySelector('[data-dot-save-banner]');
       if (banner) await Promise.all(banner.getAnimations().map((animation) => animation.finished.catch(() => {})));
     });
     // chrome.storage.local へのログはベストエフォートかつ非同期なので、
@@ -108,7 +108,7 @@ test('overlay-visual', async () => {
       throw new Error('OVERLAY_FAILURE_FACE_FAIL: 保存が失敗した後も隅が failed の面に切り替わらなかった');
     });
     const failureUi = await page.evaluate(() => {
-      const banner = document.querySelector('hologram-extension-ui')?.shadowRoot?.querySelector('[data-hologram-save-banner]');
+      const banner = document.querySelector('dot-extension-ui')?.shadowRoot?.querySelector('[data-dot-save-banner]');
       if (!banner) return null;
       const r = banner.getBoundingClientRect();
       return {
@@ -132,26 +132,26 @@ test('overlay-visual', async () => {
     // 今や再試行のために保持されており、バナーはそれを言わなければ利用者は
     // 「失敗した」と読んで手で保存し直してしまう。理由だけ、約束だけではそれ
     // ぞれ違う（そして間違った）ことを伝えてしまうので、両方の半分を検証する。
-    if (failureUi.text !== 'Hologram の保存先に接続できません。Chrome を再起動してください' || retry.label !== '保存に失敗しました。押すと再試行します。') {
+    if (failureUi.text !== 'dot の保存先に接続できません。Chrome を再起動してください' || retry.label !== '保存に失敗しました。押すと再試行します。') {
       throw new Error(`OVERLAY_FAILURE_BANNER_LOCALE_FAIL: ${JSON.stringify({ failureUi, diagnosticEntries })}`);
     }
     const rawFailure = diagnosticEntries.find((entry) => entry?.phase === 'fail' && typeof entry?.error === 'string');
     if (!rawFailure) {
       throw new Error(`OVERLAY_FAILURE_DIAGNOSTIC_FAIL: ${JSON.stringify(diagnosticEntries)}`);
     }
-    if (process.env.HOLOGRAM_OVERLAY_SCREENSHOT) {
-      await page.screenshot({ path: process.env.HOLOGRAM_OVERLAY_SCREENSHOT });
+    if (process.env.DOT_OVERLAY_SCREENSHOT) {
+      await page.screenshot({ path: process.env.DOT_OVERLAY_SCREENSHOT });
     }
     // 表示時間そのものは仕様だが、その「終わり」は観測できる: それを超える
     // はずの数値を待つのではなく、バナーが実際に去るのを待つ。下の検証は
     // それでも失敗を報告する（waitFor のタイムアウトは握りつぶす）。
-    const bannerGone = () => page.evaluate(() => !document.querySelector('hologram-extension-ui')?.shadowRoot?.querySelector('[data-hologram-save-banner]'));
+    const bannerGone = () => page.evaluate(() => !document.querySelector('dot-extension-ui')?.shadowRoot?.querySelector('[data-dot-save-banner]'));
     await waitFor('失敗バナーが表示時間を終えて去ること', bannerGone, { timeoutMs: 15_000 }).catch(() => {});
     const failureCleared = await bannerGone();
     if (!failureCleared) throw new Error('OVERLAY_FAILURE_BANNER_DISMISS_FAIL: 失敗バナーが去らなかった');
 
     const before = await page.evaluate(() => {
-      const button = document.querySelector('[data-hologram-overlay]');
+      const button = document.querySelector('[data-dot-overlay]');
       const media = document.querySelector('[data-testid="tweetPhoto"]');
       if (!button || !media) return null;
       const buttonRect = button.getBoundingClientRect();
@@ -165,7 +165,7 @@ test('overlay-visual', async () => {
     // ならない。
     await scrollPage(page, 80);
     const scroll = await page.evaluate((previous) => {
-      const button = document.querySelector('[data-hologram-overlay]')?.getBoundingClientRect();
+      const button = document.querySelector('[data-dot-overlay]')?.getBoundingClientRect();
       const media = document.querySelector('[data-testid="tweetPhoto"]')?.getBoundingClientRect();
       return button && media ? Math.abs(button.top - media.top - previous.deltaTop) < 0.5 : false;
     }, before);
@@ -258,7 +258,7 @@ test('overlay-visual', async () => {
     // 写真の左端から CONTROL_INSET（6px）内側でなければならない。下にずれる
     // のは、閉じるボタンが画像の左上の隅を占めている時だけ。
     const viewerCorner = await viewerPage.evaluate(() => {
-      const control = document.querySelector('[data-hologram-overlay]');
+      const control = document.querySelector('[data-dot-overlay]');
       const img = document.querySelector('[data-testid="swipe-to-dismiss"] img');
       const wrapper = document.querySelector('[data-testid="swipe-to-dismiss"]');
       if (!(control instanceof HTMLElement) || !(img instanceof HTMLImageElement) || !(wrapper instanceof HTMLElement)) {

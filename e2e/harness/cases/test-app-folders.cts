@@ -30,8 +30,8 @@ const { createDbWriter } = require(path.join(appDir, 'src', 'main', 'lib-db-writ
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-fold-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-fold-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -107,7 +107,7 @@ const evalJs = evalSource(async ({ waitFor }) => {
   // 経由で描画する。
   const menuRow = (txt) => [...document.querySelectorAll('[data-slot="dropdown-menu-item"]')].find((r) => (r.textContent || '').includes(txt));
   const chips = () => [...document.querySelectorAll('[data-slot="filter-chip"]')];
-  const getFolders = () => (window as any).hologram.getFolders();
+  const getFolders = () => (window as any).dot.getFolders();
   const errors: string[] = [];
   window.addEventListener('error', (e) => errors.push(String((e && e.message) || e)));
   const out: Record<string, any> = {};
@@ -219,9 +219,9 @@ const evalJs = evalSource(async ({ waitFor }) => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: path.join(tmp, 'Hologram'),
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: path.join(tmp, 'dot'),
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

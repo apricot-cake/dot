@@ -7,9 +7,9 @@
 // やり直すだけ）。
 //
 // 同じ適用の処理へ、入口は2つある:
-//   - .hologram-inbox/new/*.json＝loose なエンベロープ (native-host/inbox.mts の
+//   - .dot-inbox/new/*.json＝loose なエンベロープ (native-host/inbox.mts の
 //     writeInboxEvent が書いたもの)。定常状態での普通の経路。
-//   - .hologram-inbox/segments/*.jsonl＝畳んだ束 (lib-db-inbox-compact.ts の出力)。
+//   - .dot-inbox/segments/*.jsonl＝畳んだ束 (lib-db-inbox-compact.ts の出力)。
 //     inbox_segments の受領記録がすでにあるセグメントは、開かずに飛ばす（DB が健全なら
 //     こちらが普通）。受領記録の無いものは1行ずつ再生する＝DB を失ったときの回収の経路
 //     (#299 の受け入れ条件「空の DB へ loose とセグメントの再生で1,500件を再構成できる」)。
@@ -36,7 +36,7 @@
 //     やり直す＝同期クライアントがメディアをまだ追いかけている最中に効く）、理由を報告し、
 //     他のファイルの処理を続ける。
 //   - 適用がそれ以外の何かを throw した (#920): 同じように飛ばしたうえで、エンベロープを
-//     .hologram-inbox/failed/ へ隔離する。上の規則は予見できた失敗を並べたもので、これは
+//     .dot-inbox/failed/ へ隔離する。上の規則は予見できた失敗を並べたもので、これは
 //     残り全部を捕まえる。効くのは「エンベロープ1つが取り込み全体を止める」がいちばん痛い
 //     失敗だから。その後ろに並んだ投稿は永久に現れず、以降どの送り出しも同じファイルで
 //     死ぬので、ライブラリはただ空に見える。new/ に置いたままにせず隔離することが、この
@@ -456,7 +456,7 @@ function receiptCoversUntouchedFile(ctx: InboxApplyCtx, dir: string, name: strin
   }
 }
 
-// .hologram-inbox/new にある、まだ受領記録の付いていない loose なエンベロープを全部
+// .dot-inbox/new にある、まだ受領記録の付いていない loose なエンベロープを全部
 // 適用する。
 //
 // 取り込み済みのエンベロープは、受領記録だけを見て飛ばす（上を参照）。それが圧倒的多数を

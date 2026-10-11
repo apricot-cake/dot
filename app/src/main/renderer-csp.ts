@@ -73,7 +73,7 @@ const RENDERER_CSP = rendererCsp();
 // しまっていただろう。固定の文字列で構わないのは、これが開発機から出ることは
 // 一切無いから——上のパッケージ済みポリシーには nonce が一切無い。
 // electron.vite.config.ts はこの定数を読むので、両者がずれることはない。
-const DEV_CSP_NONCE = 'hologram-dev';
+const DEV_CSP_NONCE = 'dot-dev';
 const DEV_RENDERER_CSP = rendererCsp(DEV_CSP_NONCE);
 
 /** すべての app:// 応答が持つヘッダー: 上のポリシーに加え nosniff。 */

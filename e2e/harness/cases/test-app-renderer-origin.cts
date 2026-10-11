@@ -26,7 +26,7 @@
 // する。これは OS レベルの事実であってコードの経路ではないので、実際に
 // spawn した Electron に対してここで検証する。
 //
-// 画面を占有しない: HOLOGRAM_SMOKE=1 はすべてのウィンドウを隠して作る。
+// 画面を占有しない: DOT_SMOKE=1 はすべてのウィンドウを隠して作る。
 
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
@@ -105,7 +105,7 @@ const evalJs = evalSource(
     // 自分たちのものを何か駆動対象として持てるようにするため: このスクリプトの
     // 下でレンダラーを他へナビゲートすると、その JS コンテキスト（と、この
     // 結果）を道連れにしてしまう。
-    out.viewerOpened = (await (window as any).hologram.openImageWindow(args.png)) === true;
+    out.viewerOpened = (await (window as any).dot.openImageWindow(args.png)) === true;
     out.href = location.href;
     out.origin = location.origin;
 
@@ -116,14 +116,14 @@ const evalJs = evalSource(
 
     // レンダラー自身の module script。ページ自身がそれを名指す通りに。
     const mod = document.querySelector<HTMLScriptElement>('script[type="module"]');
-    out.moduleLoaded = !!((window as any).hologram && document.body.children.length > 0);
+    out.moduleLoaded = !!((window as any).dot && document.body.children.length > 0);
     out.moduleType = mod ? (await fetch(mod.src)).headers.get('content-type') : 'no module script';
     out.styled = document.styleSheets.length > 0;
 
     // 脱出と未知の型。どちらにしても答えはステータスコード — 起きてはならない
     // のは out/renderer の「外」のバイト列が返ってくること。
     const codes: Record<string, string> = {};
-    for (const u of ['app://bundle/%2e%2e/%2e%2e/package.json', 'app://bundle/../package.json', 'app://bundle/nope.html', 'app://bundle/hologram.db']) {
+    for (const u of ['app://bundle/%2e%2e/%2e%2e/package.json', 'app://bundle/../package.json', 'app://bundle/nope.html', 'app://bundle/dot.db']) {
       try {
         const r = await fetch(u);
         codes[u] = r.status + (r.status === 200 ? ' ' + (await r.text()).slice(0, 40) : '');
@@ -195,8 +195,8 @@ const evalJs = evalSource(
 
 async function main() {
   const cdpPort = await freePort();
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-origin-'));
-  const configDir = path.join(tmp, 'Hologram');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-origin-'));
+  const configDir = path.join(tmp, 'dot');
   const saveFolder = path.join(tmp, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.mkdirSync(saveFolder, { recursive: true });
@@ -205,9 +205,9 @@ async function main() {
 
   const env = Object.assign({}, process.env, {
     APPDATA: tmp,
-    HOLOGRAM_CONFIG_DIR: configDir,
-    HOLOGRAM_SMOKE: '1',
-    HOLOGRAM_SMOKE_EVAL: evalJs,
+    DOT_CONFIG_DIR: configDir,
+    DOT_SMOKE: '1',
+    DOT_SMOKE_EVAL: evalJs,
   });
 
   const child = spawn(resolveElectron(), ['.', `--remote-debugging-port=${cdpPort}`], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
@@ -287,7 +287,7 @@ async function main() {
   check('nosniff が付いている', r.nosniff === 'nosniff');
   check('自分自身を iframe に入れられない＝frame-ancestors が効いている', r.iframe === 'blocked');
   check('out/renderer の外は返らない（%2e%2e / .. とも）', !codeOf('app://bundle/%2e%2e/%2e%2e/package.json').startsWith('200') && !codeOf('app://bundle/../package.json').startsWith('200'));
-  check('未知の拡張子は配らない（415）', codeOf('app://bundle/hologram.db').startsWith('415'));
+  check('未知の拡張子は配らない（415）', codeOf('app://bundle/dot.db').startsWith('415'));
   check('存在しないパスは 404', codeOf('app://bundle/nope.html').startsWith('404'));
   check(`bundle 以外の host は文書にならない（${foreignHost || cdpNote || '観測できず'}）`, /Not found/.test(foreignHost));
   check('レンダラ入口以外への遷移が拒まれる（app://bundle/other.html）', r.navBlocked === true);

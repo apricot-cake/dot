@@ -12,8 +12,8 @@ const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { CONTENT_SIZE } = require('../../lib/viewport.ts');
 
 const appDir = path.join(__dirname, '../../../app');
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-overview-zoom-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-overview-zoom-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -46,7 +46,7 @@ async function main() {
       executablePath: resolveElectron(),
       args: ['.', '--force-device-scale-factor=1', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'],
       cwd: appDir,
-      env: { ...process.env, APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir, HOLOGRAM_SANDBOX: '1', HOLOGRAM_E2E: '1', HOLOGRAM_E2E_HIDDEN: '1', HOLOGRAM_START_INACTIVE: '1' },
+      env: { ...process.env, APPDATA: tmp, DOT_CONFIG_DIR: configDir, DOT_SANDBOX: '1', DOT_E2E: '1', DOT_E2E_HIDDEN: '1', DOT_START_INACTIVE: '1' },
     });
     app = launched;
     const page = await launched.firstWindow();

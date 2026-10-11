@@ -5,9 +5,9 @@ const groupReplies = makeGroupRecords({ manualGroups: () => [], ungrouped: () =>
 const groupPosts = makeGroupRecords({ manualGroups: () => [], ungrouped: () => new Set() });
 const gallery = makeGallery({ fileSrc: (file: string) => file });
 let generation = -1;
-let threads = new Map<string, HologramPostGroup>();
+let threads = new Map<string, DotPostGroup>();
 
-export function replyThreadOf(post: HologramPost): HologramPostGroup | undefined {
+export function replyThreadOf(post: DotPost): DotPostGroup | undefined {
   if (generation !== getGeneration()) {
     generation = getGeneration();
     threads = new Map();
@@ -19,12 +19,12 @@ export function replyThreadOf(post: HologramPost): HologramPostGroup | undefined
   return threads.get(post.captureId);
 }
 
-export function replyPostsOf(post: HologramPost): HologramPostGroup[] {
+export function replyPostsOf(post: DotPost): DotPostGroup[] {
   const thread = replyThreadOf(post);
   return thread ? groupPosts(thread.records) : [];
 }
 
-export function imageEntrySelection(group: HologramPostGroup) {
+export function imageEntrySelection(group: DotPostGroup) {
   const thread = group.key?.startsWith('manual:') ? group : replyThreadOf(group.rep) || group;
   const items = gallery.buildGroupGalleryItems(thread);
   const idx = Math.max(
@@ -34,7 +34,7 @@ export function imageEntrySelection(group: HologramPostGroup) {
   return { recs: thread.records.map((p) => p.captureId), idx };
 }
 
-export function galleryPosition(items: { postId?: string }[], index: number, getPost: (id: string) => HologramPost | undefined, options?: { singlePost?: boolean }) {
+export function galleryPosition(items: { postId?: string }[], index: number, getPost: (id: string) => DotPost | undefined, options?: { singlePost?: boolean }) {
   if (options?.singlePost) {
     return { post: 1, posts: 1, image: index + 1, images: items.length };
   }

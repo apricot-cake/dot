@@ -2,7 +2,7 @@
 
 // #176（複数ライブラリ — 切り替えと分類）を
 // 実際の Electron メインプロセスを通して往復させる。test-app-library-
-// missing.cts と同じ形: 各シナリオは隔離された HOLOGRAM_CONFIG_DIR に対して
+// missing.cts と同じ形: 各シナリオは隔離された DOT_CONFIG_DIR に対して
 // 新しいプロセスを起動するので、ここでは本物のライブラリに一切触れない。
 //
 //   node e2e/harness/cases/test-app-library-switch.cts
@@ -22,9 +22,9 @@ const electronPath = resolveElectron();
 function launch(configDir: string, evalJs: string): Promise<Record<string, any>> {
   return new Promise((resolve) => {
     const env = Object.assign({}, process.env, {
-      HOLOGRAM_CONFIG_DIR: configDir,
-      HOLOGRAM_SMOKE: '1',
-      HOLOGRAM_SMOKE_EVAL: evalJs,
+      DOT_CONFIG_DIR: configDir,
+      DOT_SMOKE: '1',
+      DOT_SMOKE_EVAL: evalJs,
     });
     const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
     let out = '';
@@ -81,8 +81,8 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
   // --- シナリオB: 完全に独立した2つのライブラリの切り替え --------------------
   // （has-db 分岐）は投稿を丸ごと入れ替え、両方とも最近使ったリストに現れる。
   {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-libswitch-b-'));
-    const configDir = path.join(tmp, 'Hologram');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-libswitch-b-'));
+    const configDir = path.join(tmp, 'dot');
     const libA = path.join(tmp, 'lib-a');
     const libB = path.join(tmp, 'lib-b');
     fs.mkdirSync(configDir, { recursive: true });
@@ -92,11 +92,11 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
 
     const evalJs = evalSource(
       async (_waits, args) => {
-        const before = await (window as any).hologram.listPosts();
-        const sw = await (window as any).hologram.switchLibrary(args.libB);
-        const after = await (window as any).hologram.listPosts();
-        const cfg = await (window as any).hologram.getConfig();
-        const recent = await (window as any).hologram.getRecentLibraries();
+        const before = await (window as any).dot.listPosts();
+        const sw = await (window as any).dot.switchLibrary(args.libB);
+        const after = await (window as any).dot.listPosts();
+        const cfg = await (window as any).dot.getConfig();
+        const recent = await (window as any).dot.getRecentLibraries();
         return { before, sw, after, cfg, recent };
       },
       { libB },
@@ -117,8 +117,8 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
 
   // --- シナリオC: 空のフォルダへ切り替えるとまっさらな新しいライブラリが始まる --
   {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-libswitch-c-'));
-    const configDir = path.join(tmp, 'Hologram');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-libswitch-c-'));
+    const configDir = path.join(tmp, 'dot');
     const libA = path.join(tmp, 'lib-a');
     const emptyDir = path.join(tmp, 'brand-new');
     fs.mkdirSync(configDir, { recursive: true });
@@ -128,8 +128,8 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
 
     const evalJs = evalSource(
       async (_waits, args) => {
-        const sw = await (window as any).hologram.switchLibrary(args.emptyDir);
-        const after = await (window as any).hologram.listPosts();
+        const sw = await (window as any).dot.switchLibrary(args.emptyDir);
+        const after = await (window as any).dot.listPosts();
         return { sw, after };
       },
       { emptyDir },
@@ -138,7 +138,7 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
 
     check('C1: 空のフォルダに対して switch-library が成功する', !!(r.sw && r.sw.ok === true), JSON.stringify(r.sw));
     check('C2: 新しいライブラリは投稿0件で始まる', !!(r.after && Array.isArray(r.after.posts) && r.after.posts.length === 0), JSON.stringify(r.after));
-    check('C3: 空のフォルダに新しい hologram.db が作られた', fs.existsSync(path.join(emptyDir, 'hologram.db')), `existsSync=${fs.existsSync(path.join(emptyDir, 'hologram.db'))}`);
+    check('C3: 空のフォルダに新しい dot.db が作られた', fs.existsSync(path.join(emptyDir, 'dot.db')), `existsSync=${fs.existsSync(path.join(emptyDir, 'dot.db'))}`);
 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -146,20 +146,20 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
   // --- シナリオD: ライブラリの痕跡が無い空でないフォルダはきっぱり拒まれる --
   // — そこには何も書かれず、現在のライブラリも触れられない。
   {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-libswitch-d-'));
-    const configDir = path.join(tmp, 'Hologram');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-libswitch-d-'));
+    const configDir = path.join(tmp, 'dot');
     const libA = path.join(tmp, 'lib-a');
     const junkDir = path.join(tmp, 'someone-elses-folder');
     fs.mkdirSync(configDir, { recursive: true });
     fs.mkdirSync(junkDir, { recursive: true });
-    fs.writeFileSync(path.join(junkDir, 'readme.txt'), 'not a Hologram library');
+    fs.writeFileSync(path.join(junkDir, 'readme.txt'), 'not a dot library');
     seedOneLibrary(tmp, 'a', libA, 'a1', 'library A post');
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder: libA }));
 
     const evalJs = evalSource(
       async (_waits, args) => {
-        const sw = await (window as any).hologram.switchLibrary(args.junkDir);
-        const cfg = await (window as any).hologram.getConfig();
+        const sw = await (window as any).dot.switchLibrary(args.junkDir);
+        const cfg = await (window as any).dot.getConfig();
         return { sw, cfg };
       },
       { junkDir },
@@ -177,8 +177,8 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
   // DB を失った）は拒まれるのではなく開く — 既存の復旧経路
   // （ensureDb のスナップショット復元・新規作成）が引き継ぐ。新しい仕組みは無い。
   {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-libswitch-e-'));
-    const configDir = path.join(tmp, 'Hologram');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-libswitch-e-'));
+    const configDir = path.join(tmp, 'dot');
     const libA = path.join(tmp, 'lib-a');
     const recoverDir = path.join(tmp, 'db-lost-but-trash-present');
     fs.mkdirSync(configDir, { recursive: true });
@@ -188,8 +188,8 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
 
     const evalJs = evalSource(
       async (_waits, args) => {
-        const sw = await (window as any).hologram.switchLibrary(args.recoverDir);
-        const after = await (window as any).hologram.listPosts();
+        const sw = await (window as any).dot.switchLibrary(args.recoverDir);
+        const after = await (window as any).dot.listPosts();
         return { sw, after };
       },
       { recoverDir },
@@ -197,7 +197,7 @@ function seedOneLibrary(root: string, name: string, libDir: string, captureId: s
     const r = await launch(configDir, evalJs);
 
     check('E1: 痕跡はあるが DB が無いフォルダに対して switch-library が成功する（復旧経路）', !!(r.sw && r.sw.ok === true), JSON.stringify(r.sw));
-    check('E2: そこに今やデータベースが存在する（復元元の世代が無かったので新規作成された）', fs.existsSync(path.join(recoverDir, 'hologram.db')), `existsSync=${fs.existsSync(path.join(recoverDir, 'hologram.db'))}`);
+    check('E2: そこに今やデータベースが存在する（復元元の世代が無かったので新規作成された）', fs.existsSync(path.join(recoverDir, 'dot.db')), `existsSync=${fs.existsSync(path.join(recoverDir, 'dot.db'))}`);
     check('E3: 既存の .trash フォルダは触れられていない', fs.existsSync(path.join(recoverDir, '.trash')), `existsSync=${fs.existsSync(path.join(recoverDir, '.trash'))}`);
 
     fs.rmSync(tmp, { recursive: true, force: true });

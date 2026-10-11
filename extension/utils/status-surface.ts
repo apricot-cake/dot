@@ -74,10 +74,10 @@ export class StatusSurface {
     const root = ensureUiRoot();
     const parent = root || document.body || document.documentElement;
     if (this.el.dataset.variant === 'toast') {
-      let stack = parent.querySelector<HTMLElement>('[data-hologram-toasts]');
+      let stack = parent.querySelector<HTMLElement>('[data-dot-toasts]');
       if (!stack) {
         stack = document.createElement('div');
-        stack.dataset.hologramToasts = '';
+        stack.dataset.dotToasts = '';
         parent.appendChild(stack);
       }
       stack.appendChild(this.el);

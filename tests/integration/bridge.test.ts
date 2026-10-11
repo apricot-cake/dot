@@ -16,8 +16,8 @@ let saveFolder: string;
 let resp: any;
 
 beforeAll(async () => {
-  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-test-'));
-  const configDir = path.join(tmp, 'Hologram');
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-test-'));
+  const configDir = path.join(tmp, 'dot');
   saveFolder = path.join(tmp, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder }));
@@ -40,7 +40,7 @@ beforeAll(async () => {
   header.writeUInt32LE(msg.length, 0);
 
   const child = spawn(process.execPath, [path.join(import.meta.dirname, '../../native-host/bridge.mts')], {
-    env: { ...process.env, APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir },
+    env: { ...process.env, APPDATA: tmp, DOT_CONFIG_DIR: configDir },
     stdio: ['pipe', 'pipe', 'inherit'],
   });
 
@@ -95,7 +95,7 @@ describe('返信は種類を問わず版を名乗る（#205）', () => {
 // 1つの接続に複数のフレームを流し込み、返ってきたフレームを全部読み取る。
 // bridge.mts は stdin を読み終えれば自然に終了するので、close を待てば取りこぼさない。
 async function askHost(configRoot: string, messages: unknown[]): Promise<any[]> {
-  const configDir = path.join(configRoot, 'Hologram');
+  const configDir = path.join(configRoot, 'dot');
   const frames = messages.map((m) => {
     const body = Buffer.from(JSON.stringify(m), 'utf8');
     const header = Buffer.alloc(4);
@@ -103,7 +103,7 @@ async function askHost(configRoot: string, messages: unknown[]): Promise<any[]> 
     return Buffer.concat([header, body]);
   });
   const child = spawn(process.execPath, [path.join(import.meta.dirname, '../../native-host/bridge.mts')], {
-    env: { ...process.env, APPDATA: configRoot, HOLOGRAM_CONFIG_DIR: configDir },
+    env: { ...process.env, APPDATA: configRoot, DOT_CONFIG_DIR: configDir },
     stdio: ['pipe', 'pipe', 'inherit'],
   });
   let out = Buffer.alloc(0);
@@ -133,9 +133,9 @@ async function askHost(configRoot: string, messages: unknown[]): Promise<any[]> 
 // いない利用者は、全員その状態にいる。
 describe('ローカルビルドの印（#650）', () => {
   test('印のファイルが無ければ、返信は何も言わない', async () => {
-    const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-nostamp-'));
+    const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-nostamp-'));
     try {
-      fs.mkdirSync(path.join(bare, 'Hologram'), { recursive: true });
+      fs.mkdirSync(path.join(bare, 'dot'), { recursive: true });
       const [reply] = await askHost(bare, [{ type: 'ping' }]);
       expect(reply).toMatchObject({ ok: true, pong: true });
       expect(reply.extBuild).toBeUndefined();
@@ -145,9 +145,9 @@ describe('ローカルビルドの印（#650）', () => {
   });
 
   test('印のファイルがあれば、成功にも失敗にも同じトークンが乗る', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-stamp-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-stamp-'));
     try {
-      const dir = path.join(root, 'Hologram');
+      const dir = path.join(root, 'dot');
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'extension-build.json'), JSON.stringify({ build: '1785000000000-feedface' }));
       const replies = await askHost(root, [{ type: 'ping' }, { type: 'nonsense' }]);
@@ -160,9 +160,9 @@ describe('ローカルビルドの印（#650）', () => {
   });
 
   test('壊れた印（JSON でない・build が無い）は「無い」と同じ＝ホストは黙る', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-badstamp-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-badstamp-'));
     try {
-      const dir = path.join(root, 'Hologram');
+      const dir = path.join(root, 'dot');
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'extension-build.json'), '{"build":');
       expect((await askHost(root, [{ type: 'ping' }]))[0].extBuild).toBeUndefined();
@@ -178,12 +178,12 @@ describe('保存されたもの', () => {
   test('inbox エンベロープだけが書かれる（メディアと sidecar は書かれない）', () => {
     expect(fs.readdirSync(path.join(saveFolder, 'items', captureId))).toEqual([]);
     expect(fs.existsSync(path.join(saveFolder, `${captureId}.json`))).toBe(false);
-    expect(fs.existsSync(path.join(saveFolder, '.hologram-inbox', 'new', `${captureId}.json`))).toBe(true);
+    expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', `${captureId}.json`))).toBe(true);
   });
 
   test('エンベロープの record が captureId / text / url を持つ', () => {
-    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.hologram-inbox', 'new', `${captureId}.json`), 'utf8'));
-    expect(envelope).toMatchObject({ format: 'hologram-inbox', version: 1, eventId: captureId, kind: 'post.capture' });
+    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.dot-inbox', 'new', `${captureId}.json`), 'utf8'));
+    expect(envelope).toMatchObject({ format: 'dot-inbox', version: 1, eventId: captureId, kind: 'post.capture' });
     expect(envelope.record).toMatchObject({ captureId, image: null, text: 'hi', url: 'https://x.com/u/status/1' });
   });
 });

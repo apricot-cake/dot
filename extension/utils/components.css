@@ -31,12 +31,12 @@
   /* 拡張機能はブラウザのテーマに従うので、どの画面が持つフォームの操
      作やスクロールバーも同じ配色の組から描かれるべきだ。 */
   color-scheme: light dark;
-  font-family: var(--hologram-font-sans);
+  font-family: var(--dot-font-sans);
   /* rem ではなく必ず px にする: rem はホスト側のルートフォントサイズ
      で、サイトはそれを実際に変えてくる。 */
   font-size: 13px;
   line-height: 1.4;
-  color: var(--hologram-ink);
+  color: var(--dot-ink);
 }
 
 /* ================================================================= 重なり順 */
@@ -51,7 +51,7 @@
  * 説明は位置に優先する: 読めないラベルは、それが指すものが完璧に描か
  * れていても役に立たない。両方の数値をこの1つの :host ブロックに置い
  * ているので、後から追加される3つ目の画面は、自前の裸の z-index に手
- * を伸ばす前にここを見ればよい。あえて `--hologram-*` にはしていない:
+ * を伸ばす前にここを見ればよい。あえて `--dot-*` にはしていない:
  * その接頭辞はアプリのデザイントークン（色・モーション。
  * tests/integration/extension-tokens.test.ts が tokens.generated.css と突き合わ
  * せて検証するすべて）を名指すもので、重なり順はそこから生成されるも
@@ -81,18 +81,18 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  background: var(--hologram-surface);
-  color: var(--hologram-ink);
-  border: 1px solid var(--hologram-overlay-border);
-  box-shadow: var(--hologram-overlay-shadow);
-  font: 600 13px/1.4 var(--hologram-font-sans);
+  background: var(--dot-surface);
+  color: var(--dot-ink);
+  border: 1px solid var(--dot-overlay-border);
+  box-shadow: var(--dot-overlay-shadow);
+  font: 600 13px/1.4 var(--dot-font-sans);
   /* ステータス表示は、ページ向けのクリックを横取りしてはいけない。入
      力を受け取るものは、それぞれ自分でこれを元に戻す。 */
   pointer-events: none;
   transition:
-    border-color var(--hologram-duration-base),
-    box-shadow var(--hologram-duration-base),
-    transform var(--hologram-duration-base) var(--hologram-ease-out);
+    border-color var(--dot-duration-base),
+    box-shadow var(--dot-duration-base),
+    transform var(--dot-duration-base) var(--dot-ease-out);
 }
 
 /* バナー: 上端に置く、中央寄せしたコンパクトなピル。どの状態でも同じ
@@ -123,7 +123,7 @@
 /* 状態 → 画面自身の輪郭。idle/active/busy はニュートラルのままにし、
  * 3つの結果はそれに色を付ける＝ラベルが小さすぎて一目で読めないとき、
  * これが結果を視界の端まで運ぶ。 */
-.surface[data-hologram-bulk-discovery] {
+.surface[data-dot-bulk-discovery] {
   top: auto;
   bottom: 16px;
   inset-inline: auto 16px;
@@ -134,11 +134,11 @@
   border-radius: 12px;
   font-weight: 400;
 }
-.surface[data-hologram-bulk-discovery] .label {
+.surface[data-dot-bulk-discovery] .label {
   min-width: 0;
   padding-top: 6px;
 }
-.surface[data-hologram-bulk-discovery] .badge {
+.surface[data-dot-bulk-discovery] .badge {
   width: 16px;
   height: 32px;
   background: transparent;
@@ -149,7 +149,7 @@
   gap: 8px;
   margin-top: 8px;
 }
-.surface[data-hologram-bulk-discovery] .action {
+.surface[data-dot-bulk-discovery] .action {
   min-height: 32px;
   border-radius: 7px;
   font-weight: 400;
@@ -165,28 +165,28 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: var(--hologram-ink-muted);
+  color: var(--dot-ink-muted);
 }
 .surface .action.bulk-never-show {
   border-color: transparent;
   background: transparent;
-  color: var(--hologram-ink-muted);
+  color: var(--dot-ink-muted);
 }
 .surface .action.bulk-close:hover,
 .surface .action.bulk-never-show:hover {
-  background: var(--hologram-hover);
+  background: var(--dot-hover);
 }
 .surface[data-state='success'] {
-  border-color: var(--hologram-success);
+  border-color: var(--dot-success);
 }
 .surface[data-state='partial'] {
-  border-color: var(--hologram-warning);
+  border-color: var(--dot-warning);
 }
 .surface[data-state='error'] {
-  border-color: var(--hologram-danger);
+  border-color: var(--dot-danger);
 }
 
-[data-hologram-toasts] {
+[data-dot-toasts] {
   inset: auto 0 0 auto;
   margin: 0;
   border: 0;
@@ -211,7 +211,7 @@
   pointer-events: none;
 }
 
-[data-hologram-toasts]::backdrop {
+[data-dot-toasts]::backdrop {
   display: none;
 }
 .surface[data-variant='toast'] {
@@ -225,25 +225,25 @@
   border-radius: 11px;
   font-weight: 400;
   align-items: center;
-  border-color: var(--hologram-overlay-border);
+  border-color: var(--dot-overlay-border);
 }
 .surface[data-variant='toast'] .badge {
   background: transparent;
-  color: var(--hologram-ink-muted);
+  color: var(--dot-ink-muted);
   width: 16px;
   height: 20px;
 }
-.surface[data-hologram-save-progress] { display: grid; min-height: 0; }
-.surface[data-hologram-save-progress] .label { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.surface[data-hologram-save-progress] > * { grid-area: 1 / 1; justify-self: start; }
-.toast-progress-content, .surface[data-hologram-save-progress] .toast-measure { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.surface[data-hologram-save-progress] .toast-measure { visibility: hidden; }
-.surface[data-hologram-save-progress] .toast-measure::before { content: ''; width: 16px; flex: none; }
+.surface[data-dot-save-progress] { display: grid; min-height: 0; }
+.surface[data-dot-save-progress] .label { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.surface[data-dot-save-progress] > * { grid-area: 1 / 1; justify-self: start; }
+.toast-progress-content, .surface[data-dot-save-progress] .toast-measure { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.surface[data-dot-save-progress] .toast-measure { visibility: hidden; }
+.surface[data-dot-save-progress] .toast-measure::before { content: ''; width: 16px; flex: none; }
 .toast-failure-group { display: flex; flex-direction: column; gap: 10px; width: max-content; max-width: min(320px, calc(100vw - 48px)); flex-shrink: 0; }
 .toast-failure-group > .surface { max-width: 100%; }
-.toast-failure-group > [data-hologram-toast-details] { width: 0; min-width: 100%; overflow-wrap: anywhere; }
-.surface[data-hologram-bulk-banner] .badge { background: transparent; color: var(--hologram-ink-muted); }
-.surface[data-hologram-bulk-banner] { border-color: var(--hologram-overlay-border); }
+.toast-failure-group > [data-dot-toast-details] { width: 0; min-width: 100%; overflow-wrap: anywhere; }
+.surface[data-dot-bulk-banner] .badge { background: transparent; color: var(--dot-ink-muted); }
+.surface[data-dot-bulk-banner] { border-color: var(--dot-overlay-border); }
 .surface[data-variant='toast'] .spinner { width: 15px; height: 15px; }
 .surface[data-variant='toast'] .label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .surface[data-variant='toast'] .action { border-radius: 6px; font-weight: 400; }
@@ -251,17 +251,17 @@
 .toast-actions, .toast-details-heading { display: flex; align-items: center; gap: 8px; }
 .toast-actions { flex-shrink: 0; gap: 6px; }
 .surface[data-variant='toast'] .toast-details-toggle { padding: 2px 0; border: 0; background: transparent; }
-.surface[data-hologram-toast-details] { display: block; pointer-events: auto; }
-.surface[data-hologram-toast-details][hidden] { display: none; }
+.surface[data-dot-toast-details] { display: block; pointer-events: auto; }
+.surface[data-dot-toast-details][hidden] { display: none; }
 .toast-details-heading { position: absolute; top: 12px; right: 12px; }
 .toast-failures > .toast-failure:first-child > div:first-child { padding-right: 26px; }
 .toast-failure-group > .surface[hidden] { display: none; }
 .toast-details-heading span { font-weight: 500; }
-.toast-target { color: var(--hologram-ink-muted); font-size: 12px; margin-bottom: 4px; }
-.toast-failure + .toast-failure { border-top: 1px solid var(--hologram-overlay-border); padding-top: 10px; margin-top: 10px; }
+.toast-target { color: var(--dot-ink-muted); font-size: 12px; margin-bottom: 4px; }
+.toast-failure + .toast-failure { border-top: 1px solid var(--dot-overlay-border); padding-top: 10px; margin-top: 10px; }
 .toast-failure-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 8px; }
 .toast-failure-actions > a { color: inherit; text-decoration: underline; text-underline-offset: 3px; line-height: 1.5; }
-.toast-failure-actions > a:hover { color: var(--hologram-ink-muted); }
+.toast-failure-actions > a:hover { color: var(--dot-ink-muted); }
 .toast-failure-actions > a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 .toast-failure-actions > .action { flex: none; margin: 0; }
 
@@ -276,31 +276,31 @@
   justify-content: center;
   border-radius: 50%;
   box-sizing: border-box;
-  background: var(--hologram-badge-neutral);
-  color: var(--hologram-ink-muted);
+  background: var(--dot-badge-neutral);
+  color: var(--dot-ink-muted);
   transition:
-    background var(--hologram-duration-base),
-    color var(--hologram-duration-base);
+    background var(--dot-duration-base),
+    color var(--dot-duration-base);
 }
 [data-variant='banner'] .badge {
   width: 26px;
   height: 26px;
 }
 [data-state='busy'] .badge {
-  background: var(--hologram-accent-soft);
-  color: var(--hologram-accent);
+  background: var(--dot-accent-soft);
+  color: var(--dot-accent);
 }
 [data-state='success'] .badge {
-  background: var(--hologram-success);
-  color: var(--hologram-on-success);
+  background: var(--dot-success);
+  color: var(--dot-on-success);
 }
 [data-state='partial'] .badge {
-  background: var(--hologram-warning);
-  color: var(--hologram-on-warning);
+  background: var(--dot-warning);
+  color: var(--dot-on-warning);
 }
 [data-state='error'] .badge {
-  background: var(--hologram-danger);
-  color: var(--hologram-on-danger);
+  background: var(--dot-danger);
+  color: var(--dot-on-danger);
 }
 
 /* スピナーは、リングがインクの1つの弧になっているバッジだ。reduced
@@ -308,13 +308,13 @@
  * れは処理が進行中であることを伝えるもので、止まったリングは保存が止
  * まったと言っているように見えてしまう。 */
 .spinner {
-  animation: hologram-spin 0.9s linear infinite;
+  animation: dot-spin 0.9s linear infinite;
 }
 [data-variant='banner'] .spinner {
   width: 15px;
   height: 15px;
 }
-@keyframes hologram-spin {
+@keyframes dot-spin {
   to {
     transform: rotate(1turn);
   }
@@ -337,20 +337,20 @@
   border-radius: 999px;
   cursor: pointer;
   pointer-events: auto;
-  border: 1px solid var(--hologram-overlay-border);
-  background: var(--hologram-badge-neutral);
-  color: var(--hologram-ink);
-  font: 600 12px/1 var(--hologram-font-sans);
-  transition: background var(--hologram-duration-base);
+  border: 1px solid var(--dot-overlay-border);
+  background: var(--dot-badge-neutral);
+  color: var(--dot-ink);
+  font: 600 12px/1 var(--dot-font-sans);
+  transition: background var(--dot-duration-base);
 }
 .action:hover {
-  background: var(--hologram-hover);
+  background: var(--dot-hover);
 }
 
 /* ====================================================================== フォーカス */
 
 :where(button, input, [tabindex]):focus-visible {
-  outline: 2px solid var(--hologram-focus-ring);
+  outline: 2px solid var(--dot-focus-ring);
   outline-offset: 2px;
 }
 

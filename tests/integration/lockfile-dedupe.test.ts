@@ -79,7 +79,7 @@ describe('duplicatesAcrossWorkspaces', () => {
         app: {},
         'node_modules/vite': { version: '8.1.5' },
         'app/node_modules/vite': { version: '8.2.0' },
-        'node_modules/hologram-app': { link: true },
+        'node_modules/dot-app': { link: true },
       },
     };
     expect(duplicatesAcrossWorkspaces(lock).map((d) => `${d.name} ${d.root}/${d.workspace}`)).toEqual(['vite 8.1.5/8.2.0']);

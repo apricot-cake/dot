@@ -12,7 +12,7 @@ let F: any;
 
 beforeAll(async () => {
   (globalThis as any).window = {
-    hologram: {
+    dot: {
       setFolders: async (data: any) => {
         lastWritten = data;
         return { ok: true };

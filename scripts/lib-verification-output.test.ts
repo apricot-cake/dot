@@ -6,7 +6,7 @@ const { repoRoot, resolveVerificationOutput, verificationRoot } = require('./lib
 
 describe('検証成果物の出力先', () => {
   test('既定の出力先はリポジトリ外のユーザー領域になる', () => {
-    expect(verificationRoot()).toBe(path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'Hologram', 'verification'));
+    expect(verificationRoot()).toBe(path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'dot', 'verification'));
   });
 
   test('リポジトリ内への出力を拒否する', () => {

@@ -48,7 +48,7 @@ beforeEach(() => {
   folderList = [{ id: 'f1', name: 'お気に入り' }];
   posterTags = [{ value: '常連', count: 4 }];
   performed = [];
-  // エントリが分岐に使う browse モードは hologramStore 自身のキー＝アプリが書くのと同じものな
+  // エントリが分岐に使う browse モードは dotStore 自身のキー＝アプリが書くのと同じものな
   // ので、テストはスタブではなくアプリの状態を動かす。
   store.setState({ browseMode: 'posts' });
   registerSearchSuggestions({

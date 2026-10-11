@@ -14,7 +14,7 @@ export function convertSearchIndex(db: Database.Database) {
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const file = process.argv[2];
-  if (!file || !fs.existsSync(file)) throw new Error('Pass an existing hologram.db path');
+  if (!file || !fs.existsSync(file)) throw new Error('Pass an existing dot.db path');
   const db = new Database(file);
   try {
     if (Number(db.pragma('user_version', { simple: true })) !== 49) {

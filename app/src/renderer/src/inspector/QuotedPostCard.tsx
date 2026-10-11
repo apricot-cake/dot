@@ -3,7 +3,7 @@ import { ImageIcon, MessageSquareQuote, Reply } from 'lucide-react';
 import { Avatar } from '@/_shared/PostCard';
 import { cn } from '@/lib/utils';
 
-export function QuotedPostCard({ m }: { m: HologramQuotedCardModel }) {
+export function QuotedPostCard({ m }: { m: DotQuotedCardModel }) {
   const Icon = m.kind === 'reply' ? Reply : MessageSquareQuote;
   const clickable = !!m.onOpen;
   return (

@@ -33,12 +33,12 @@ export default defineConfig(() => ({
     //
     // koffi を名指ししているのは、externalizeDepsPlugin が external にするのが
     // `dependencies` だけで、koffi は意図して devDependency にしてあるから＝
-    // HOLOGRAM_START_INACTIVE の検証経路でしか読み込まれないので、出荷するアプリ
+    // DOT_START_INACTIVE の検証経路でしか読み込まれないので、出荷するアプリ
     // からは外れていなければならない。バンドルすると壊れる（ネイティブアドオンな
     // ので）うえ、開発専用の依存を dist へ引きずり込む。
     plugins: [externalizeDepsPlugin({ include: ['koffi'] })],
     build: {
-      outDir: process.env.HOLOGRAM_APP_BUILD_OUT ? path.join(process.env.HOLOGRAM_APP_BUILD_OUT, 'main') : undefined,
+      outDir: process.env.DOT_APP_BUILD_OUT ? path.join(process.env.DOT_APP_BUILD_OUT, 'main') : undefined,
       lib: { entry: { index: r('src/main/index.ts'), 'image-processing-worker': r('src/main/image-processing-worker.ts'), 'archive-import-worker': r('src/main/archive-import-worker.ts') } },
     },
   },
@@ -52,14 +52,14 @@ export default defineConfig(() => ({
     // 扱う）。
     plugins: [externalizeDepsPlugin({ exclude: ['electron-log'] })],
     build: {
-      outDir: process.env.HOLOGRAM_APP_BUILD_OUT ? path.join(process.env.HOLOGRAM_APP_BUILD_OUT, 'preload') : undefined,
+      outDir: process.env.DOT_APP_BUILD_OUT ? path.join(process.env.DOT_APP_BUILD_OUT, 'preload') : undefined,
     },
   },
   renderer: {
     root: 'src/renderer',
     resolve: { alias: RESOLVE_ALIAS },
     build: {
-      outDir: process.env.HOLOGRAM_APP_BUILD_OUT ? path.join(process.env.HOLOGRAM_APP_BUILD_OUT, 'renderer') : undefined,
+      outDir: process.env.DOT_APP_BUILD_OUT ? path.join(process.env.DOT_APP_BUILD_OUT, 'renderer') : undefined,
       rollupOptions: {
         input: { index: r('src/renderer/index.html') },
       },
@@ -68,6 +68,6 @@ export default defineConfig(() => ({
     // （インラインの module スクリプト）をパッケージ版と同じ CSP の下で走らせる。
     // 理由は renderer-csp.ts にある。`apply: "serve"` でビルドからは外れる＝
     // ビルドではポリシーが nonce を持たず、必要とするものも無い。
-    plugins: [react(), tailwindcss(), { name: 'hologram:dev-csp-nonce', apply: 'serve', config: () => ({ html: { cspNonce: DEV_CSP_NONCE } }) }],
+    plugins: [react(), tailwindcss(), { name: 'dot:dev-csp-nonce', apply: 'serve', config: () => ({ html: { cspNonce: DEV_CSP_NONCE } }) }],
   },
 }));

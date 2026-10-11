@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { hologramPostGridSource as source } from './grid';
+import { dotPostGridSource as source } from './grid';
 import { store } from './store';
 
 test('閲覧回数の更新では配置を保持し、並び替えと絞り込みでは更新する', () => {

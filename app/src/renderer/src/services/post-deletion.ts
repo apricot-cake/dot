@@ -11,7 +11,7 @@ interface PostDeletionDeps {
 
 // 一覧から外すとフォルダ所属も永続化される。ゴミ箱が所属を保存し、
 // 成功を返すまでは、削除対象を一覧から外してはいけない。
-export async function deletePosts(records: readonly Pick<HologramPost, 'captureId' | 'image' | 'video'>[], deps: PostDeletionDeps): Promise<void> {
+export async function deletePosts(records: readonly Pick<DotPost, 'captureId' | 'image' | 'video'>[], deps: PostDeletionDeps): Promise<void> {
   const results = await Promise.all(
     records.map(async (record) => {
       try {

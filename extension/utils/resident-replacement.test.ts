@@ -43,11 +43,11 @@ describe('分離ワールドをまたぐ常駐世代の交代', () => {
     const dispose = vi.fn();
     const stop = watchResidentReplacement(document, runtime, dispose);
     cleanups.push(stop);
-    document.dispatchEvent(new Event('hologram:resident-replaced'));
+    document.dispatchEvent(new Event('dot:resident-replaced'));
     expect(dispose).not.toHaveBeenCalled();
     stop();
     runtime.id = undefined;
-    document.dispatchEvent(new Event('hologram:resident-replaced'));
+    document.dispatchEvent(new Event('dot:resident-replaced'));
     expect(dispose).not.toHaveBeenCalled();
   });
 });

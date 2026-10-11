@@ -7,7 +7,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock('electron-log/main', () => ({ default: { info: vi.fn(), error: vi.fn() } }));
-vi.mock('./native-host.ts', () => ({ configDir: () => 'C:\\hologram-config' }));
+vi.mock('./native-host.ts', () => ({ configDir: () => 'C:\\dot-config' }));
 vi.mock('./lib-config.ts', () => ({
   getSaveFolder: () => state.folder,
   readLibraryExportReminderConfig: () => {

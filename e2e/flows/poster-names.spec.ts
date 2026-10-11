@@ -3,10 +3,10 @@ import { expect, test } from '../lib/harness.ts';
 import { openDatabase } from '../../app/src/main/lib-db.ts';
 import { preparePostStmts, makeTagResolver, writePost } from '../../app/src/main/lib-db-record-writer.ts';
 
-test('旧名で投稿者を検索し、カードとインスペクタに履歴を表示する', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('旧名で投稿者を検索し、カードとインスペクタに履歴を表示する', async ({ launchDot }) => {
+  const { page } = await launchDot({
     seed: ({ saveFolder }) => {
-      const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+      const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
       try {
         const stmts = preparePostStmts(sqlite),
           tags = makeTagResolver(sqlite);

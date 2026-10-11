@@ -54,7 +54,7 @@ import { register as registerTransferIpc } from '../../app/src/main/ipc-transfer
 
 // --- 1. lib-drop-import.ts: 純粋な再帰の走査 -----------------------------------
 describe('main: collectDroppedPaths（再帰の走査・electron 非依存）', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-drop-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-drop-'));
 
   afterAll(() => {
     fs.rmSync(root, { recursive: true, force: true });
@@ -211,7 +211,7 @@ describe('main: collectDroppedPaths（再帰の走査・electron 非依存）', 
 
 // --- 2. ipc-transfer.ts: 2つの IPC ハンドラ ---------------------------------------
 describe('main: collect-dropped-paths / import-dropped-paths（IPC）', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-drop-ipc-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-drop-ipc-'));
   const folder = path.join(dir, 'library');
   fs.mkdirSync(folder, { recursive: true });
   const { sqlite } = openDatabase(path.join(dir, 'test.db'));
@@ -358,7 +358,7 @@ describe('renderer: handleDroppedPaths（collect→confirm→import）', () => {
     importAnswer = { imported: 1, skipped: 0 };
     stub.toasts.length = 0;
     (globalThis as any).window = {
-      hologram: {
+      dot: {
         getPrefs: async () => ({ language: 'ja' }),
         collectDroppedPaths: async (paths: string[]) => {
           calls.collect.push(paths);
@@ -396,7 +396,7 @@ describe('renderer: handleDroppedPaths（collect→confirm→import）', () => {
   test('パス解決に失敗した項目はスキップする（例外を投げない）', async () => {
     const drop = await freshDropIntake();
     const list = [{ __path: '/a.png' }, {}];
-    (globalThis as any).window.hologram.getPathForFile = (f: any) => {
+    (globalThis as any).window.dot.getPathForFile = (f: any) => {
       if (!f.__path) throw new Error('no path');
       return f.__path;
     };
@@ -452,7 +452,7 @@ describe('renderer: handleDroppedPaths（collect→confirm→import）', () => {
       resolveSecond = resolve;
     });
     const answers = [firstAnswer, secondAnswer];
-    (globalThis as any).window.hologram.collectDroppedPaths = async () => answers.shift();
+    (globalThis as any).window.dot.collectDroppedPaths = async () => answers.shift();
     const drop = await freshDropIntake();
     const confirm = await import('../../app/src/renderer/src/services/confirm');
 

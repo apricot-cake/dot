@@ -7,12 +7,12 @@ import { afterAll } from 'vitest';
 // 実際のconfigディレクトリを絶対に見せない。
 // テストファイルごとに一時ディレクトリを1つ＝setupファイルはそのファイルの
 // importより前に、ファイルごとに1回だけ走るので、モジュール読み込み時に
-// HOLOGRAM_CONFIG_DIRを読むスイートもそれを見られる。ファイルごとにする
+// DOT_CONFIG_DIRを読むスイートもそれを見られる。ファイルごとにする
 // のは（旧集計スクリプトは全スイートで1つのディレクトリを共有していた）、
 // Vitestがファイルを並列に走らせるため、2つのスイートが同じconfigディレクトリ
 // へ書き込むと競合してしまうから。
-const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-tests-'));
-process.env.HOLOGRAM_CONFIG_DIR = sandbox;
+const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-tests-'));
+process.env.DOT_CONFIG_DIR = sandbox;
 
 afterAll(() => {
   try {

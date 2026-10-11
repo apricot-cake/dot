@@ -7,7 +7,7 @@ const { buildExtension } = require('./build-extension.cts');
 
 const ROOT = path.join(__dirname, '..');
 const { output } = buildExtension('chrome');
-const destination = path.join(ROOT, 'extension', '.output', 'hologram-chrome-mv3.zip');
+const destination = path.join(ROOT, 'extension', '.output', 'dot-chrome-mv3.zip');
 const zip = new yazl.ZipFile();
 
 for (const entry of fs.readdirSync(output, { recursive: true, withFileTypes: true })) {
@@ -19,5 +19,5 @@ for (const entry of fs.readdirSync(output, { recursive: true, withFileTypes: tru
 
 zip.end();
 zip.outputStream.pipe(fs.createWriteStream(destination)).on('close', () => {
-  console.log(`[hologram] wrote verified Chrome ZIP: ${destination}`);
+  console.log(`[dot] wrote verified Chrome ZIP: ${destination}`);
 });

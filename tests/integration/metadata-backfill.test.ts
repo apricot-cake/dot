@@ -9,12 +9,12 @@ import { postsByIdsSync } from '../../app/src/main/lib-db-query';
 import { applyCachedMetadata } from '../../app/src/main/lib-metadata-backfill';
 
 test('取得済み補完は画像・タグID・履歴を保ち、再適用せず、失敗データを書かない', () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-backfill-'));
-  const handle = openDatabase(path.join(folder, 'hologram.db'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-backfill-'));
+  const handle = openDatabase(path.join(folder, 'dot.db'));
   const db = handle.sqlite;
   try {
     const key = 'x:123';
-    const root = path.join(folder, '.hologram-metadata-backfill');
+    const root = path.join(folder, '.dot-metadata-backfill');
     fs.mkdirSync(path.join(root, 'results'), { recursive: true });
     const record = {
       captureId: 'eagle-123',

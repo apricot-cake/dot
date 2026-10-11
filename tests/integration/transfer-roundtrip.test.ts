@@ -31,12 +31,12 @@ let destB: string;
 let zipPath: string;
 
 beforeAll(async () => {
-  dbA = openDatabase(path.join(mkTempDir('hologram-roundtrip-a-db-'), 'test.db'));
-  srcA = mkTempDir('hologram-roundtrip-a-lib-');
-  trashA = mkTempDir('hologram-roundtrip-a-trash-');
-  dbB = openDatabase(path.join(mkTempDir('hologram-roundtrip-b-db-'), 'test.db'));
-  destB = mkTempDir('hologram-roundtrip-b-lib-');
-  zipPath = path.join(mkTempDir('hologram-roundtrip-out-'), 'export.zip');
+  dbA = openDatabase(path.join(mkTempDir('dot-roundtrip-a-db-'), 'test.db'));
+  srcA = mkTempDir('dot-roundtrip-a-lib-');
+  trashA = mkTempDir('dot-roundtrip-a-trash-');
+  dbB = openDatabase(path.join(mkTempDir('dot-roundtrip-b-db-'), 'test.db'));
+  destB = mkTempDir('dot-roundtrip-b-lib-');
+  zipPath = path.join(mkTempDir('dot-roundtrip-out-'), 'export.zip');
 
   // --- DB A を仕込む ---------------------------------------------------------
   const { sqlite: sqliteA } = dbA;

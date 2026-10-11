@@ -59,7 +59,7 @@ fs.realpathSync = Object.assign((target, options) => {
 const write = fs.writeFileSync;
 fs.writeFileSync = (file, data, options) => {
   const result = write(file, data, options);
-  if (path.basename(String(file)) === '.hologram-request-owner.json') barrier('owner');
+  if (path.basename(String(file)) === '.dot-request-owner.json') barrier('owner');
   return result;
 };
 const rename = fs.renameSync;
@@ -75,7 +75,7 @@ fs.renameSync = (from, to) => {
 };
 const renameAsync = fs.promises.rename;
 fs.promises.rename = async (from, to) => {
-  const publishing = String(to).includes(path.sep + '.hologram-inbox' + path.sep + 'new' + path.sep);
+  const publishing = String(to).includes(path.sep + '.dot-inbox' + path.sep + 'new' + path.sep);
   if (publishing) barrier('publish');
   if (publishing && process.env.RECOVERY_FAIL_PUBLISH) throw new Error('Injected publication failure');
   const result = await renameAsync(from, to);
@@ -90,7 +90,7 @@ fs.rmSync = (target, options) => {
 `;
 
 function fixture() {
-  const config = fs.mkdtempSync(path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'request-recovery-'));
+  const config = fs.mkdtempSync(path.join(process.env.DOT_CONFIG_DIR!, 'request-recovery-'));
   const folder = path.join(config, 'library');
   fs.mkdirSync(folder);
   fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ saveFolder: folder }));
@@ -100,7 +100,7 @@ function fixture() {
 }
 
 function startHost(f: ReturnType<typeof fixture>, req: unknown = request, env: Record<string, string> = {}) {
-  const child = spawn(process.execPath, ['--require', f.hook, path.resolve('native-host/bridge.mts')], { env: { ...process.env, HOLOGRAM_CONFIG_DIR: f.config, RECOVERY_FETCH_LOG: f.fetchLog, RECOVERY_BARRIER: f.barrier, RECOVERY_LIBRARY: f.folder, ...env }, stdio: ['pipe', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, ['--require', f.hook, path.resolve('native-host/bridge.mts')], { env: { ...process.env, DOT_CONFIG_DIR: f.config, RECOVERY_FETCH_LOG: f.fetchLog, RECOVERY_BARRIER: f.barrier, RECOVERY_LIBRARY: f.folder, ...env }, stdio: ['pipe', 'pipe', 'pipe'] });
   let output = Buffer.alloc(0);
   let stderr = '';
   child.stdout.on('data', (bytes) => {
@@ -144,7 +144,7 @@ async function stopHost(f: ReturnType<typeof fixture>, stage: string, req: unkno
 }
 
 function receiptDir(f: ReturnType<typeof fixture>) {
-  return path.join(f.folder, '.hologram-inbox', 'requests', id);
+  return path.join(f.folder, '.dot-inbox', 'requests', id);
 }
 
 function items(f: ReturnType<typeof fixture>) {
@@ -186,7 +186,7 @@ test.each(['saveMedia', 'savePost'])('照会後のライブラリ切替では%s�
   expect(await startHost(f, bound).response()).toMatchObject({ ok: false, code: 'library-changed' });
   expect(fs.readdirSync(other)).toEqual([]);
   expect(fs.existsSync(f.fetchLog)).toBe(false);
-  expect(fs.existsSync(path.join(f.folder, '.hologram-inbox'))).toBe(false);
+  expect(fs.existsSync(path.join(f.folder, '.dot-inbox'))).toBe(false);
   fs.writeFileSync(path.join(f.config, 'config.json'), JSON.stringify({ saveFolder: f.folder }));
   expect(await startHost(f, bound).response()).toMatchObject({ ok: true, saveFolder: f.folder });
 });
@@ -233,7 +233,7 @@ test.each(['completed', 'prepared'])('数値idを含む旧ハッシュの%s記�
     .update(JSON.stringify({ ...parsed.request, requestNonce: undefined }))
     .digest('hex');
   const root = receiptDir(f);
-  for (const file of [path.join(root, 'result.json'), path.join(root, 'output.json'), path.join(root, 'item', '.hologram-request-owner.json'), path.join(f.folder, 'items', id, '.hologram-request-owner.json')]) {
+  for (const file of [path.join(root, 'result.json'), path.join(root, 'output.json'), path.join(root, 'item', '.dot-request-owner.json'), path.join(f.folder, 'items', id, '.dot-request-owner.json')]) {
     if (!fs.existsSync(file)) continue;
     const value = JSON.parse(fs.readFileSync(file, 'utf8'));
     value.payloadHash = legacyHash;
@@ -254,7 +254,7 @@ test('束縛した要求は別ライブラリの同一IDの完了記録を採用
   fs.writeFileSync(path.join(f.config, 'config.json'), JSON.stringify({ saveFolder: other }));
   const otherRequest = { ...request, metadata: { url: 'https://x.com/u/status/2078680803660431999' } };
   expect(await startHost(f, otherRequest).response()).toMatchObject({ ok: true, saveFolder: other });
-  const result = path.join(other, '.hologram-inbox', 'requests', id, 'result.json');
+  const result = path.join(other, '.dot-inbox', 'requests', id, 'result.json');
   const original = fs.readFileSync(result);
   expect(await startHost(f, bound).response()).toMatchObject({ ok: false, code: 'library-changed' });
   expect(fs.readFileSync(result)).toEqual(original);
@@ -329,7 +329,7 @@ test('世代交代でreceiptのパスが空いても、三つの回収ホスト�
     expect(await startHost(f).response()).toMatchObject({ ok: true, captureId: id });
     expect(fs.readFileSync(f.fetchLog, 'utf8')).toBe(fetched);
     expect(items(f).sort()).toEqual([id, other.captureId]);
-    expect(fs.readdirSync(path.join(f.folder, '.hologram-inbox', 'new')).sort()).toEqual([`${id}.json`, `${other.captureId}.json`]);
+    expect(fs.readdirSync(path.join(f.folder, '.dot-inbox', 'new')).sort()).toEqual([`${id}.json`, `${other.captureId}.json`]);
   } finally {
     if (winner.child.exitCode === null && winner.child.signalCode === null) {
       winner.child.kill('SIGKILL');
@@ -357,10 +357,10 @@ test.each(['cafe', 'CAFE'])('旧v2の%s表記で作った排他を別表記の�
   const f = fixture();
   const originalId = `1789600000000-${suffix}`;
   const queryId = `1789600000000-${suffix === 'cafe' ? 'CAFE' : 'cafe'}`;
-  const dir = path.join(f.folder, '.hologram-inbox', 'requests', originalId);
+  const dir = path.join(f.folder, '.dot-inbox', 'requests', originalId);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'result.json'), JSON.stringify({ state: 'processing', ownerPid: process.pid, startedAt: Date.now(), lockVersion: 2, generation: 'legacy', requestNonce: nonce, payloadHash: 'a'.repeat(64) }));
-  const lockRoot = path.join(f.folder, '.hologram-inbox', 'request-locks');
+  const lockRoot = path.join(f.folder, '.dot-inbox', 'request-locks');
   fs.mkdirSync(lockRoot);
   const stripe = createHash('sha256').update(originalId).digest()[0].toString(16).padStart(2, '0');
   const lock = new DatabaseSync(path.join(lockRoot, `${stripe}.sqlite`));
@@ -416,7 +416,7 @@ test.each(['release', 'exit'])('同じ旧stripeの別投稿は所有者の%sま�
     const exact = process.platform === 'win32' || process.platform === 'linux';
     expect(await other.response()).toMatchObject(exact ? { ok: true, captureId: otherId } : { ok: false, code: 'request-in-progress' });
     expect(owner.child.exitCode).toBeNull();
-    expect(fs.existsSync(path.join(f.folder, '.hologram-inbox', 'new', `${otherId}.json`))).toBe(exact);
+    expect(fs.existsSync(path.join(f.folder, '.dot-inbox', 'new', `${otherId}.json`))).toBe(exact);
     if (finish === 'exit') {
       owner.child.kill('SIGKILL');
       await owner.closed;
@@ -425,7 +425,7 @@ test.each(['release', 'exit'])('同じ旧stripeの別投稿は所有者の%sま�
       expect(await owner.response()).toMatchObject({ ok: true, captureId: id });
     }
     if (!exact) expect(await startHost(f, post).response()).toMatchObject({ ok: true, captureId: otherId });
-    expect(fs.existsSync(path.join(f.folder, '.hologram-inbox', 'new', `${otherId}.json`))).toBe(true);
+    expect(fs.existsSync(path.join(f.folder, '.dot-inbox', 'new', `${otherId}.json`))).toBe(true);
     expect(fs.readFileSync(f.fetchLog, 'utf8')).toBe('fetch\n');
   } finally {
     for (const host of [owner, other])
@@ -458,7 +458,7 @@ test('媒体取得後に強制終了しても、実際に割り当てたsuffix�
   expect((await startHost(f).response()).ok).toBe(true);
   expect(fs.readdirSync(path.join(f.folder, 'items')).sort()).toEqual([id, `${id}-1`]);
   expect(fs.readFileSync(path.join(original, 'existing.png'), 'utf8')).toBe('既存の媒体');
-  expect(fs.readdirSync(path.join(f.folder, '.hologram-inbox', 'new'))).toEqual([`${id}-1.json`]);
+  expect(fs.readdirSync(path.join(f.folder, '.dot-inbox', 'new'))).toEqual([`${id}-1.json`]);
 });
 
 test('投稿の複数媒体を取得中に終了しても、旧世代を回収して一つの項目へ保存する', async () => {
@@ -490,7 +490,7 @@ test('元要求IDの別の公開済み項目を、suffix要求の保存結果と
   fs.mkdirSync(path.join(f.folder, 'items', id), { recursive: true });
   fs.writeFileSync(path.join(f.folder, 'items', id, 'old.png'), '元の媒体');
   await writeInboxEvent(f.folder, buildEnvelope(normalizePostRecord({ captureId: id, url: 'https://example.com/original', image: `items/${id}/old.png`, media: [{ url: 'https://example.com/old.png', file: `items/${id}/old.png` }] })));
-  const original = path.join(f.folder, '.hologram-inbox', 'new', `${id}.json`);
+  const original = path.join(f.folder, '.dot-inbox', 'new', `${id}.json`);
   const before = fs.readFileSync(original);
   await stopHost(f, 'publish');
   expect(await startHost(f).response()).toMatchObject({ ok: true, captureId: `${id}-1`, file: `items/${id}-1/${id}-1.png` });
@@ -509,7 +509,7 @@ test.each(['prepared', 'item', 'publish', 'commit', 'ack'])('%sで終了した�
   expect(fs.readFileSync(f.fetchLog, 'utf8')).toBe(fetched);
   expect(fs.readFileSync(file)).toEqual(before);
   expect(fs.readdirSync(path.join(f.folder, 'items'))).toEqual([id]);
-  expect(fs.readdirSync(path.join(f.folder, '.hologram-inbox', 'new'))).toEqual([`${id}.json`]);
+  expect(fs.readdirSync(path.join(f.folder, '.dot-inbox', 'new'))).toEqual([`${id}.json`]);
 });
 
 test('公開失敗の応答で媒体を削除せず、同じ公開を再試行できる', async () => {
@@ -526,7 +526,7 @@ test.each(['downloading', 'publishing'])('%sの耐久記録に失敗したら媒
   const f = fixture();
   expect(await startHost(f, request, { RECOVERY_FAIL_JOURNAL: phase }).response()).toMatchObject({ ok: false, code: 'save-failed' });
   expect(items(f)).toEqual([]);
-  expect(fs.existsSync(path.join(f.folder, '.hologram-inbox', 'new', `${id}.json`))).toBe(false);
+  expect(fs.existsSync(path.join(f.folder, '.dot-inbox', 'new', `${id}.json`))).toBe(false);
   expect(fs.existsSync(f.fetchLog)).toBe(phase === 'publishing');
 });
 
@@ -542,7 +542,7 @@ test('異なるエンベロープが同じ公開先に存在したら上書き�
   const f = fixture();
   await stopHost(f, 'publish');
   await writeInboxEvent(f.folder, buildEnvelope(normalizePostRecord({ captureId: id, text: '異なる内容' })));
-  const file = path.join(f.folder, '.hologram-inbox', 'new', `${id}.json`);
+  const file = path.join(f.folder, '.dot-inbox', 'new', `${id}.json`);
   const before = fs.readFileSync(file);
   expect(await startHost(f).response()).toMatchObject({ ok: false, code: 'request-in-progress' });
   expect(fs.readFileSync(file)).toEqual(before);
@@ -573,7 +573,7 @@ test('記録前の失敗と削除失敗が重なっても、次回の回復でst
 test('別ホストの持続照会ポートにも、公開回復後の保存済み状態を通知する', async () => {
   const f = fixture();
   await stopHost(f, 'publish');
-  const child = spawn(process.execPath, ['--require', f.hook, path.resolve('native-host/bridge.mts')], { env: { ...process.env, HOLOGRAM_CONFIG_DIR: f.config, RECOVERY_FETCH_LOG: f.fetchLog }, stdio: ['pipe', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, ['--require', f.hook, path.resolve('native-host/bridge.mts')], { env: { ...process.env, DOT_CONFIG_DIR: f.config, RECOVERY_FETCH_LOG: f.fetchLog }, stdio: ['pipe', 'pipe', 'pipe'] });
   const closed = new Promise<void>((resolve) => child.on('close', () => resolve()));
   let pending: ((response: any) => void) | null = null;
   let buffer = Buffer.alloc(0);
@@ -607,7 +607,7 @@ test('別ホストの持続照会ポートにも、公開回復後の保存済�
 test.each(['nonce', 'generation', 'live'])('%sが異なる保存の媒体を回収しない', async (kind) => {
   const f = fixture();
   await stopHost(f, 'download');
-  const marker = path.join(receiptDir(f), 'item', '.hologram-request-owner.json');
+  const marker = path.join(receiptDir(f), 'item', '.dot-request-owner.json');
   if (kind === 'generation') {
     const owner = JSON.parse(fs.readFileSync(marker, 'utf8'));
     fs.writeFileSync(marker, JSON.stringify({ ...owner, generation: 'b'.repeat(32) }));
@@ -644,11 +644,11 @@ test.each([false, true])(
       const record = normalizePostRecord({ captureId: `1789600000001-${n.toString(16).padStart(4, '0')}`, text: `圧縮の検証 ${n}` });
       await writeInboxEvent(f.folder, buildEnvelope(record));
     }
-    const db = openDatabase(path.join(f.folder, 'hologram.db'));
+    const db = openDatabase(path.join(f.folder, 'dot.db'));
     try {
       expect(drainInbox(f.folder, db.sqlite).skipped).toEqual([]);
       expect(compactInbox(f.folder, db.sqlite).compacted).toBe(true);
-      expect(fs.existsSync(path.join(f.folder, '.hologram-inbox', 'new', `${id}.json`))).toBe(false);
+      expect(fs.existsSync(path.join(f.folder, '.dot-inbox', 'new', `${id}.json`))).toBe(false);
       if (deleted) {
         db.sqlite.prepare('DELETE FROM posts WHERE captureId = ?').run(id);
         fs.rmSync(path.join(f.folder, 'items', id), { recursive: true });

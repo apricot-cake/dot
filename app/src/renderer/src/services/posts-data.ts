@@ -10,12 +10,12 @@
 // 書き換えの唯一の通り道（viewer.ts を参照）。本物の ES モジュール（名前付きの export）で、
 // 使う側（viewer.ts / sidebar.ts / image-tab.ts）が直接 import する。
 import { PostRecordInputSchema } from '../../../../../native-host/post-schemas.mts';
-let posts: HologramPost[] = [];
-const quoted = new Map<string, HologramPost>();
-export function getQuotedPost(id: string): HologramPost | undefined {
+let posts: DotPost[] = [];
+const quoted = new Map<string, DotPost>();
+export function getQuotedPost(id: string): DotPost | undefined {
   return quoted.get(id);
 }
-export function getQuotedPosts(): HologramPost[] {
+export function getQuotedPosts(): DotPost[] {
   return [...quoted.values()];
 }
 let generation = 0;
@@ -29,15 +29,15 @@ const notify = () => {
     }
   }
 };
-export function get(): HologramPost[] {
+export function get(): DotPost[] {
   return posts;
 }
-export function sync(next: HologramPost[]): void {
+export function sync(next: DotPost[]): void {
   posts = next;
   quoted.clear();
   for (const p of next) {
     const q = p.quotedPost;
-    if (q?.captureId) quoted.set(q.captureId, { ...PostRecordInputSchema.parse({ ...q, platform: p.platform, captureId: q.captureId }), capturedAt: p.capturedAt, updatedAt: p.updatedAt, tagIds: [] } as HologramPost);
+    if (q?.captureId) quoted.set(q.captureId, { ...PostRecordInputSchema.parse({ ...q, platform: p.platform, captureId: q.captureId }), capturedAt: p.capturedAt, updatedAt: p.updatedAt, tagIds: [] } as DotPost);
   }
   generation++;
   notify();

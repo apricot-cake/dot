@@ -2,12 +2,12 @@
 // ゴミ箱）に対する、命令形→宣言形のブリッジ。orchestrator.ts がデータ
 // パイプラインを持ち、セル上のジェスチャーが何をするかを供給する
 // （configureActions）。グリッドのコンポーネントはセルの描画とウィンドウ
-// イング（masonic）を持つ。modelOf/keyOf に限っては hologramStore とは
+// イング（masonic）を持つ。modelOf/keyOf に限っては dotStore とは
 // 別に持っている＝これらがコールバックを運ぶため（menu.js/qf-pop.js と同じ
-// 理由）――それ以外（items、レイアウトの入力）は hologramStore に本当に
+// 理由）――それ以外（items、レイアウトの入力）は dotStore に本当に
 // 住んでいて、これらのソースはモデルの残りをそこから導出する。今は本物の
 // ES モジュールで、その export は viewer.ts とグリッドコンポーネントから
-// 直接 import される。hologramStore 自体も本物の ES モジュール（store.ts）。
+// 直接 import される。dotStore 自体も本物の ES モジュール（store.ts）。
 
 import { currentPosterShape, currentShape, DISPLAY_KEYS, POST_GUTTER, POSTER_DISPLAY_KEYS, posterGutterFor } from './display.ts';
 import type { DisplayShape, PosterShape } from './display.ts';
@@ -16,7 +16,7 @@ import type { ZoomAnchor } from './zoom-anchor.ts';
 //
 // 両方のグリッド（post と poster）は、push されるブリッジ（viewer が完全な
 // モデルを添えて render()/patch() を呼ぶ）から、pull されるソース（viewer は
-// items/layout を hologramStore に書き込むだけで、ソースが get() のたびに
+// items/layout を dotStore に書き込むだけで、ソースが get() のたびに
 // 残りを導出する）へ変換された。GridMount（_shared/VirtualGrid.tsx）は自分の
 // ブリッジ prop に対して .get()/.subscribe() しか呼ばない――
 // render()/patch()/isActive() は決して呼んでおらず、それらは viewer 専用の
@@ -64,8 +64,8 @@ function postLayout(shape: DisplayShape, gridSize: number) {
 
 function makePostGridSource() {
   let config: PostGridConfig | null = null;
-  let actions: HologramCardActions | undefined; // セル上のジェスチャーが何をするか（orchestrator.ts が埋める）
-  let liveColumnWidth: number | null = null; // ドラッグ中の一時的な上書き。意図して hologramStore には置かない（その型の doc コメント参照）
+  let actions: DotCardActions | undefined; // セル上のジェスチャーが何をするか（orchestrator.ts が埋める）
+  let liveColumnWidth: number | null = null; // ドラッグ中の一時的な上書き。意図して dotStore には置かない（その型の doc コメント参照）
   let zoomAnchor: ZoomAnchor | null = null; // Ctrl+ホイールズームが保持したい位置（#282）＝liveColumnWidth と同じ側路
   let lastItems: any;
   let lastItemKeys: (string | number | null | undefined)[] = [];
@@ -83,13 +83,13 @@ function makePostGridSource() {
   };
   // ストアのキーへのリスナーは（subscribe() の呼び出しごとにではなく）一度
   // だけ配線する――実際には利用側は GridMount 1つだけだが、これは万一それが
-  // 変わったときに hologramStore への購読（と notify() のファンアウト）が
+  // 変わったときに dotStore への購読（と notify() のファンアウト）が
   // 重複して積み上がるのを避ける。'browseMode' がこの一覧にあるのはタイム
   // ラインのため（#183）: 下のレイアウト分岐がそれを直接読み、モード切替
   // だけ（表示軸やサイズの変化を伴わない）でも新しいレイアウトで再描画され
   // なければならないから。
   subscribeKeys(['postGroups', ...DISPLAY_KEYS, 'gridSize', 'browseMode'], notify);
-  function computeModel(): HologramGridModel | null {
+  function computeModel(): DotGridModel | null {
     if (!config) return null;
     const items = store.getState().postGroups;
     if (items == null) return null; // undefined（まだ何も描画されていない）または明示的な null（グリッドが空）
@@ -121,13 +121,13 @@ function makePostGridSource() {
       // を意味しない――itemsKey の更新ではそれをカバーできない。2回目の
       // パスは `items` をそのままにして範囲だけを動かすため。）
       paint: ++paintSeq,
-    } as HologramGridModel;
+    } as DotGridModel;
   }
   return {
     configure(cfg: PostGridConfig) {
       config = cfg;
     },
-    configureActions(a: HologramCardActions) {
+    configureActions(a: DotCardActions) {
       actions = a;
     },
     setLiveColumnWidth(px: number | null) {
@@ -151,7 +151,7 @@ function makePostGridSource() {
     },
   };
 }
-export const hologramPostGridSource = makePostGridSource();
+export const dotPostGridSource = makePostGridSource();
 
 function posterLayout(shape: PosterShape, gridSize: number) {
   const infoBlock = 78; // 名前／ハンドル／プラットフォーム＋件数ブロックのおおよその高さ
@@ -167,15 +167,15 @@ function posterLayout(shape: PosterShape, gridSize: number) {
 // poster グリッドのモデルソース: post 側のソースと同じ形から、onAspect
 // （ポスターのアバターは学習済みアスペクト比を報告しない）とドラッグ中の
 // 一時的な上書きを引いたもの――ポスターのサイズスライダーはすでに 'input'
-// のティックごとに hologramIpc.setPref をコミットしている
+// のティックごとに dotIpc.setPref をコミットしている
 // （services/orchestrator.ts の setupPosterSizeSlider は post 側のスライダー
-// のようなドラッグ中／コミットの分離を持たない）ので、hologramStore への
+// のようなドラッグ中／コミットの分離を持たない）ので、dotStore への
 // 書き込みもティックごとに行っても新たなコストにはならない。get() は
 // 他のすべてのレイアウト入力と同様、確定済みの値をストアからそのまま
 // 読むだけ。
 function makePosterGridSource() {
   let config: PosterGridConfig | null = null;
-  let actions: HologramCardActions | undefined;
+  let actions: DotCardActions | undefined;
   let revealKey: string | number | null = null;
   let revealSeq = 0;
   let lastItems: any;
@@ -192,7 +192,7 @@ function makePosterGridSource() {
     }
   };
   subscribeKeys(['posterGroups', ...POSTER_DISPLAY_KEYS, 'posterGridSize'], notify);
-  function computeModel(): HologramGridModel | null {
+  function computeModel(): DotGridModel | null {
     if (!config) return null;
     const items = store.getState().posterGroups;
     if (items == null) return null; // 最初の renderPosters() までは undefined。以降は常に配列（空のこともある）で、明示的に null へクリアされることはない（posts と違い、poster には保つべき innerHTML クリアの順序制約が無い）
@@ -210,13 +210,13 @@ function makePosterGridSource() {
       revealIndex: revealKey == null ? null : items.findIndex((item, index) => config?.keyOf(item, index) === revealKey),
       revealSeq,
       paint: ++paintSeq,
-    } as HologramGridModel;
+    } as DotGridModel;
   }
   return {
     configure(cfg: PosterGridConfig) {
       config = cfg;
     },
-    configureActions(a: HologramCardActions) {
+    configureActions(a: DotCardActions) {
       actions = a;
     },
     reveal(key: string | number) {
@@ -231,7 +231,7 @@ function makePosterGridSource() {
     },
   };
 }
-export const hologramPosterGridSource = makePosterGridSource();
+export const dotPosterGridSource = makePosterGridSource();
 
 // ゴミ箱グリッドのモデルソース（#268）――ゴミ箱の行き先はライブラリと同じ
 // カードを描くので、post 側の modelOf/keyOf/labels をそのまま取り
@@ -244,7 +244,7 @@ export const hologramPosterGridSource = makePosterGridSource();
 // サイズスライダーのドラッグ中はホームと同じく列幅だけを一時的に上書きする。
 function makeTrashGridSource() {
   let config: TrashGridConfig | null = null;
-  let actions: HologramCardActions | undefined;
+  let actions: DotCardActions | undefined;
   let liveColumnWidth: number | null = null;
   let lastItems: any;
   let itemsKeySeq = 0;
@@ -260,7 +260,7 @@ function makeTrashGridSource() {
     }
   };
   subscribeKeys(['trashGroups', ...DISPLAY_KEYS, 'gridSize'], notify);
-  function computeModel(): HologramGridModel | null {
+  function computeModel(): DotGridModel | null {
     if (!config) return null;
     const items = store.getState().trashGroups;
     if (items == null) return null; // undefined（一度も読み込んでいない）または明示的な null（ゴミ箱が空）
@@ -279,13 +279,13 @@ function makeTrashGridSource() {
       cardActions: actions,
       columnWidth: liveColumnWidth ?? layout.columnWidth,
       paint: ++paintSeq,
-    } as HologramGridModel;
+    } as DotGridModel;
   }
   return {
     configure(cfg: TrashGridConfig) {
       config = cfg;
     },
-    configureActions(a: HologramCardActions) {
+    configureActions(a: DotCardActions) {
       actions = a;
     },
     setLiveColumnWidth(px: number | null) {
@@ -299,4 +299,4 @@ function makeTrashGridSource() {
     },
   };
 }
-export const hologramTrashGridSource = makeTrashGridSource();
+export const dotTrashGridSource = makeTrashGridSource();

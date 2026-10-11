@@ -83,7 +83,7 @@ export function mount(canvas: HTMLCanvasElement | null): { destroy(): void } {
   const cv: HTMLCanvasElement = canvas;
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // WebGL のコンテキスト／プログラム／uniform の位置の一式は、この閉包の私的なもの
-  // （HologramAboutIcon.mount() の destroy() の面より外へ出ることはない）なので、`any` が
+  // （DotAboutIcon.mount() の destroy() の面より外へ出ることはない）なので、`any` が
   // 現実的な型＝app/src/main/index.ts のタイマーの変数と同じ判断で、互いに再帰するこれらの
   // 閉包すべてに本物の null 絞りを通しても、呼び出し側のいない儀式にしかならない。
   let gl: any = null,

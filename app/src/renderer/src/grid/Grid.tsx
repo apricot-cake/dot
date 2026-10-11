@@ -14,7 +14,7 @@ import { store, subscribeKey } from '../services/store.ts';
 
 // modelOf() は描画のたびに生きている viewer の状態を読み直すので、供給側の描き直しで
 // 見えているセルが更新される。詳細表示のリングと選択はそのクロージャ読みのモデルには
-// 入っていない＝どちらも hologramStore から直に導く（'inspectedKey' / 'selectedSet' の
+// 入っていない＝どちらも dotStore から直に導く（'inspectedKey' / 'selectedSet' の
 // 本物の購読）ので、インスペクタを開いても選択を切り替えても、描き直しなしで当該のセルが
 // 再描画される。
 const subInspected = (cb: () => void) => subscribeKey('inspectedKey', cb);
@@ -26,7 +26,7 @@ export function PostCell({ index, data }: GridCellProps) {
   const model = useGridModel();
   const inspectedKey = useSyncExternalStore(subInspected, getInspected);
   const selectedSet = useSyncExternalStore(subSelected, getSelected);
-  const shape = model.shape as HologramGridModel['shape'];
+  const shape = model.shape as DotGridModel['shape'];
   const m = model.modelOf(data, index);
   m.inspected = inspectedKey != null && !!model.keyOf && model.keyOf(data, index) === inspectedKey;
   m.selected = selectedSet.has(m.postKey);
@@ -35,7 +35,7 @@ export function PostCell({ index, data }: GridCellProps) {
 
 const onBackgroundClick = () => selectionClickBackground();
 
-export function GridHost({ model }: { model: HologramGridModel }) {
+export function GridHost({ model }: { model: DotGridModel }) {
   // nav: 選択が動き回るのはこのグリッドなので、列数とスクロールの幾何を
   // services/grid-nav.ts へ公開する（投稿者グリッドは選択を持たない）。
   // anchor: そして Ctrl+ホイールのズームが位置を保つのもこのグリッド（#282）＝投稿者

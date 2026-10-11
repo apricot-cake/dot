@@ -10,8 +10,8 @@ let folder: string, db: ReturnType<typeof openDatabase>['sqlite'];
 const id = 'repair-post',
   names = ['image.png', 'video.mp4', 'avatar.png', 'poster.png', 'thumbnail.png'];
 beforeEach(() => {
-  folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-item-reference-repair-'));
-  db = openDatabase(path.join(folder, 'hologram.db')).sqlite;
+  folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-item-reference-repair-'));
+  db = openDatabase(path.join(folder, 'dot.db')).sqlite;
   db.prepare('INSERT INTO posts(captureId,capturedAt,updatedAt,image,video,avatarFile,linkCard,localViewCount,tagReviewed) VALUES(?,?,?,?,?,?,?,?,?)').run(id, '2026-01-01', '2026-01-01', names[0], names[1], names[2], JSON.stringify({ url: 'https://example.test', thumbnailFile: names[4] }), 7, 1);
   db.prepare('INSERT INTO media(postId,seq,file,posterFile,frames,rotation) VALUES(?,?,?,?,?,?)').run(id, 0, names[0], names[3], JSON.stringify({ file: 'frames.zip' }), 90);
   for (const name of names) {

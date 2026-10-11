@@ -13,7 +13,7 @@ let directory: string;
 let safeOutput: string;
 beforeEach(async () => {
   vi.clearAllMocks();
-  directory = await fs.mkdtemp(path.join(os.tmpdir(), 'hologram-ugoira-safe-frame-'));
+  directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-ugoira-safe-frame-'));
   safeOutput = path.join(directory, 'safe.png');
   await fs.writeFile(safeOutput, 'safe-frame-output');
   mocks.frame.mockResolvedValue(Buffer.from('untrusted-frame-input'));

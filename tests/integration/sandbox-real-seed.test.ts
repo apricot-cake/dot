@@ -71,9 +71,9 @@ function hashTree(dir: string): string {
 }
 
 // このマシンの実ライブラリを合成で置き換えたもの。マシン固有の設定を持つ config ディレクトリと、
-// hologram.db（#176）とレコードが参照するメディアを持つ保存フォルダから成る。
+// dot.db（#176）とレコードが参照するメディアを持つ保存フォルダから成る。
 function buildRealLibrary() {
-  const root = mkdir('hologram-real-');
+  const root = mkdir('dot-real-');
   const configDir = path.join(root, 'config');
   const saveFolder = path.join(root, 'library');
   fs.mkdirSync(configDir, { recursive: true });
@@ -145,7 +145,7 @@ function buildRealLibrary() {
 function expectFailedSeedWasRemoved(sandboxRoot: string) {
   expect(fs.existsSync(path.join(sandboxRoot, 'library'))).toBe(false);
   expect(fs.existsSync(path.join(sandboxRoot, 'config', 'config.json'))).toBe(false);
-  expect(fs.readdirSync(sandboxRoot).filter((name) => name.startsWith('.hologram-real-seed-'))).toEqual([]);
+  expect(fs.readdirSync(sandboxRoot).filter((name) => name.startsWith('.dot-real-seed-'))).toEqual([]);
   if (fs.existsSync(path.join(sandboxRoot, 'config'))) {
     expect(fs.readdirSync(path.join(sandboxRoot, 'config')).filter((name) => name.startsWith('.config.real-seed-'))).toEqual([]);
   }
@@ -185,7 +185,7 @@ describe('実ライブラリからのシード', () => {
   beforeAll(async () => {
     real = buildRealLibrary();
     realHashBefore = hashTree(real.root);
-    sandboxRoot = mkdir('hologram-sandbox-');
+    sandboxRoot = mkdir('dot-sandbox-');
     sandboxConfig = path.join(sandboxRoot, 'config');
     sandboxLibrary = path.join(sandboxRoot, 'library');
     report = await seedRealSandbox({
@@ -197,7 +197,7 @@ describe('実ライブラリからのシード', () => {
   });
 
   test('スナップショットが全投稿を持つ（backup API 経由）', () => {
-    const dbFile = path.join(sandboxLibrary, 'hologram.db');
+    const dbFile = path.join(sandboxLibrary, 'dot.db');
     expect(fs.existsSync(dbFile)).toBe(true);
     const { sqlite } = openDatabase(dbFile, { readonly: true });
     expect((sqlite.prepare('SELECT count(*) c FROM posts').get() as any).c).toBe(3);
@@ -247,7 +247,7 @@ describe('実ライブラリからのシード', () => {
 
   test('隔離チェックが通る', () => {
     const res = verifyIsolation({
-      dbFile: path.join(sandboxLibrary, 'hologram.db'),
+      dbFile: path.join(sandboxLibrary, 'dot.db'),
       configPath: path.join(sandboxConfig, 'config.json'),
       sandboxLibrary,
       realConfigDir: real.configDir,
@@ -262,7 +262,7 @@ describe('実ライブラリからのシード', () => {
 describe('生成 staging の durable flush', () => {
   test('capture media を staging へコピーする前に ownership receipt が存在する', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-sandbox-receipt-before-copy-');
+    const root = mkdir('dot-sandbox-receipt-before-copy-');
     const receipt = path.join(root, 'receipt.json');
     const originalCopy = fs.copyFileSync;
     let observed = false;
@@ -291,7 +291,7 @@ describe('生成 staging の durable flush', () => {
   test('生成物だけを書き込み可能 handle で開き、実 source は変更しない', async () => {
     const real = buildRealLibrary();
     const realHashBefore = hashTree(real.root);
-    const sandboxRoot = mkdir('hologram-sandbox-flush-');
+    const sandboxRoot = mkdir('dot-sandbox-flush-');
     const opened: Array<{ file: string; flags: string }> = [];
     const originalOpen = fs.openSync;
     vi.spyOn(fs, 'openSync').mockImplementation(((file: fs.PathLike, flags: fs.OpenMode, ...args: any[]) => {
@@ -324,7 +324,7 @@ describe('生成 staging の durable flush', () => {
     fs.chmodSync(sourceMedia, 0o444);
     const sourceBytes = fs.readFileSync(sourceMedia);
     const sourceMode = fs.statSync(sourceMedia).mode & 0o777;
-    const sandboxRoot = mkdir('hologram-sandbox-readonly-copy-');
+    const sandboxRoot = mkdir('dot-sandbox-readonly-copy-');
     const sandboxLibrary = path.join(sandboxRoot, 'library');
 
     try {
@@ -349,9 +349,9 @@ describe('生成 staging の durable flush', () => {
   test.each([false, true])('supported directory fsyncでlibrary rename直後の失敗をrollbackする（metadata=%s）', async (withMetadata) => {
     const real = buildRealLibrary();
     const sourceHash = hashTree(real.root);
-    const root = mkdir(`hologram-sandbox-publish-sync-${withMetadata ? 'pair' : 'none'}-`);
+    const root = mkdir(`dot-sandbox-publish-sync-${withMetadata ? 'pair' : 'none'}-`);
     const library = path.join(root, 'library');
-    const probe = path.join(mkdir('hologram-directory-fsync-probe-'), 'probe');
+    const probe = path.join(mkdir('dot-directory-fsync-probe-'), 'probe');
     fs.writeFileSync(probe, 'probe');
     const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform') as PropertyDescriptor;
     Object.defineProperty(process, 'platform', { ...platformDescriptor, value: 'linux' });
@@ -389,7 +389,7 @@ describe('生成 staging の durable flush', () => {
   test.each([false, true])('Windows directory fsync非対応では警告して正常publishする（metadata=%s）', async (withMetadata) => {
     const real = buildRealLibrary();
     const sourceHash = hashTree(real.root);
-    const root = mkdir(`hologram-sandbox-windows-sync-${withMetadata ? 'pair' : 'none'}-`);
+    const root = mkdir(`dot-sandbox-windows-sync-${withMetadata ? 'pair' : 'none'}-`);
     const logs: string[] = [];
     const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform') as PropertyDescriptor;
     Object.defineProperty(process, 'platform', { ...platformDescriptor, value: 'win32' });
@@ -405,7 +405,7 @@ describe('生成 staging の durable flush', () => {
     } finally {
       Object.defineProperty(process, 'platform', platformDescriptor);
     }
-    expect(fs.existsSync(path.join(root, 'library', 'hologram.db'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'library', 'dot.db'))).toBe(true);
     expect(logs.some((message) => message.includes('directory fsync を提供しない'))).toBe(true);
     expect(hashTree(real.root)).toBe(sourceHash);
   });
@@ -414,7 +414,7 @@ describe('生成 staging の durable flush', () => {
 describe('隔離チェックは実パスの残留を捕まえる', () => {
   test('config が実ライブラリを指していれば落ちる', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-sandbox-bad-');
+    const sandboxRoot = mkdir('dot-sandbox-bad-');
     const sandboxConfig = path.join(sandboxRoot, 'config');
     const sandboxLibrary = path.join(sandboxRoot, 'library');
     await seedRealSandbox({ realConfigDir: real.configDir, realSaveFolder: real.saveFolder, sandboxConfigDir: sandboxConfig, sandboxLibrary });
@@ -422,7 +422,7 @@ describe('隔離チェックは実パスの残留を捕まえる', () => {
     // 種を蒔いたあとで config を実ライブラリへ向け直す＝この状態で起動すると実ライブラリへ書く。
     fs.writeFileSync(path.join(sandboxConfig, 'config.json'), JSON.stringify({ saveFolder: real.saveFolder }));
     const res = verifyIsolation({
-      dbFile: path.join(sandboxLibrary, 'hologram.db'),
+      dbFile: path.join(sandboxLibrary, 'dot.db'),
       configPath: path.join(sandboxConfig, 'config.json'),
       sandboxLibrary,
       realConfigDir: real.configDir,
@@ -434,12 +434,12 @@ describe('隔離チェックは実パスの残留を捕まえる', () => {
 
   test('スナップショットに絶対パスが入っていれば落ちる', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-sandbox-abs-');
+    const sandboxRoot = mkdir('dot-sandbox-abs-');
     const sandboxConfig = path.join(sandboxRoot, 'config');
     const sandboxLibrary = path.join(sandboxRoot, 'library');
     await seedRealSandbox({ realConfigDir: real.configDir, realSaveFolder: real.saveFolder, sandboxConfigDir: sandboxConfig, sandboxLibrary });
 
-    const dbFile = path.join(sandboxLibrary, 'hologram.db');
+    const dbFile = path.join(sandboxLibrary, 'dot.db');
     const { sqlite } = openDatabase(dbFile);
     // 実ライブラリの絶対パスを DB へ忍び込ませる（将来そういう列が足されても捕まえられる）。
     sqlite.prepare('UPDATE posts SET text = ? WHERE captureId = ?').run(path.join(real.saveFolder, 'x.jpg'), '1780000000000-a001');
@@ -454,10 +454,10 @@ describe('隔離チェックは実パスの残留を捕まえる', () => {
 describe('失敗した実データシードを次回の sandbox から隔離する', () => {
   test('隔離検査 ok:false なら生成途中の snapshot/config/メディアをすべて撤去する', async () => {
     const real = buildRealLibrary();
-    const { sqlite } = openDatabase(path.join(real.saveFolder, 'hologram.db'));
+    const { sqlite } = openDatabase(path.join(real.saveFolder, 'dot.db'));
     sqlite.prepare('UPDATE posts SET text = ? WHERE captureId = ?').run(real.saveFolder, '1780000000000-a001');
     sqlite.close();
-    const sandboxRoot = mkdir('hologram-seed-false-');
+    const sandboxRoot = mkdir('dot-seed-false-');
 
     await expect(seedInto(real, sandboxRoot)).rejects.toThrow(/分離検証に失敗/);
     expectFailedSeedWasRemoved(sandboxRoot);
@@ -465,8 +465,8 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('DB snapshot 作成失敗でも生成物を残さない', async () => {
     const real = buildRealLibrary();
-    fs.rmSync(path.join(real.saveFolder, 'hologram.db'));
-    const sandboxRoot = mkdir('hologram-seed-db-');
+    fs.rmSync(path.join(real.saveFolder, 'dot.db'));
+    const sandboxRoot = mkdir('dot-seed-db-');
 
     await expect(seedInto(real, sandboxRoot)).rejects.toThrow(/データベースが見つからない/);
     expectFailedSeedWasRemoved(sandboxRoot);
@@ -474,10 +474,10 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('DB 読み取り失敗でも生成物を残さない', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-seed-read-');
+    const sandboxRoot = mkdir('dot-seed-read-');
     const originalRead = fs.readFileSync;
     vi.spyOn(fs, 'readFileSync').mockImplementation(((file: fs.PathOrFileDescriptor, ...args: any[]) => {
-      if (String(file).includes('.hologram-real-seed-') && String(file).endsWith('hologram.db')) throw new Error('injected read failure');
+      if (String(file).includes('.dot-real-seed-') && String(file).endsWith('dot.db')) throw new Error('injected read failure');
       return originalRead(file, ...(args as any));
     }) as typeof fs.readFileSync);
     try {
@@ -490,10 +490,10 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('DB query throw でも生成物を残さない', async () => {
     const real = buildRealLibrary();
-    const { sqlite } = openDatabase(path.join(real.saveFolder, 'hologram.db'));
+    const { sqlite } = openDatabase(path.join(real.saveFolder, 'dot.db'));
     sqlite.exec('DROP TABLE media');
     sqlite.close();
-    const sandboxRoot = mkdir('hologram-seed-query-');
+    const sandboxRoot = mkdir('dot-seed-query-');
 
     await expect(seedInto(real, sandboxRoot)).rejects.toThrow(/media/);
     expectFailedSeedWasRemoved(sandboxRoot);
@@ -502,7 +502,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   test('実メディア copy 失敗でも生成物と source を消さない', async () => {
     const real = buildRealLibrary();
     const realHashBefore = hashTree(real.root);
-    const sandboxRoot = mkdir('hologram-seed-copy-');
+    const sandboxRoot = mkdir('dot-seed-copy-');
     vi.spyOn(fs, 'copyFileSync').mockImplementation(() => {
       throw new Error('injected copy failure');
     });
@@ -517,7 +517,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('config 書き込み失敗でも生成物を残さない', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-seed-config-');
+    const sandboxRoot = mkdir('dot-seed-config-');
     const originalWrite = fs.writeFileSync;
     vi.spyOn(fs, 'writeFileSync').mockImplementation(((file: fs.PathOrFileDescriptor, ...args: any[]) => {
       if (String(file).includes('.config.real-seed-')) throw new Error('injected config failure');
@@ -547,7 +547,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('marker rename と config cleanup が失敗しても receipt を残して fail closed にする', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-seed-config-publish-');
+    const sandboxRoot = mkdir('dot-seed-config-publish-');
     const configPath = path.join(sandboxRoot, 'config', 'config.json');
     const markerPath = path.join(sandboxRoot, 'seed.json');
     const receiptPath = path.join(sandboxRoot, 'receipt.json');
@@ -582,7 +582,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('公開 library の逆 rename が失敗したら実DBと receipt を保持して fail closed にする', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-seed-library-publish-');
+    const sandboxRoot = mkdir('dot-seed-library-publish-');
     const library = path.join(sandboxRoot, 'library');
     const configPath = path.join(sandboxRoot, 'config', 'config.json');
     const receiptPath = path.join(sandboxRoot, 'receipt.json');
@@ -606,14 +606,14 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
     } finally {
       vi.restoreAllMocks();
     }
-    expect(fs.existsSync(path.join(library, 'hologram.db'))).toBe(true);
+    expect(fs.existsSync(path.join(library, 'dot.db'))).toBe(true);
     expect(fs.existsSync(receiptPath)).toBe(true);
     expect(() => assertRealSeedPublishComplete(receiptPath)).toThrow(/起動を拒否/);
   });
 
   test('library rollback 後の staging cleanup が失敗しても receipt を保持して次回回復できる', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-rollback-cleanup-');
+    const root = mkdir('dot-seed-rollback-cleanup-');
     const library = path.join(root, 'library');
     const configDir = path.join(root, 'config');
     const config = path.join(configDir, 'config.json');
@@ -626,7 +626,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
       return originalRename(oldPath, newPath);
     }) as typeof fs.renameSync);
     vi.spyOn(fs, 'rmSync').mockImplementation(((target: fs.PathLike, options?: fs.RmDirOptions) => {
-      if (String(target).includes('.hologram-real-seed-')) throw new Error('injected rolled-back staging lock');
+      if (String(target).includes('.dot-real-seed-')) throw new Error('injected rolled-back staging lock');
       return originalRm(target, options);
     }) as typeof fs.rmSync);
     try {
@@ -635,7 +635,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
       vi.restoreAllMocks();
     }
     expect(fs.existsSync(receipt)).toBe(true);
-    const owned = fs.readdirSync(root).find((name) => name.startsWith('.hologram-real-seed-'));
+    const owned = fs.readdirSync(root).find((name) => name.startsWith('.dot-real-seed-'));
     expect(owned).toBeTruthy();
     recoverRealSeedAttempt(receipt, { library, config, marker });
     expect(fs.existsSync(receipt)).toBe(false);
@@ -643,17 +643,17 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('rollback直後の中断fixtureは receipt から staging を回復できる', () => {
-    const root = mkdir('hologram-seed-rollback-interrupt-');
+    const root = mkdir('dot-seed-rollback-interrupt-');
     const attemptId = 'd'.repeat(32);
     const library = path.join(root, 'library');
     const config = path.join(root, 'config', 'config.json');
     const marker = path.join(root, 'seed.json');
     const receipt = path.join(root, 'receipt.json');
-    const stagingLibrary = path.join(root, `.hologram-real-seed-${attemptId}`);
+    const stagingLibrary = path.join(root, `.dot-real-seed-${attemptId}`);
     const stagingConfig = path.join(root, 'config', `.config.real-seed-${attemptId}.json`);
     const stagingMarker = `${marker}.real-seed-${attemptId}`;
     fs.mkdirSync(stagingLibrary);
-    fs.writeFileSync(path.join(stagingLibrary, 'hologram.db'), 'fake real snapshot');
+    fs.writeFileSync(path.join(stagingLibrary, 'dot.db'), 'fake real snapshot');
     fs.mkdirSync(path.dirname(stagingConfig));
     fs.writeFileSync(receipt, JSON.stringify({ version: 1, state: 'preparing', attemptId, library, config, marker, stagingLibrary, stagingConfig, stagingMarker }));
     recoverRealSeedAttempt(receipt, { library, config, marker });
@@ -662,14 +662,14 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('reseed final library 削除失敗では receipt を保持し通常起動を拒否して再試行できる', () => {
-    const root = mkdir('hologram-seed-wipe-library-failure-');
+    const root = mkdir('dot-seed-wipe-library-failure-');
     const library = path.join(root, 'library');
     const config = path.join(root, 'config', 'config.json');
     const marker = path.join(root, 'seed.json');
     const receipt = path.join(root, 'receipt.json');
     fs.mkdirSync(library);
     fs.mkdirSync(path.dirname(config));
-    fs.writeFileSync(path.join(library, 'hologram.db'), 'fake real db');
+    fs.writeFileSync(path.join(library, 'dot.db'), 'fake real db');
     fs.writeFileSync(config, JSON.stringify({ saveFolder: library }));
     fs.writeFileSync(marker, JSON.stringify({ mode: 'real' }));
     const originalRm = fs.rmSync;
@@ -683,7 +683,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
       vi.restoreAllMocks();
     }
     expect(fs.existsSync(receipt)).toBe(true);
-    expect(fs.existsSync(path.join(library, 'hologram.db'))).toBe(true);
+    expect(fs.existsSync(path.join(library, 'dot.db'))).toBe(true);
     expect(() => assertSandboxSeedProvenance({ receiptPath: receipt, markerPath: marker, library })).toThrow(/起動を拒否/);
 
     wipeSandboxSeed({ receiptPath: receipt, library, config, marker });
@@ -692,14 +692,14 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('reseed final 撤去途中の失敗でも各cleanupを試しreceiptを保持する', () => {
-    const root = mkdir('hologram-seed-wipe-interrupted-');
+    const root = mkdir('dot-seed-wipe-interrupted-');
     const library = path.join(root, 'library');
     const config = path.join(root, 'config', 'config.json');
     const marker = path.join(root, 'seed.json');
     const receipt = path.join(root, 'receipt.json');
     fs.mkdirSync(library);
     fs.mkdirSync(path.dirname(config));
-    fs.writeFileSync(path.join(library, 'hologram.db'), 'fake real db');
+    fs.writeFileSync(path.join(library, 'dot.db'), 'fake real db');
     fs.writeFileSync(config, JSON.stringify({ saveFolder: library }));
     fs.writeFileSync(marker, JSON.stringify({ mode: 'real' }));
     const originalRm = fs.rmSync;
@@ -723,14 +723,14 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('reseed final 全撤去と同期の完了後だけreceiptを解除する', () => {
-    const root = mkdir('hologram-seed-wipe-success-');
+    const root = mkdir('dot-seed-wipe-success-');
     const library = path.join(root, 'library');
     const config = path.join(root, 'config', 'config.json');
     const marker = path.join(root, 'seed.json');
     const receipt = path.join(root, 'receipt.json');
     fs.mkdirSync(library);
     fs.mkdirSync(path.dirname(config));
-    fs.writeFileSync(path.join(library, 'hologram.db'), 'fake real db');
+    fs.writeFileSync(path.join(library, 'dot.db'), 'fake real db');
     fs.writeFileSync(config, JSON.stringify({ saveFolder: library }));
     fs.writeFileSync(marker, JSON.stringify({ mode: 'real' }));
     wipeSandboxSeed({ receiptPath: receipt, library, config, marker });
@@ -741,15 +741,15 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('公開途中の中断 receipt は次回起動を拒否し、成功 marker 完成後は許可する', async () => {
-    const interruptedRoot = mkdir('hologram-seed-interrupted-');
+    const interruptedRoot = mkdir('dot-seed-interrupted-');
     const interruptedReceipt = path.join(interruptedRoot, 'receipt.json');
     fs.writeFileSync(interruptedReceipt, JSON.stringify({ state: 'publishing' }));
     fs.mkdirSync(path.join(interruptedRoot, 'library'));
-    fs.writeFileSync(path.join(interruptedRoot, 'library', 'hologram.db'), 'fake private db');
+    fs.writeFileSync(path.join(interruptedRoot, 'library', 'dot.db'), 'fake private db');
     expect(() => assertRealSeedPublishComplete(interruptedReceipt)).toThrow(/起動を拒否/);
 
     const real = buildRealLibrary();
-    const successRoot = mkdir('hologram-seed-success-receipt-');
+    const successRoot = mkdir('dot-seed-success-receipt-');
     const successReceipt = path.join(successRoot, 'receipt.json');
     const marker = path.join(successRoot, 'seed.json');
     await seedRealSandbox({
@@ -767,7 +767,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('junction 相当の生成先でも source を保持する', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-seed-link-');
+    const sandboxRoot = mkdir('dot-seed-link-');
     const linkedLibrary = path.join(sandboxRoot, 'linked-library');
     fs.symlinkSync(real.saveFolder, linkedLibrary, process.platform === 'win32' ? 'junction' : 'dir');
     const before = hashTree(real.root);
@@ -785,16 +785,16 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('receipt に所有記録された staging だけを reseed 回復で撤去する', () => {
-    const root = mkdir('hologram-seed-recover-');
+    const root = mkdir('dot-seed-recover-');
     const attemptId = 'a'.repeat(32);
     const library = path.join(root, 'library');
     const config = path.join(root, 'config', 'config.json');
     const marker = path.join(root, 'seed.json');
     const receipt = path.join(root, 'receipt.json');
-    const stagingLibrary = path.join(root, `.hologram-real-seed-${attemptId}`);
+    const stagingLibrary = path.join(root, `.dot-real-seed-${attemptId}`);
     const stagingConfig = path.join(root, 'config', `.config.real-seed-${attemptId}.json`);
     const stagingMarker = `${marker}.real-seed-${attemptId}`;
-    const unrelated = path.join(root, '.hologram-real-seed-unrelated');
+    const unrelated = path.join(root, '.dot-real-seed-unrelated');
     fs.mkdirSync(stagingLibrary);
     fs.mkdirSync(path.dirname(stagingConfig));
     fs.mkdirSync(unrelated);
@@ -811,13 +811,13 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('reseed の staging cleanup は独立して試し、失敗時は receipt を保持する', () => {
-    const root = mkdir('hologram-seed-recover-failure-');
+    const root = mkdir('dot-seed-recover-failure-');
     const attemptId = 'c'.repeat(32);
     const library = path.join(root, 'library');
     const config = path.join(root, 'config', 'config.json');
     const marker = path.join(root, 'seed.json');
     const receipt = path.join(root, 'receipt.json');
-    const stagingLibrary = path.join(root, `.hologram-real-seed-${attemptId}`);
+    const stagingLibrary = path.join(root, `.dot-real-seed-${attemptId}`);
     const stagingConfig = path.join(root, 'config', `.config.real-seed-${attemptId}.json`);
     const stagingMarker = `${marker}.real-seed-${attemptId}`;
     fs.mkdirSync(stagingLibrary);
@@ -842,7 +842,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('不正 receipt の任意 staging path と既存データは削除しない', () => {
-    const root = mkdir('hologram-seed-invalid-receipt-');
+    const root = mkdir('dot-seed-invalid-receipt-');
     const library = path.join(root, 'library');
     const config = path.join(root, 'config.json');
     const marker = path.join(root, 'seed.json');
@@ -858,7 +858,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('junction祖先経由で作成時と同じrootを指す receipt は lexical expected から回復できる', () => {
-    const root = mkdir('hologram-seed-recovery-junction-');
+    const root = mkdir('dot-seed-recovery-junction-');
     const target = path.join(root, 'target');
     const alias = path.join(root, 'alias');
     fs.mkdirSync(path.join(target, 'config'), { recursive: true });
@@ -867,7 +867,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
     const canonicalLibrary = path.join(target, 'library');
     const canonicalConfig = path.join(target, 'config', 'config.json');
     const canonicalMarker = path.join(target, 'seed.json');
-    const stagingLibrary = path.join(target, `.hologram-real-seed-${attemptId}`);
+    const stagingLibrary = path.join(target, `.dot-real-seed-${attemptId}`);
     const stagingConfig = path.join(target, 'config', `.config.real-seed-${attemptId}.json`);
     const stagingMarker = `${canonicalMarker}.real-seed-${attemptId}`;
     const receipt = path.join(root, 'receipt.json');
@@ -882,7 +882,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   test('junction ancestor の retarget 後は receipt を拒否して旧targetとsourceを保持する', () => {
     const real = buildRealLibrary();
     const sourceHash = hashTree(real.root);
-    const root = mkdir('hologram-seed-recovery-retarget-');
+    const root = mkdir('dot-seed-recovery-retarget-');
     const targetA = path.join(root, 'target-a');
     const targetB = path.join(root, 'target-b');
     const alias = path.join(root, 'alias');
@@ -890,7 +890,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
     fs.mkdirSync(path.join(targetB, 'config'), { recursive: true });
     fs.symlinkSync(targetA, alias, process.platform === 'win32' ? 'junction' : 'dir');
     const attemptId = 'f'.repeat(32);
-    const stagingLibrary = path.join(targetA, `.hologram-real-seed-${attemptId}`);
+    const stagingLibrary = path.join(targetA, `.dot-real-seed-${attemptId}`);
     const receipt = path.join(root, 'receipt.json');
     fs.mkdirSync(stagingLibrary);
     fs.writeFileSync(path.join(stagingLibrary, 'keep.txt'), 'keep');
@@ -919,7 +919,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('receipt 部分 write は final として公開されず、明示 recovery で固定 creating だけを撤去する', () => {
-    const root = mkdir('hologram-seed-partial-receipt-');
+    const root = mkdir('dot-seed-partial-receipt-');
     const library = path.join(root, 'library');
     const config = path.join(root, 'config.json');
     const marker = path.join(root, 'seed.json');
@@ -937,7 +937,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('receipt write 中断の fault injection 後も次の明示 recovery が成功する', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-receipt-write-crash-');
+    const root = mkdir('dot-seed-receipt-write-crash-');
     const library = path.join(root, 'library');
     const configDir = path.join(root, 'config');
     const config = path.join(configDir, 'config.json');
@@ -964,7 +964,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('旧実装の壊れた final receipt は任意 path を解釈せず明示 recovery できる', () => {
-    const root = mkdir('hologram-seed-corrupt-final-receipt-');
+    const root = mkdir('dot-seed-corrupt-final-receipt-');
     const library = path.join(root, 'library');
     const config = path.join(root, 'config.json');
     const marker = path.join(root, 'seed.json');
@@ -980,21 +980,21 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
   });
 
   test('receipt なしDBは provenance 不明として通常起動を拒否し既存データを保持する', () => {
-    const root = mkdir('hologram-seed-unmarked-');
+    const root = mkdir('dot-seed-unmarked-');
     const library = path.join(root, 'library');
     fs.mkdirSync(library);
-    fs.writeFileSync(path.join(library, 'hologram.db'), 'unknown existing db');
-    const before = fs.readFileSync(path.join(library, 'hologram.db'));
+    fs.writeFileSync(path.join(library, 'dot.db'), 'unknown existing db');
+    const before = fs.readFileSync(path.join(library, 'dot.db'));
 
     expect(() => assertSandboxSeedProvenance({ receiptPath: path.join(root, 'receipt.json'), markerPath: path.join(root, 'seed.json'), library })).toThrow(/provenance/);
-    expect(fs.readFileSync(path.join(library, 'hologram.db')).equals(before)).toBe(true);
+    expect(fs.readFileSync(path.join(library, 'dot.db')).equals(before)).toBe(true);
   });
 
   test.each(['real', 'fixture'])('正常な %s 成功 metadata は通常起動を許可する', (mode) => {
-    const root = mkdir(`hologram-seed-${mode}-`);
+    const root = mkdir(`dot-seed-${mode}-`);
     const library = path.join(root, 'library');
     fs.mkdirSync(library);
-    fs.writeFileSync(path.join(library, 'hologram.db'), 'known db');
+    fs.writeFileSync(path.join(library, 'dot.db'), 'known db');
     const marker = path.join(root, 'seed.json');
     fs.writeFileSync(marker, JSON.stringify({ mode }));
     expect(() => assertSandboxSeedProvenance({ receiptPath: path.join(root, 'receipt.json'), markerPath: marker, library })).not.toThrow();
@@ -1002,17 +1002,17 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('missing parent を持つ別々の nested roots に正常シードできる', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-missing-parents-');
+    const root = mkdir('dot-seed-missing-parents-');
     const sandboxConfigDir = path.join(root, 'state', 'deep', 'config');
     const sandboxLibrary = path.join(root, 'data', 'deep', 'library');
     await seedRealSandbox({ realConfigDir: real.configDir, realSaveFolder: real.saveFolder, sandboxConfigDir, sandboxLibrary });
-    expect(fs.existsSync(path.join(sandboxLibrary, 'hologram.db'))).toBe(true);
+    expect(fs.existsSync(path.join(sandboxLibrary, 'dot.db'))).toBe(true);
     expect(fs.existsSync(path.join(sandboxConfigDir, 'config.json'))).toBe(true);
   });
 
   test('独立した未作成の marker と receipt の親も公開前に作成する', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-metadata-parents-');
+    const root = mkdir('dot-seed-metadata-parents-');
     const marker = path.join(root, 'metadata', 'success', 'seed.json');
     const receipt = path.join(root, 'recovery', 'pending', 'receipt.json');
     const before = hashTree(real.root);
@@ -1031,7 +1031,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test.each(['none', 'library', 'config', 'marker'])('公開失敗後は各出力親の同期を終えてから receipt を撤去する（同期失敗=%s）', async (faultParent) => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-rollback-parent-sync-');
+    const root = mkdir('dot-seed-rollback-parent-sync-');
     const parents = Object.fromEntries(['library', 'config', 'marker', 'receipt'].map((name) => [name, path.join(root, name)]));
     for (const dir of Object.values(parents)) fs.mkdirSync(dir);
     const library = path.join(parents.library, 'output');
@@ -1087,7 +1087,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('library/config/marker/receipt の pairwise 衝突を staging 前に拒否する', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-collision-');
+    const root = mkdir('dot-seed-collision-');
     const library = path.join(root, 'output');
     await expect(
       seedRealSandbox({
@@ -1108,7 +1108,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
     { name: 'receipt のみ', marker: false, receipt: true },
   ])('$name の helper option は書き込み前に拒否する', async ({ marker, receipt }) => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-option-contract-');
+    const root = mkdir('dot-seed-option-contract-');
     await expect(
       seedRealSandboxImpl({
         realConfigDir: real.configDir,
@@ -1124,7 +1124,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
 
   test('marker/receipt 両方指定の helper option は正常に完了する', async () => {
     const real = buildRealLibrary();
-    const root = mkdir('hologram-seed-option-both-');
+    const root = mkdir('dot-seed-option-both-');
     await seedRealSandboxImpl({
       realConfigDir: real.configDir,
       realSaveFolder: real.saveFolder,
@@ -1133,7 +1133,7 @@ describe('失敗した実データシードを次回の sandbox から隔離す�
       successMarkerPath: path.join(root, 'seed.json'),
       publishReceiptPath: path.join(root, 'receipt.json'),
     });
-    expect(fs.existsSync(path.join(root, 'library', 'hologram.db'))).toBe(true);
+    expect(fs.existsSync(path.join(root, 'library', 'dot.db'))).toBe(true);
     expect(fs.existsSync(path.join(root, 'seed.json'))).toBe(true);
     expect(fs.existsSync(path.join(root, 'receipt.json'))).toBe(false);
   });
@@ -1143,7 +1143,7 @@ describe('特定投稿だけ実物をピンポイントコピー', () => {
   test('指定した captureId のファイルだけ実バイトに置き換わる', async () => {
     const real = buildRealLibrary();
     const realHashBefore = hashTree(real.root);
-    const sandboxRoot = mkdir('hologram-sandbox-pin-');
+    const sandboxRoot = mkdir('dot-sandbox-pin-');
     const sandboxConfig = path.join(sandboxRoot, 'config');
     const sandboxLibrary = path.join(sandboxRoot, 'library');
     const report = await seedRealSandbox({
@@ -1163,7 +1163,7 @@ describe('特定投稿だけ実物をピンポイントコピー', () => {
 
   test('存在しない captureId は黙って通さず報告する', async () => {
     const real = buildRealLibrary();
-    const sandboxRoot = mkdir('hologram-sandbox-unknown-');
+    const sandboxRoot = mkdir('dot-sandbox-unknown-');
     const sandboxConfig = path.join(sandboxRoot, 'config');
     const sandboxLibrary = path.join(sandboxRoot, 'library');
     const report = await seedRealSandbox({
@@ -1181,7 +1181,7 @@ describe('特定投稿だけ実物をピンポイントコピー', () => {
 describe('planStandins: DB の参照だけを対象にする', () => {
   test('ゴミ箱の投稿は飛ばす（.trash 側の JSON レコードは複製できない）', () => {
     const real = buildRealLibrary();
-    const dbFile = path.join(real.saveFolder, 'hologram.db');
+    const dbFile = path.join(real.saveFolder, 'dot.db');
     const { sqlite } = openDatabase(dbFile);
     sqlite.prepare('UPDATE posts SET trashedAt = ? WHERE captureId = ?').run('2026-04-05T00:00:00Z', '1780000000000-a001');
     const plan = planStandins(sqlite);
@@ -1193,8 +1193,8 @@ describe('planStandins: DB の参照だけを対象にする', () => {
 
   test('copyRealMedia は保存フォルダの外へ出ない', () => {
     const real = buildRealLibrary();
-    const dbFile = path.join(real.saveFolder, 'hologram.db');
-    const sandboxLibrary = mkdir('hologram-sandbox-escape-');
+    const dbFile = path.join(real.saveFolder, 'dot.db');
+    const sandboxLibrary = mkdir('dot-sandbox-escape-');
     const { sqlite } = openDatabase(dbFile);
     sqlite.prepare('UPDATE posts SET image = ? WHERE captureId = ?').run('../escaped.jpg', '1780000000000-a001');
     const res = copyRealMedia(sqlite, ['1780000000000-a001'], real.saveFolder, sandboxLibrary);

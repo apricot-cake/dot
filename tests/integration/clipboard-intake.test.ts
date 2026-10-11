@@ -5,7 +5,7 @@
 // セッションも絡むので、「通った」と「たまたま画像がコピーされていたから通った」を
 // 区別できない。偽物にするのは `clipboard.read()` と各項目の `getType()` だけ。
 // 保存フォルダへの書き込み、DB への書き込み、カードの実寸の計測はすべて製品コードを
-// そのまま動かす（一時的な保存フォルダと一時的な `hologram.db` を本当に作る）。
+// そのまま動かす（一時的な保存フォルダと一時的な `dot.db` を本当に作る）。
 //
 // #85 の受け入れ条件をそのまま並べる:
 //   1. 入力欄にフォーカスがある間の Ctrl+V は通常の貼り付けとして素通しする（取り込みは発火しない）
@@ -112,7 +112,7 @@ function makePng(w: number, h: number): Buffer {
 }
 
 // --- 保存フォルダと DB（本物） --------------------------------------------------
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-clip-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-clip-'));
 const folder = path.join(dir, 'library');
 fs.mkdirSync(folder, { recursive: true });
 const { sqlite } = openDatabase(path.join(dir, 'test.db'));
@@ -394,7 +394,7 @@ describe('renderer: Ctrl+V の判定', () => {
     answer = { imported: 1 };
     stub.toasts.length = 0;
     (globalThis as any).window = {
-      hologram: {
+      dot: {
         getPrefs: async () => ({ language: 'ja' }),
         importClipboard: async (title: string) => {
           calls.push(title);

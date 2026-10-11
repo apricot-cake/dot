@@ -13,7 +13,7 @@ import { runLibraryBackgroundTask } from '../../app/src/main/lib-library-backgro
 import { copyLibraryInto, relocateLibrary, removeEmptyDefaultLibraryParent, sweepStragglers, verifyAndCleanup } from '../../app/src/main/lib-migrate';
 
 function mkroot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-migrate-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-migrate-'));
   return { root, src: path.join(root, 'src'), dest: path.join(root, 'dest') };
 }
 function seed(dir: string, files: Record<string, string>) {
@@ -45,24 +45,24 @@ describe('copyLibraryInto', () => {
     expect(fs.existsSync(path.join(src, 'a.jpg'))).toBe(true);
   });
 
-  // #299 (St6): .hologram-inbox も、入れ子を持つトップレベルのエントリが1つ増えるだけ。
+  // #299 (St6): .dot-inbox も、入れ子を持つトップレベルのエントリが1つ増えるだけ。
   // 上の .trash がすでに受けているのと同じ「中身を見ないディレクトリを1単位として
   // コピー・検証・削除する」扱いになる。lib-migrate.ts に変更は要らなかった。ここでは
   // 入れ子の inbox/new/segments の木が保存フォルダの移動を生き延びることを固定する。
-  test('.hologram-inbox ツリーも1エントリとして丸ごとコピーされる', async () => {
+  test('.dot-inbox ツリーも1エントリとして丸ごとコピーされる', async () => {
     const { src, dest } = mkroot();
     seed(src, {
       'a.jpg': 'AAA',
-      '.hologram-inbox/new/111-aaaa.json': '{"eventId":"111-aaaa"}',
-      '.hologram-inbox/segments/deadbeef.jsonl': '{"eventId":"000-1111"}\n',
+      '.dot-inbox/new/111-aaaa.json': '{"eventId":"111-aaaa"}',
+      '.dot-inbox/segments/deadbeef.jsonl': '{"eventId":"000-1111"}\n',
     });
 
     const cp = await copyLibraryInto(src, dest, null);
 
     expect(cp.ok).toBe(true);
-    expect(cp.entries).toEqual(expect.arrayContaining(['a.jpg', '.hologram-inbox']));
-    expect(read(dest, '.hologram-inbox', 'new', '111-aaaa.json')).toBe('{"eventId":"111-aaaa"}');
-    expect(read(dest, '.hologram-inbox', 'segments', 'deadbeef.jsonl')).toBe('{"eventId":"000-1111"}\n');
+    expect(cp.entries).toEqual(expect.arrayContaining(['a.jpg', '.dot-inbox']));
+    expect(read(dest, '.dot-inbox', 'new', '111-aaaa.json')).toBe('{"eventId":"111-aaaa"}');
+    expect(read(dest, '.dot-inbox', 'segments', 'deadbeef.jsonl')).toBe('{"eventId":"000-1111"}\n');
 
     const cl = await verifyAndCleanup(src, dest, cp.entries);
     expect(cl).toMatchObject({ removed: 2, leftover: [], emptied: true });
@@ -206,9 +206,9 @@ describe('sweepStragglers', () => {
 });
 
 describe('removeEmptyDefaultLibraryParent', () => {
-  test('既定の library を撤去した後、空の Hologram 親フォルダも撤去する', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-default-parent-'));
-    const defaultLibrary = path.join(root, 'Hologram', 'library');
+  test('既定の library を撤去した後、空の dot 親フォルダも撤去する', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-default-parent-'));
+    const defaultLibrary = path.join(root, 'dot', 'library');
     fs.mkdirSync(defaultLibrary, { recursive: true });
     fs.rmdirSync(defaultLibrary);
 
@@ -219,8 +219,8 @@ describe('removeEmptyDefaultLibraryParent', () => {
   });
 
   test('既定の親に別のファイルがあれば残す', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-default-parent-'));
-    const parent = path.join(root, 'Hologram');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-default-parent-'));
+    const parent = path.join(root, 'dot');
     const defaultLibrary = path.join(parent, 'library');
     fs.mkdirSync(defaultLibrary, { recursive: true });
     fs.writeFileSync(path.join(parent, 'keep.txt'), 'KEEP');
@@ -233,8 +233,8 @@ describe('removeEmptyDefaultLibraryParent', () => {
   });
 
   test('任意のライブラリの親は空でも触らない', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-default-parent-'));
-    const defaultLibrary = path.join(root, 'Hologram', 'library');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-default-parent-'));
+    const defaultLibrary = path.join(root, 'dot', 'library');
     const customLibrary = path.join(root, 'MyStuff', 'Library');
     fs.mkdirSync(customLibrary, { recursive: true });
     fs.rmdirSync(customLibrary);
@@ -290,8 +290,8 @@ describe('relocateLibrary（全体の統率）', () => {
   });
 
   test('既定位置からの移動が完了すると、空になった既定の親も撤去する', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-default-relocate-'));
-    const src = path.join(root, 'home', 'Hologram', 'library');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-default-relocate-'));
+    const src = path.join(root, 'home', 'dot', 'library');
     const dest = path.join(root, 'destination', 'Library');
     seed(src, { 'a.jpg': 'AAA' });
     let cfg: any = { saveFolder: src };
@@ -308,7 +308,7 @@ describe('relocateLibrary（全体の統率）', () => {
     });
 
     expect(res).toMatchObject({ ok: true, leftover: 0 });
-    expect(fs.existsSync(path.join(root, 'home', 'Hologram'))).toBe(false);
+    expect(fs.existsSync(path.join(root, 'home', 'dot'))).toBe(false);
     expect(read(dest, 'a.jpg')).toBe('AAA');
   });
 
@@ -410,13 +410,13 @@ describe('relocateLibrary（全体の統率）', () => {
     expect(fs.existsSync(src)).toBe(false);
   });
 
-  // #176: hologram.db はライブラリフォルダの中に置くようになった。だから他のファイルと
+  // #176: dot.db はライブラリフォルダの中に置くようになった。だから他のファイルと
   // 同じく copyLibraryInto を通って運ばれる。ここではそのコピーを挟む閉じ直し・開き直しの
   // 順序を固定する（lib-migrate.ts の step 0 / step 2.5）。
   describe('#176: コピーを挟む closeDb/openDb の順序', () => {
     test('closeDb はコピーの前、openDb は反転の後・cleanup が src を消す前', async () => {
       const { src, dest } = mkroot();
-      seed(src, { 'hologram.db': 'DBBYTES', 'a.jpg': 'AAA' });
+      seed(src, { 'dot.db': 'DBBYTES', 'a.jpg': 'AAA' });
       let cfg: any = { saveFolder: src };
       const calls: string[] = [];
 
@@ -433,7 +433,7 @@ describe('relocateLibrary（全体の統率）', () => {
         sweepDelayMs: 50,
         closeDb: () => {
           calls.push('closeDb');
-          expect(fs.existsSync(path.join(dest, 'hologram.db'))).toBe(false); // まだコピーされていない
+          expect(fs.existsSync(path.join(dest, 'dot.db'))).toBe(false); // まだコピーされていない
         },
         openDb: () => {
           calls.push('openDb');
@@ -444,12 +444,12 @@ describe('relocateLibrary（全体の統率）', () => {
 
       expect(res).toMatchObject({ ok: true });
       expect(calls).toEqual(['closeDb', 'openDb', 'afterFlip']);
-      expect(fs.readFileSync(path.join(dest, 'hologram.db'), 'utf8')).toBe('DBBYTES');
+      expect(fs.readFileSync(path.join(dest, 'dot.db'), 'utf8')).toBe('DBBYTES');
     });
 
     test('宛先で開けない DB はポインタを src へ巻き戻し、src を無傷で残す', async () => {
       const { src, dest } = mkroot();
-      seed(src, { 'hologram.db': 'DBBYTES', 'a.jpg': 'AAA' });
+      seed(src, { 'dot.db': 'DBBYTES', 'a.jpg': 'AAA' });
       let cfg: any = { saveFolder: src };
       let reopenedOldDb = false;
 
@@ -478,7 +478,7 @@ describe('relocateLibrary（全体の統率）', () => {
       expect(cfg.saveFolder).toBe(src); // 巻き戻した
       expect(reopenedOldDb).toBe(true); // 指し直すだけでなく、ライブラリを開いて使える状態で残す
       expect(fs.existsSync(path.join(src, 'a.jpg'))).toBe(true); // src には一切触れていない
-      expect(fs.existsSync(path.join(src, 'hologram.db'))).toBe(true);
+      expect(fs.existsSync(path.join(src, 'dot.db'))).toBe(true);
     });
 
     test('closeDb/openDb はどちらも任意＝渡さなければ #176 以前とまったく同じ挙動', async () => {

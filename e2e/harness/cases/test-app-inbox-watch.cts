@@ -1,10 +1,10 @@
 'use strict';
 
 // 永続的な取込キューのアプリ側消費者をエンドツーエンドで検証する（#5 St6 / #299）:
-//   - アプリが閉じている間に.hologram-inbox/newへ保存された投稿は、次回起動時にDBへ
+//   - アプリが閉じている間に.dot-inbox/newへ保存された投稿は、次回起動時にDBへ
 //     drainされて描画される（sidecarは一切関与しない――「アプリが動いていない間に
 //     保存されたものは次回起動で拾われる」という受け入れ条件）
-//   - アプリが動いている間に.hologram-inbox/newへ保存された投稿は、再起動なしで
+//   - アプリが動いている間に.dot-inbox/newへ保存された投稿は、再起動なしで
 //     watchInboxFolderのchokidarウォッチャー（400msデバウンス）に拾われる（「アプリが
 //     動いている間の保存はウォッチャー経由で反映される」という条件）
 // 同じエンベロープの何度実行しても同じ再適用はユニットテスト一式（tests/integration/db-inbox.test.ts）
@@ -26,8 +26,8 @@ const { normalizePostRecord } = require(path.join(__dirname, '../../../native-ho
 const electronPath = resolveElectron();
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-inboxwatch-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-inboxwatch-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -35,7 +35,7 @@ fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolde
 
 const jpeg = Buffer.from('/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AfwH/2Q==', 'base64');
 
-// .hologram-inbox/new＋原本画像ファイルにだけ書き込む――sidecarは無く、
+// .dot-inbox/new＋原本画像ファイルにだけ書き込む――sidecarは無く、
 // bridge.mtsのhandleSavePostが生成するのと同じアーティファクトだ。
 async function saveViaInbox(id) {
   fs.writeFileSync(path.join(saveFolder, `${id}.jpg`), jpeg);
@@ -60,7 +60,7 @@ const evalJs = evalSource(async ({ waitFor }) => {
   return cards();
 });
 
-const env = Object.assign({}, process.env, { APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir, HOLOGRAM_SMOKE: '1', HOLOGRAM_SMOKE_EVAL: evalJs });
+const env = Object.assign({}, process.env, { APPDATA: tmp, DOT_CONFIG_DIR: configDir, DOT_SMOKE: '1', DOT_SMOKE_EVAL: evalJs });
 
 (async () => {
   // アプリが一度も動いていない間に保存されたもの――最初の描画時点で存在していなければ

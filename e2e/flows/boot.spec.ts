@@ -3,8 +3,8 @@
 import { expect, test } from '../lib/harness.ts';
 import { FIXTURE_POSTS } from '../lib/library.ts';
 
-test('起動するとシードした投稿がグリッドに並ぶ', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('起動するとシードした投稿がグリッドに並ぶ', async ({ launchDot }) => {
+  const { page } = await launchDot();
 
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   await expect(cards).toHaveCount(FIXTURE_POSTS.length);
@@ -24,16 +24,16 @@ test('起動するとシードした投稿がグリッドに並ぶ', async ({ la
 // テストが待つマウントより前にそれを document へ書く。両方向を検証するのは、
 // index.html の静的な値が ja だから: ja だけを確認するケースは、何も書かれ
 // なくても通ってしまう。
-test('表示言語の設定が文書の lang 属性に出る', async ({ launchHologram }) => {
-  const ja = await launchHologram({ language: 'ja' });
+test('表示言語の設定が文書の lang 属性に出る', async ({ launchDot }) => {
+  const ja = await launchDot({ language: 'ja' });
   await expect(ja.page.locator('html')).toHaveAttribute('lang', 'ja');
 
-  const en = await launchHologram({ language: 'en' });
+  const en = await launchDot({ language: 'en' });
   await expect(en.page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
-test('投稿が無いライブラリでは初回の空状態が出る', async ({ launchHologram }) => {
-  const { page } = await launchHologram({ posts: [] });
+test('投稿が無いライブラリでは初回の空状態が出る', async ({ launchDot }) => {
+  const { page } = await launchDot({ posts: [] });
 
   await expect(page.locator('[data-slot="empty-state"]')).toBeVisible({ timeout: 5000 });
   await expect(page.locator('[data-slot="post-grid"] [data-slot="post-card"]')).toHaveCount(0);

@@ -14,17 +14,17 @@ import { checkForRedirect, classifyRealPath } from './lib-storage-redirect-guard
 
 describe('classifyRealPath＝純粋な分類器', () => {
   test('MSIX の per-package LocalCache へ解決されたパスは redirected', () => {
-    const real = 'C:\\Users\\me\\AppData\\Local\\Packages\\Example.App_abc123\\LocalCache\\Roaming\\Hologram\\config.json';
+    const real = 'C:\\Users\\me\\AppData\\Local\\Packages\\Example.App_abc123\\LocalCache\\Roaming\\dot\\config.json';
     expect(classifyRealPath(real)).toBe('redirected');
   });
 
   test('通常のホーム直下は ok（偽陽性ゼロ＝#1009 の受け入れ条件1）', () => {
-    expect(classifyRealPath('C:\\Users\\me\\.hologram\\config.json')).toBe('ok');
-    expect(classifyRealPath('C:\\Users\\me\\Hologram\\library\\hologram.db')).toBe('ok');
+    expect(classifyRealPath('C:\\Users\\me\\.dot\\config.json')).toBe('ok');
+    expect(classifyRealPath('C:\\Users\\me\\dot\\library\\dot.db')).toBe('ok');
   });
 
   test('大文字小文字が違っても検出する（Windows のパスは大小無視）', () => {
-    expect(classifyRealPath('C:\\Users\\me\\AppData\\Local\\packages\\Foo_x\\localcache\\Roaming\\Hologram')).toBe('redirected');
+    expect(classifyRealPath('C:\\Users\\me\\AppData\\Local\\packages\\Foo_x\\localcache\\Roaming\\dot')).toBe('redirected');
   });
 
   test('片方の segment しか無ければ redirected ではない（誤検出しない語の一致）', () => {
@@ -33,7 +33,7 @@ describe('classifyRealPath＝純粋な分類器', () => {
   });
 
   test('macOS/Linux スタイルのパスはそもそもマッチしない', () => {
-    expect(classifyRealPath('/Users/me/Library/Application Support/Hologram/config.json')).toBe('ok');
+    expect(classifyRealPath('/Users/me/Library/Application Support/dot/config.json')).toBe('ok');
   });
 });
 
@@ -42,8 +42,8 @@ describe('checkForRedirect＝プローブの書き込み → realpath → 掃除
   // ためにある）。ただしアサーションは区切り文字に依存してはいけない。プローブのパスは
   // path.join で組むので、Linux の CI ランナーでは '/' になる。このファイルの最初の版は
   // startsWith('...\\') で見ていて、Windows では通り CI では落ちた（2026-08-07）。
-  const DIR = 'C:\\Users\\me\\.hologram';
-  const probed = (calls: string[], kind: string) => calls.some((c) => c.startsWith(`${kind}:${DIR}`) && c.includes('.hologram-realpath-probe-'));
+  const DIR = 'C:\\Users\\me\\.dot';
+  const probed = (calls: string[], kind: string) => calls.some((c) => c.startsWith(`${kind}:${DIR}`) && c.includes('.dot-realpath-probe-'));
 
   test('ensureDir 付き: mkdir/write/realpath が全部そのまま返り、redirected を含まなければ ok', () => {
     const calls: string[] = [];
@@ -101,7 +101,7 @@ describe('checkForRedirect＝プローブの書き込み → realpath → 掃除
     const result = checkForRedirect(DIR, {
       deps: {
         writeFileSync: () => {},
-        realpathNative: () => 'C:\\Users\\me\\AppData\\Local\\Packages\\Some.Package_xyz\\LocalCache\\Roaming\\Hologram\\probe',
+        realpathNative: () => 'C:\\Users\\me\\AppData\\Local\\Packages\\Some.Package_xyz\\LocalCache\\Roaming\\dot\\probe',
         unlinkSync: () => {},
       },
     });

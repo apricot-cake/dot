@@ -13,8 +13,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-clear-all-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-clear-all-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -38,12 +38,12 @@ seedLibrary(configDir, [
 ]);
 
 const evalJs = evalSource(async () => {
-  const h = (window as any).hologram;
+  const h = (window as any).dot;
   const cleared = await h.clearAll();
   const listed = await h.listPosts();
   return { cleared, posts: listed.posts.length };
 });
-const env = Object.assign({}, process.env, { APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir, HOLOGRAM_SMOKE: '1', HOLOGRAM_SMOKE_EVAL: evalJs });
+const env = Object.assign({}, process.env, { APPDATA: tmp, DOT_CONFIG_DIR: configDir, DOT_SMOKE: '1', DOT_SMOKE_EVAL: evalJs });
 const child = spawn(resolveElectron(), ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
 let out = '';
 child.stdout.on('data', (data: Buffer) => {

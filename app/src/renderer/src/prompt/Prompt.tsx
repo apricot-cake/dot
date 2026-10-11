@@ -21,7 +21,7 @@ import { t } from '../_shared/i18n.ts';
 const subscribe = (cb: () => void) => subscribePrompt(cb);
 const getSnapshot = () => get();
 
-function PromptContent({ model }: { model: HologramPromptModel }) {
+function PromptContent({ model }: { model: DotPromptModel }) {
   const [value, setValue] = useState(model.value ?? '');
   const okDisabled = !value.trim();
   const doOk = () => {
@@ -64,7 +64,7 @@ export function PromptHost() {
   const m = useSyncExternalStore(subscribe, getSnapshot);
   // ダイアログが閉じるアニメーションの間、最後のモデルを持ち続ける＝退場の途中で中身が
   // 空にならないようにする（ConfirmHost が1つ持っているのと同じ理由）。
-  const lastRef = useRef<HologramPromptModel | null>(null);
+  const lastRef = useRef<DotPromptModel | null>(null);
   if (m) lastRef.current = m;
   const model = m ?? lastRef.current;
   return (

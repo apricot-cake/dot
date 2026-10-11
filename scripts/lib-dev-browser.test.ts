@@ -4,12 +4,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { expect, test, vi } from 'vitest';
 const { developmentOptions, assertDevelopmentProfile, persistentLaunchOptions, launchDevelopmentContext, startDevelopmentBrowser, waitForInterrupt } = require('./lib-dev-browser.cts');
-const profile = path.join(os.homedir(), '.hologram-ext-profile');
+const profile = path.join(os.homedir(), '.dot-ext-profile');
 const absentFiles = { existsSync: () => false };
 
 test('既存 Default の専用プロファイル以外を拒否する', () => {
-  expect(() => developmentOptions({ HOLOGRAM_EXTENSION_DEV_PROFILE: path.join(os.homedir(), 'daily') })).toThrow('既存の専用プロファイル');
-  expect(() => developmentOptions({ HOLOGRAM_EXTENSION_DEV_PROFILE_DIRECTORY: 'Profile 1' })).toThrow('既存の Default');
+  expect(() => developmentOptions({ DOT_EXTENSION_DEV_PROFILE: path.join(os.homedir(), 'daily') })).toThrow('既存の専用プロファイル');
+  expect(() => developmentOptions({ DOT_EXTENSION_DEV_PROFILE_DIRECTORY: 'Profile 1' })).toThrow('既存の Default');
 });
 
 test('pipe を管理する永続 context を headless で起動し、Windows ログインの鍵保管を置き換えない', () => {

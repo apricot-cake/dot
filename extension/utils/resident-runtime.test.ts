@@ -10,7 +10,7 @@ vi.mock('./ui-root.ts', () => ({ refreshUiRootStyles: vi.fn() }));
 vi.mock('./bulk-discovery.ts', () => ({ startBulkDiscovery: mocks.bulk }));
 vi.mock('wxt/utils/define-content-script', () => ({ defineContentScript: (config: { main: () => void }) => config }));
 
-const OWNER = Symbol.for('hologram.resident-runtime');
+const OWNER = Symbol.for('dot.resident-runtime');
 const scope = globalThis as typeof globalThis & { [OWNER]?: { dispose: () => void } };
 let main: () => void;
 let runtime: { id: string; onMessage: { addListener: ReturnType<typeof vi.fn>; removeListener: ReturnType<typeof vi.fn> }; sendMessage: ReturnType<typeof vi.fn> };

@@ -107,7 +107,7 @@ protocol.registerSchemesAsPrivileged([
 // config.json の読み書き、破損の番人、冗長化した保存先フォルダのポインタは ./lib-config.ts へ
 // 切り出した（上で import している）。
 
-// .hologram-inbox/new を監視する（#5 St6 / #299）＝アプリの外からライブラリへ書き込む唯一の
+// .dot-inbox/new を監視する（#5 St6 / #299）＝アプリの外からライブラリへ書き込む唯一の
 // 経路。#302 以降、保存先フォルダ自体を見る2本目の監視は無い。投稿ごとの JSON をそこへ書くものは
 // もう無いので（#298 でアプリ内の編集は DB へ、#299 で native host の保存はこのキューへ回った）、
 // レコードの変化を求めてフォルダを見張るのは、もう起こり得ないことを見張ることになる。メディア
@@ -180,7 +180,7 @@ async function watchInboxFolder(): Promise<void> {
   // #37: ここで保存先フォルダを mkdir で作り直すことは一切しない。getSaveFolder() は、そこに
   // もう何も無くても（アプリの外で移動・改名・アンマウントされた）設定の明示値をそのまま返す。
   // このチェックを入れる前は、下の ensureInboxDirs が起動のたびに無条件でフォルダを（空の
-  // .hologram-inbox の木ごと）作り直していた。この Issue が止めようとしている「まっさらな空の
+  // .dot-inbox の木ごと）作り直していた。この Issue が止めようとしている「まっさらな空の
   // ライブラリに見える」不具合そのもの。監視は丸ごと省く。これをレンダラーへ出すのは
   // refreshLibraryStatus()。
   if (!fs.existsSync(folder)) {
@@ -225,7 +225,7 @@ function broadcast(channel: string, ...args: unknown[]) {
 // ＝DB が正本なので、読む前にディスクと突き合わせる必要はなく、拾わなければならない取り込みは
 // 取込キューだけ（drainInbox、適用済みのイベント1件につき索引の効いた SELECT 1回）。
 //
-// hologram.db は保存先フォルダの中にある（#176）。今やデータベースこそが
+// dot.db は保存先フォルダの中にある（#176）。今やデータベースこそが
 // ライブラリの実体なので、ライブラリは自己完結した1つのフォルダになる＝コピーすればコピーが
 // 自分の投稿を連れて行くし、世代ストア（lib-db-generations.ts）も同じ
 // フォルダについて回る。2026-07-21 のクラウド同期の懸念（同期
@@ -246,7 +246,7 @@ function restoreFromSnapshotIfAvailable(file: string): boolean {
   if (!snapshot || !fs.existsSync(snapshot)) return false;
   try {
     fs.copyFileSync(snapshot, file);
-    log.warn(`restored hologram.db from DB generation: ${snapshot}`);
+    log.warn(`restored dot.db from DB generation: ${snapshot}`);
     return true;
   } catch (err) {
     log.error('failed to restore DB snapshot:', err);
@@ -275,7 +275,7 @@ let dbHandle: { db: any; sqlite: any } | null = null;
 // 生きているデータベースファイルの名前を1か所に。今は複数の呼び出し元が要る（#233 のロール
 // バックはこれを丸ごと置き換える）。場所は現在の保存先フォルダの中にある。
 function dbFile() {
-  return path.join(getSaveFolder(), 'hologram.db');
+  return path.join(getSaveFolder(), 'dot.db');
 }
 let screenshotTrashRetired = false;
 // 生きているハンドルを閉じて忘れる。次の ensureDb() がディスク上にあるものを開くように。
@@ -419,12 +419,12 @@ async function flushSavedIndexWrite() {
   if (handle) await writeSavedIndexNow(handle);
 }
 
-// .hologram-inbox/new を DB へ流し込む（#5 St6 / #299）＝エンベロープ1件につき受領記録の付いた
+// .dot-inbox/new を DB へ流し込む（#5 St6 / #299）＝エンベロープ1件につき受領記録の付いた
 // トランザクション適用が1回、その後も loose ファイルは残す（lib-db-inbox.ts を参照）。飛ばした
 // ものは何であれログに出す（メディアが無い、ハッシュ／投稿の衝突、壊れたか版の分からない
 // エンベロープ、例外を投げた適用）ので、詰まったキャプチャは追える。例外は投げない＝drainInbox
 // 自体、1つの悪いファイルで残りを止めることは決してないし（#920 で、エンベロープを
-// .hologram-inbox/failed/ へ隔離することにより、想定外の例外についてもそれが成り立つように
+// .dot-inbox/failed/ へ隔離することにより、想定外の例外についてもそれが成り立つように
 // なった）、ここでの同期的な fs エラー（フォルダが一時的に使えない）は、このパスが何も見つけ
 // なかったという意味でしかなく、呼び出し元の同期を失敗させる理由ではない。
 function drainInboxLogged(folder: string, sqlite: any) {
@@ -635,7 +635,7 @@ function haltIfStorageRedirected(): boolean {
   if (!hits.length) return false;
   dialog.showMessageBoxSync({
     type: 'error',
-    title: 'Hologram を起動できません',
+    title: 'dot を起動できません',
     message: 'データが本来と違う場所へ保存される状態を検出しました',
     detail: `${hits.join('\n\n')}\n\nこのまま起動するとデータが見えない場所に保存されるため、起動を中止しました。`,
   });
@@ -844,7 +844,7 @@ async function restoreMissingLibrary(dest: string): Promise<{ ok: true; saveFold
       writeConfig(cfg);
 
       try {
-        // 分類が示していたことは、ensureDb() が既に全部やっている。hologram.db をそのまま開く
+        // 分類が示していたことは、ensureDb() が既に全部やっている。dot.db をそのまま開く
         // （'has-db'）、ファイルが無ければ開く前に最新の世代のスナップショットを復元する
         // （'evidence-no-db'＝既にある回収の経路で、新しい仕掛けは無い）、新しく作る（'empty'）。
         ensureDb();
@@ -1124,36 +1124,36 @@ function registerExtractedIpc() {
 registerExtractedIpc();
 
 // 副作用の無い起動チェック。host の登録を飛ばし、ウィンドウを隠し、レンダラーが読み込まれたら
-// 終了する。HOLOGRAM_SMOKE=1 を付けて走らせる。
-const SMOKE = process.env.HOLOGRAM_SMOKE === '1';
-const E2E = process.env.HOLOGRAM_E2E === '1';
+// 終了する。DOT_SMOKE=1 を付けて走らせる。
+const SMOKE = process.env.DOT_SMOKE === '1';
+const E2E = process.env.DOT_E2E === '1';
 
 // ハーネスは日本語のラベルで操作子を引く。そして得られる言語は普通そのマシンのもの＝'auto' の
 // 言語設定は navigator.language を通して解決される（src/renderer/src/services/i18n.ts）。だから
 // 日本語の開発機で通る同じスイートが en-US の CI ランナーで赤になり、英語の UI は別の言語では
 // なく操作子が無いように読める。ハーネスの実行では言語を固定する。もう一方で走らせたいときは
-// HOLOGRAM_LANG が上書きする。app が ready になる前に設定しなければならず、だからここにある。
+// DOT_LANG が上書きする。app が ready になる前に設定しなければならず、だからここにある。
 //
-// HOLOGRAM_LANG は SMOKE の下だけでなく単独でも効く。Playwright のスイート（e2e/）が同じラベルを
+// DOT_LANG は SMOKE の下だけでなく単独でも効く。Playwright のスイート（e2e/）が同じラベルを
 // 見えているウィンドウから読むため＝あちらはスモークの経路ではなくサンドボックスの経路で起動する
 // ので、そうしないとランナーの言語になってしまう。
-const HARNESS_LANG = process.env.HOLOGRAM_LANG || (SMOKE ? 'ja' : '');
+const HARNESS_LANG = process.env.DOT_LANG || (SMOKE ? 'ja' : '');
 if (HARNESS_LANG) app.commandLine.appendSwitch('lang', HARNESS_LANG);
 
 // サンドボックスの検証用インスタンス（scripts/sandbox-app.cts）。隔離した
-// HOLOGRAM_CONFIG_DIR の上で動く、見えていて残り続ける2つ目のインスタンス。SMOKE と違って
+// DOT_CONFIG_DIR の上で動く、見えていて残り続ける2つ目のインスタンス。SMOKE と違って
 // 対話できるままだが、SMOKE と同じくマシン共有の状態には一切触れてはいけない＝host の登録を
 // すると、本物の Chrome の HKCU のマニフェスト項目がサンドボックスの設定ディレクトリを指し、
 // 本物の保存が壊れる。
-const SANDBOX = process.env.HOLOGRAM_SANDBOX === '1';
-const ACTIVATE_EXISTING_SIGNAL = '--hologram-activate-existing';
+const SANDBOX = process.env.DOT_SANDBOX === '1';
+const ACTIVATE_EXISTING_SIGNAL = '--dot-activate-existing';
 const hasActivateExistingSignal = (argv: readonly string[]) => argv.includes(ACTIVATE_EXISTING_SIGNAL);
 
 // 単一インスタンス。2回目の起動は、重複を開く（共有の userData とキャッシュを取り合う）のでは
 // なく既にあるウィンドウへフォーカスする。隔離したヘッドレスのテスト実行が互いを塞がないよう、
 // SMOKE の下では飛ばす。
 //
-// restart-app.ps1 がアプリを止めるのも同じロック。--hologram-quit を持った使い捨ての起動が
+// restart-app.ps1 がアプリを止めるのも同じロック。--dot-quit を持った使い捨ての起動が
 // ロックを取り損ね、その argv がロックの保持者へ届き、保持者が自分で終了する。それがマシンの
 // electron.exe の一覧からプロセスを選ぶやり方に取って代わった理由は restart-signal.ts にある。
 const QUIT_SIGNAL = hasQuitSignal(process.argv);
@@ -1198,7 +1198,7 @@ if (!gotSingleInstanceLock) {
       // 始まった場合（検証ハーネスの再起動）は別で、そこでは古い「既に動いているものを前に出す」
       // 挙動が今も望みのもの。新しいウィンドウを開くと元のウィンドウが見えないままになり、
       // ハーネスの「再起動でウィンドウが戻ったか」の確認が成り立たなくなる。
-      const launchedHidden = process.env.HOLOGRAM_START_MINIMIZED === '1' || process.env.HOLOGRAM_START_INACTIVE === '1';
+      const launchedHidden = process.env.DOT_START_MINIMIZED === '1' || process.env.DOT_START_INACTIVE === '1';
       if (launchedHidden) {
         const w = getWin();
         if (w) {
@@ -1232,12 +1232,12 @@ if (!gotSingleInstanceLock) {
     // ではなく）こちらのウィンドウアイコンを出すようにする。インストール済みの exe には
     // Forge がこれを設定する。ここで設定するのは restart-app.ps1 の開発実行を
     // 覆うため。
-    app.setAppUserModelId('com.hologram.app');
+    app.setAppUserModelId('com.dot.app');
     if (app.isPackaged) {
-      updateElectronApp({ repo: 'apricot-cake/hologram', updateInterval: '1 hour' });
+      updateElectronApp({ repo: 'apricot-cake/dot', updateInterval: '1 hour' });
     }
     log.eventLogger.startLogging();
-    log.info('Starting Hologram', { packaged: app.isPackaged, version: app.getVersion() });
+    log.info('Starting dot', { packaged: app.isPackaged, version: app.getVersion() });
     // #1004: これがなぜ効くのか、どんな起動を捕まえられるのか（Issue を立てるに至った件では、
     // 古い引数の付いたスタートメニューのショートカット）は startup-debug-port.ts を参照。
     if (shouldWarnMissingDebugPort(process.argv, app.isPackaged)) {
@@ -1275,7 +1275,7 @@ if (!gotSingleInstanceLock) {
     // 開発サーバーの応答に留め付ける（renderer-csp.ts）。
     installDevRendererCsp(DEV_ORIGIN);
     installNavigationGuards();
-    const startMin = !SMOKE && process.env.HOLOGRAM_START_MINIMIZED === '1';
+    const startMin = !SMOKE && process.env.DOT_START_MINIMIZED === '1';
     // Playwright のフローは CDP から操作するので、利用者のデスクトップに出す必要がない。
     // hidden でも paintWhenInitiallyHidden とバックグラウンド抑止の起動引数により、描画と
     // レイアウトの検証は続く。
@@ -1285,21 +1285,21 @@ if (!gotSingleInstanceLock) {
     // 実際のレイアウトを観測できるよう、ウィンドウは合成を続けなければならず、検証の実行が
     // SMOKE の隠しウィンドウを使わずにウィンドウを開くのはまさにそのため。
     // 非表示E2Eは ready-to-show で showInactive() を呼んではいけない。
-    const startInactive = !SMOKE && !startMin && !startE2eHidden && process.env.HOLOGRAM_START_INACTIVE === '1';
+    const startInactive = !SMOKE && !startMin && !startE2eHidden && process.env.DOT_START_INACTIVE === '1';
     createWindow(!SMOKE && !startMin && !startInactive && !startE2eHidden); // 非通常起動は隠して作り、必要な場合だけ下で見せる
     // 本物のライブラリから種を取ったサンドボックス（#286）は、本物の投稿テキストのスナップ
     // ショットを持ち、キャプチャを名指しした場合は本物のメディアも持つ＝このウィンドウから
     // 撮ったものは何であれ個人データ。注意書きはコンソールへ出さずページの中に描く。スクリーン
     // ショットがそれを載せなければならないため。読み込みのたびに当て直すので、レンダラーの
     // 読み込み直しがそれを落とすことはできない。
-    if (SANDBOX && process.env.HOLOGRAM_SANDBOX_NOTICE && getWin()) {
-      const notice = process.env.HOLOGRAM_SANDBOX_NOTICE;
+    if (SANDBOX && process.env.DOT_SANDBOX_NOTICE && getWin()) {
+      const notice = process.env.DOT_SANDBOX_NOTICE;
       (getWin() as BrowserWindow).webContents.on('did-finish-load', () => {
         const w = getWin();
         if (!w || w.isDestroyed()) return;
         w.webContents
           .executeJavaScript(
-            `(() => { const id = 'hologram-sandbox-notice'; const old = document.getElementById(id); if (old) old.remove();
+            `(() => { const id = 'dot-sandbox-notice'; const old = document.getElementById(id); if (old) old.remove();
                const el = document.createElement('div'); el.id = id; el.textContent = ${JSON.stringify(notice)};
                el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;pointer-events:none;background:#b3261e;color:#fff;font:12px/1.7 system-ui,sans-serif;text-align:center';
                document.body.appendChild(el); })()`,
@@ -1321,7 +1321,7 @@ if (!gotSingleInstanceLock) {
     }
 
     if (SMOKE) {
-      const shot = process.env.HOLOGRAM_SMOKE_SHOT;
+      const shot = process.env.DOT_SMOKE_SHOT;
       // Electron 36 はこのイベントの位置引数を1つの details オブジェクトに置き換えた。そのため
       // 古い `(_e, level, message)` の形は、レンダラーのメッセージすべてについて黙って
       // `[renderer:undefined] undefined` を出していた＝まったく転送しないより悪い。ハーネスの
@@ -1359,9 +1359,9 @@ if (!gotSingleInstanceLock) {
         });
       (getWin() as BrowserWindow).webContents.once('did-finish-load', () =>
         setTimeout(async () => {
-          if (process.env.HOLOGRAM_SMOKE_EVAL) {
+          if (process.env.DOT_SMOKE_EVAL) {
             try {
-              const r = await evalInRenderer((getWin() as BrowserWindow).webContents, process.env.HOLOGRAM_SMOKE_EVAL);
+              const r = await evalInRenderer((getWin() as BrowserWindow).webContents, process.env.DOT_SMOKE_EVAL);
               console.log('EVAL_RESULT', JSON.stringify(r));
             } catch (e) {
               console.log('EVAL_ERR', e.message);

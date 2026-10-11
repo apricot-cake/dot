@@ -18,7 +18,7 @@ import { close, get, subscribe as subscribeConfirm } from '../services/confirm.t
 const subscribe = (cb: () => void) => subscribeConfirm(cb);
 const getSnapshot = () => get();
 
-function ConfirmContent({ model }: { model: HologramConfirmModel }) {
+function ConfirmContent({ model }: { model: DotConfirmModel }) {
   const [skip, setSkip] = useState(false);
   const [option, setOption] = useState(model.optionDefault === true);
   const [kw, setKw] = useState('');
@@ -133,7 +133,7 @@ export function ConfirmHost() {
   const m = useSyncExternalStore(subscribe, getSnapshot);
   // ダイアログが閉じるアニメーションの間、最後のモデルを持ち続ける＝退場の途中で中身が
   // 空にならないようにする（その時点で m はすでに null）。
-  const lastRef = useRef<HologramConfirmModel | null>(null);
+  const lastRef = useRef<DotConfirmModel | null>(null);
   if (m) lastRef.current = m;
   const model = m ?? lastRef.current;
   return (

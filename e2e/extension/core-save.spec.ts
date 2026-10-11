@@ -20,7 +20,7 @@ test('対応する投稿で保存を開始し、保存先に届かないと再�
     await page.mouse.click(control.rect.x + control.rect.width / 2, control.rect.y + control.rect.height / 2);
 
     await expect.poll(async () => (await overlay.overlaySnapshot(page)).controls.some((candidate: any) => candidate.face === 'failed' && candidate.tag === 'BUTTON' && candidate.tabIndex === 0)).toBe(true);
-    const banner = page.locator('[data-hologram-save-banner]');
+    const banner = page.locator('[data-dot-save-banner]');
     await expect(banner).toHaveAttribute('role', 'alert');
     await expect(banner).toContainText('アプリに接続できません');
   } finally {

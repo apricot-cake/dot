@@ -11,7 +11,7 @@
 //
 // DOM は globalThis に載せた jsdom で動かし、本物の Selection / MouseEvent を使う
 // （selectionTextAt はグローバルの window.getSelection() を読む）。IPC は
-// window.hologram 上のスパイに差し替える＝外部サイトにも本物のクリップボードにも一切
+// window.dot 上のスパイに差し替える＝外部サイトにも本物のクリップボードにも一切
 // 触らない。
 
 import { JSDOM } from 'jsdom';
@@ -43,8 +43,8 @@ beforeAll(() => {
   g.document = dom.window.document;
   g.Node = dom.window.Node;
   g.MouseEvent = dom.window.MouseEvent;
-  // services/ipc.ts は呼び出しのたびに window.hologram を遅延で読む＝素のスタブで足りる。
-  (dom.window as any).hologram = ipc;
+  // services/ipc.ts は呼び出しのたびに window.dot を遅延で読む＝素のスタブで足りる。
+  (dom.window as any).dot = ipc;
 });
 
 afterAll(() => {

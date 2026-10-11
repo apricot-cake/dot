@@ -15,7 +15,7 @@
 // 見えないバーになる。
 import { BarChart3 } from 'lucide-react';
 
-export function PollCard({ m }: { m: HologramPollCardModel }) {
+export function PollCard({ m }: { m: DotPollCardModel }) {
   return (
     <div data-slot="poll-card" className="flex flex-col gap-1.5 rounded-lg border border-border p-2.5">
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground">

@@ -94,7 +94,7 @@ async function runPreCommit(options: HookOptions = {}): Promise<void> {
     const gitDir = (await git(['rev-parse', '--absolute-git-dir'])).toString('utf8').trim();
     const root = (await git(['rev-parse', '--show-toplevel'])).toString('utf8').trim();
     const normal = process.platform === 'win32' ? index.toLowerCase() === defaultIndex.toLowerCase() : index === defaultIndex;
-    temporary = await fs.mkdtemp(path.join(path.resolve(os.tmpdir()), 'hologram-pre-commit-'));
+    temporary = await fs.mkdtemp(path.join(path.resolve(os.tmpdir()), 'dot-pre-commit-'));
     const snapshotIndex = path.join(temporary, 'index');
     const worktree = path.join(temporary, 'worktree');
     await fs.mkdir(worktree);
@@ -144,7 +144,7 @@ async function runPreCommit(options: HookOptions = {}): Promise<void> {
         const binary = process.env.BIOME_BINARY || `@biomejs/cli-${process.platform}-${process.arch}${libc}/${process.platform === 'win32' ? 'biome.exe' : 'biome'}`;
         formatter = { command: require.resolve(binary, { paths: [root] }), args: [] };
       } catch {
-        console.error('[hologram] Biome が未インストールのため整形を省略します。npm run setup を実行してください。');
+        console.error('[dot] Biome が未インストールのため整形を省略します。npm run setup を実行してください。');
         await finish();
         return;
       }
@@ -184,6 +184,6 @@ async function runPreCommit(options: HookOptions = {}): Promise<void> {
 module.exports = { runPreCommit };
 if (require.main === module)
   runPreCommit().catch((error: Error) => {
-    console.error(`[hologram] ${error.message}`);
+    console.error(`[dot] ${error.message}`);
     process.exitCode = 1;
   });

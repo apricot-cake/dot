@@ -10,16 +10,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { isSortAscending, sortOption, sortWithDirection } from '../services/sort-direction.ts';
 import { t } from '../_shared/i18n.ts';
 import { DISPLAY_KEYS, POSTER_DISPLAY_KEYS, posterShapeSnapshot, shapeSnapshot } from '../services/display.ts';
-import type { HologramSizeTrack } from '../services/grid-density-builder.ts';
+import type { DotSizeTrack } from '../services/grid-density-builder.ts';
 import { applyPostSize, applyPosterSize, getPostSizeTrack, getPosterSizeTrack, rerollShuffle, setPostSort, setTrashSort } from '../services/orchestrator.ts';
 import { store, subscribeKey, subscribeKeys } from '../services/store.ts';
-import type { HologramStoreState } from '../services/store.ts';
+import type { DotStoreState } from '../services/store.ts';
 
-const subKey = (key: keyof HologramStoreState) => (cb: () => void) => subscribeKey(key, cb);
+const subKey = (key: keyof DotStoreState) => (cb: () => void) => subscribeKey(key, cb);
 
 // ストアのキーをまとめて購読する（どれが変わっても cb が呼ばれる）＝サイズのトラックは
 // 表示の形と、今のレイアウトのサイズの両方に依存し、この2つは別々のストアのキーにある。
-const subMany = (keys: readonly (keyof HologramStoreState)[]) => (cb: () => void) => subscribeKeys(keys, cb);
+const subMany = (keys: readonly (keyof DotStoreState)[]) => (cb: () => void) => subscribeKeys(keys, cb);
 const subPostSize = subMany([...DISPLAY_KEYS, 'gridSize']);
 const postSizeSnap = () => `${shapeSnapshot()}|${store.getState().gridSize}`;
 const subPosterSize = subMany([...POSTER_DISPLAY_KEYS, 'posterGridSize']);
@@ -50,7 +50,7 @@ const SORT_POSTER: SortOption[] = [
   { value: 'random', key: 'sortRandom', icon: Shuffle },
 ];
 
-function usePostSizeTrack(): HologramSizeTrack | null {
+function usePostSizeTrack(): DotSizeTrack | null {
   // ビュー／サイズのストアの変更かウィンドウのリサイズで描き直し、そのうえで幾何から導かれる
   // 生きたトラックを読み直す（#postGrid の幅に依存し、それを動かすのはこの2つだけ）。
   useSyncExternalStore(subPostSize, postSizeSnap);
@@ -77,7 +77,7 @@ function usePostSizeTrack(): HologramSizeTrack | null {
   }, []);
   return getPostSizeTrack ? getPostSizeTrack() : null;
 }
-function usePosterSizeTrack(): HologramSizeTrack | null {
+function usePosterSizeTrack(): DotSizeTrack | null {
   useSyncExternalStore(subPosterSize, posterSizeSnap);
   const [, bumpResize] = useState(0);
   useEffect(() => {
@@ -106,7 +106,7 @@ function usePosterSizeTrack(): HologramSizeTrack | null {
 // サイズの軸は Slider が動かす。ドラッグ中のつまみはローカルの状態が持つ（ドラッグ途中の
 // 更新はストアを通さない）。呼び出し側はトラックの範囲を key にしているので、つまみが種を
 // 撒き直すのはビューが変わったときだけで、同じビューの中の確定ごとには起きない。
-function SizeSlider({ track, onDrag, onCommit }: { track: HologramSizeTrack; onDrag: (v: number) => void; onCommit: (v: number) => void }) {
+function SizeSlider({ track, onDrag, onCommit }: { track: DotSizeTrack; onDrag: (v: number) => void; onCommit: (v: number) => void }) {
   const [v, setV] = useState(track.value);
   const applied = useRef(track.value);
   useEffect(() => {

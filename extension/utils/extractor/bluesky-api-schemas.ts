@@ -12,7 +12,7 @@ const author = z.looseObject({ did: z.string().min(1), handle: z.string().min(1)
 export const BlueskyProfileSchema = author.extend({
   banner: z.string().optional(),
   description: z.string().optional(),
-  // 件数の非負条件は Hologram の保存契約。負値を丸めて正常にしない。
+  // 件数の非負条件は dot の保存契約。負値を丸めて正常にしない。
   followersCount: CountSchema.optional(),
   followsCount: CountSchema.optional(),
   createdAt: dateText.optional(),

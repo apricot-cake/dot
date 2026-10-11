@@ -95,8 +95,8 @@ const BAND_CONTROLS: Target[] = [
   ['新しいタブ', '[data-slot="tab-new"]'],
 ];
 
-test('タブ列とページ操作を分け、タブ列の中心を揃える', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('タブ列とページ操作を分け、タブ列の中心を揃える', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await bandReady(page);
   const [band, toolbar, tab, ...controls] = await measure(page, [BAND, ['ページ操作', '[data-slot="page-toolbar"]'], ['タブ', '[data-slot="tab"]'], ...BAND_CONTROLS]);
   expect(band.top).toBe(0);
@@ -109,8 +109,8 @@ test('タブ列とページ操作を分け、タブ列の中心を揃える', as
   dumpOnFailure('タブ列', [band, toolbar, tab, ...controls]);
 });
 
-test('サイドバー列の軸: ナビ行が左端と幅を共有し、レールの中心 x に乗る', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('サイドバー列の軸: ナビ行が左端と幅を共有し、レールの中心 x に乗る', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await bandReady(page);
 
   // 今や計測対象は1つの形だけ（#981）— レール。軸そのものは変わっていない:

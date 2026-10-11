@@ -2,7 +2,7 @@ import { dirname, basename, resolve } from 'node:path';
 import { defineConfig } from 'wxt';
 import { API_HOST_PERMISSIONS, RESIDENT_MATCHES } from './utils/extractor/index.ts';
 
-const explicitOutput = process.env.HOLOGRAM_EXTENSION_OUTPUT || process.env.HOLOGRAM_EXTENSION_TEST_OUTPUT;
+const explicitOutput = process.env.DOT_EXTENSION_OUTPUT || process.env.DOT_EXTENSION_TEST_OUTPUT;
 
 export default defineConfig({
   // Chrome Web Storeへ提出するManifest V3の成果物だけを作る。
@@ -61,10 +61,10 @@ export default defineConfig({
     // はそれを「ローカルビルドは存在しない」と読み、これはこのマシンを
     // 出ていくものすべてにとって正しい答えだ。
     define: {
-      __EXT_BUILD_ID__: JSON.stringify(process.env.HOLOGRAM_EXT_BUILD_ID || ''),
+      __EXT_BUILD_ID__: JSON.stringify(process.env.DOT_EXT_BUILD_ID || ''),
       // 実ブラウザ E2E が closed shadow 内を拡張機能 world から検査するための
       // 専用境界。release では定数 false になり、listener ごと除去される。
-      __EXT_TEST__: JSON.stringify(Boolean(process.env.HOLOGRAM_EXTENSION_TEST_OUTPUT)),
+      __EXT_TEST__: JSON.stringify(Boolean(process.env.DOT_EXTENSION_TEST_OUTPUT)),
     },
   }),
   manifest: {

@@ -1,4 +1,4 @@
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { setTagGroup, setTagGroupLabel } from './tags.ts';
 import { t } from '../_shared/i18n.ts';
 import { promptName } from '../prompt/Prompt.tsx';
@@ -17,7 +17,7 @@ export async function moveTag(id: number, groupId: string | null) {
 export function createTagGroup(onCreated?: (id: string) => void | Promise<void>) {
   promptName(t('tagGroupCreate'), '', async (name) => {
     try {
-      const state = await hologramIpc.getTagGroups();
+      const state = await dotIpc.getTagGroups();
       if (Object.values(state.labels || {}).includes(name)) {
         notify(t('tagGroupNameExists'));
         return;
@@ -45,7 +45,7 @@ export function showGroupActions(groupId: string, name: string, x: number, y: nu
       if (item.act === 'rename')
         promptName(t('tagGroupRename'), name, async (next) => {
           try {
-            const state = await hologramIpc.getTagGroups();
+            const state = await dotIpc.getTagGroups();
             if (Object.entries(state.labels || {}).some(([id, label]) => id !== groupId && label === next)) {
               notify(t('tagGroupNameExists'));
               return;
@@ -62,10 +62,10 @@ export function showGroupActions(groupId: string, name: string, x: number, y: nu
           cancelLabel: t('tagMgmtCancel'),
           onOk: async () => {
             try {
-              const state = await hologramIpc.getTagGroups();
+              const state = await dotIpc.getTagGroups();
               const labels = { ...state.labels };
               delete labels[groupId];
-              const result = await hologramIpc.setTagGroups(
+              const result = await dotIpc.setTagGroups(
                 state.memberships.filter((row) => row.groupId !== groupId),
                 labels,
               );

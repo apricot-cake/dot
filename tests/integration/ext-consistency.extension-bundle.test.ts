@@ -172,7 +172,7 @@ describe('manifest とコードが名指しするファイルは出力に在る'
     const files = fs.readdirSync(OUT, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && /\.(?:js|html|json|css)$/.test(entry.name));
     expect(files.length).toBeGreaterThan(0);
     for (const entry of files) {
-      expect(fs.readFileSync(path.join(entry.parentPath, entry.name), 'utf8'), entry.name).not.toContain('HOLOGRAM_DEV_API_RESPONSE_CAPTURE_V1');
+      expect(fs.readFileSync(path.join(entry.parentPath, entry.name), 'utf8'), entry.name).not.toContain('DOT_DEV_API_RESPONSE_CAPTURE_V1');
     }
   });
 
@@ -206,8 +206,8 @@ describe('manifest とコードが名指しするファイルは出力に在る'
   // 開発用プロファイルだけが storage.local の明示設定で隔離 host を選ぶ。
   test('共有バンドルは両方の Native Host とプロファイル設定を持つ', () => {
     const worker = fs.readFileSync(path.join(OUT, 'background.js'), 'utf8');
-    expect(worker).toContain('com.hologram.host');
-    expect(worker).toContain('com.hologram.host.dev');
+    expect(worker).toContain('com.dot.host');
+    expect(worker).toContain('com.dot.host.dev');
     expect(worker).toContain('nativeHost.profile.v1');
   });
 

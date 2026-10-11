@@ -10,7 +10,7 @@
 // 理由。レンダラーが持ち続けるのは、自分にしかできないこと: タグの語彙
 // （pickerData）、種別メニュー、そして onApply の中の永続化／undo／
 // トースト通知（bulk-tag-builder.ts）。
-let current: HologramBulkTagModel | null = null;
+let current: DotBulkTagModel | null = null;
 let seq = 0;
 const subs = new Set<() => void>();
 const notify = () => {
@@ -23,7 +23,7 @@ const notify = () => {
   }
 };
 
-export function open(config: HologramBulkTagConfig) {
+export function open(config: DotBulkTagConfig) {
   current = Object.assign({ openId: ++seq }, config);
   notify();
 }

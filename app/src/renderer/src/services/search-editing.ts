@@ -1,9 +1,9 @@
 // 検索欄は一つのテキスト条件を編集する。候補を選んだ場合は明示的なフィルタへ置き換える。
 export interface SearchEditingDeps {
-  getTree(): HologramQueryGroup;
-  addFilter(leaf: { type: string; [k: string]: any }): HologramQueryLeaf | null;
-  removeNode(node: HologramQueryLeaf): void;
-  treeLeaves(tree: HologramQueryGroup): HologramQueryLeaf[];
+  getTree(): DotQueryGroup;
+  addFilter(leaf: { type: string; [k: string]: any }): DotQueryLeaf | null;
+  removeNode(node: DotQueryLeaf): void;
+  treeLeaves(tree: DotQueryGroup): DotQueryLeaf[];
   searchQuery(): string;
   setSearchBoxValue(v: string): void;
   afterQueryChange(): void;
@@ -12,7 +12,7 @@ export interface SearchEditingDeps {
 
 export function makeSearchEditing(deps: SearchEditingDeps) {
   const { getTree, addFilter, removeNode, treeLeaves, searchQuery, setSearchBoxValue, afterQueryChange, renderPosts } = deps;
-  let editingTextNode: HologramQueryLeaf | null = null;
+  let editingTextNode: DotQueryLeaf | null = null;
 
   function isEditingLeaf(node: unknown) {
     return node === editingTextNode;
@@ -61,12 +61,12 @@ export function makeSearchEditing(deps: SearchEditingDeps) {
     // 旧形式のANDで並ぶテキスト条件を、同じ意味の一つの検索語へまとめる。
     // ORや否定を含む保存条件は意味を変えず、そのまま残す。
     if (tree.op === 'and' && !tree.neg) {
-      const leaves = tree.children.filter((n): n is HologramQueryLeaf => n.kind === 'cond' && n.type === 'text' && !n.neg);
+      const leaves = tree.children.filter((n): n is DotQueryLeaf => n.kind === 'cond' && n.type === 'text' && !n.neg);
       if (leaves.length) {
         editingTextNode = leaves[0];
         const value = [...new Set(leaves.map((n) => String(n.value || '').trim()).filter(Boolean))].join(' ');
         editingTextNode.value = value;
-        tree.children = tree.children.filter((n) => !leaves.slice(1).includes(n as HologramQueryLeaf));
+        tree.children = tree.children.filter((n) => !leaves.slice(1).includes(n as DotQueryLeaf));
         setSearchBoxValue(value);
       }
     }

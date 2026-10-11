@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('フォロワー数の補足は候補内だけで表示する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('フォロワー数の補足は候補内だけで表示する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: '投稿者' }).press('Enter');
   await page.getByRole('button', { name: '表示', exact: true }).press('Enter');
   const select = page.locator('[data-slot="select-trigger"]');

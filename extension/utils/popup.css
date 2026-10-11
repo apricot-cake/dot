@@ -22,14 +22,14 @@
 .settings-popup .setting-card {
   margin: 0;
   padding: 16px;
-  border: 1px solid var(--hologram-border);
+  border: 1px solid var(--dot-border);
   border-radius: 12px;
-  background: var(--hologram-page-surface);
+  background: var(--dot-page-surface);
 }
 
 .settings-popup .setting-card-title,
 .settings-popup .setting-card label {
-  color: var(--hologram-ink-strong);
+  color: var(--dot-ink-strong);
   font-weight: 600;
 }
 

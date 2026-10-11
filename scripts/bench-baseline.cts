@@ -49,7 +49,7 @@
 //   node scripts/bench-baseline.cts <libraryDir> [options]
 //
 // オプション:
-//   --db FILE              計測対象のデータベース（既定 <libraryDir>/hologram.db）
+//   --db FILE              計測対象のデータベース（既定 <libraryDir>/dot.db）
 //   --warmup N             計測前に捨てる反復回数（既定 2）
 //   --iterations N         シナリオごとの計測反復回数（既定 5）
 //   --incremental-pct N    incrementalシナリオで書き換える投稿の割合（既定 1）
@@ -205,8 +205,8 @@ function libraryContentHash(dir) {
 // 存在したかどうかにかかわらず別の接続が所有し得るため、観察も削除もしない。
 // cleanup が削除するのは、この関数自身が作った一時ディレクトリだけである。
 async function snapshotDatabase(sourceFile: string): Promise<{ dbFile: string; cleanup: () => void }> {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-bench-'));
-  const dbFile = path.join(tempDir, 'hologram.db');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-bench-'));
+  const dbFile = path.join(tempDir, 'dot.db');
   let source: any = null;
   try {
     source = openDatabase(sourceFile, { readonly: true });
@@ -348,7 +348,7 @@ async function main() {
   const dir = path.resolve(opts.libraryDir);
   if (!fs.existsSync(dir)) throw new Error(`libraryDir が見つかりません: ${dir}`);
 
-  const sourceDbFile = path.resolve(opts.db || path.join(dir, 'hologram.db'));
+  const sourceDbFile = path.resolve(opts.db || path.join(dir, 'dot.db'));
   if (!fs.existsSync(sourceDbFile)) throw new Error(`データベースが見つかりません: ${sourceDbFile}（scripts/gen-dummy-library.cts で生成するか、--db を指定してください）`);
   const snapshot = await snapshotDatabase(sourceDbFile);
   const dbFile = snapshot.dbFile;

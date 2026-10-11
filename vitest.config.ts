@@ -9,7 +9,7 @@ import { defineConfig } from 'vitest/config';
 // スイートはそれらのモジュールを直接importするので、ランタイムのファイルを
 // リネームするのではなく、変換にこの拡張子を教える。
 const ctsAsTypeScript = (): Plugin => ({
-  name: 'hologram:cts-as-typescript',
+  name: 'dot:cts-as-typescript',
   async transform(code, id) {
     if (!id.endsWith('.cts')) return null;
     const { code: js, map } = await transformWithOxc(code, id, { lang: 'ts' });
@@ -25,7 +25,7 @@ export default defineConfig({
     include: ['app/**/*.test.ts', 'extension/**/*.test.ts', 'native-host/**/*.test.ts', 'scripts/**/*.test.ts', 'tests/integration/**/*.test.ts'],
     // ビルド済みの Chrome 拡張機能を読むテストは、通常テストから分ける。
     // `npm run test:ext` がテスト専用出力を作ってから実行する。
-    exclude: ['**/*.extension-bundle.test.ts', '**/node_modules/**'],
+    exclude: ['**/*.extension-bundle.test.ts', '**/node_modules/**', 'app/artifacts/**', 'app/dist/**'],
     // Nodeが既定。ブラウザ側の拡張機能コードを試す4つのスイートは、ファイル
     // ごとに`@vitest-environment jsdom`のdocblockでjsdomを選ぶ。
     environment: 'node',

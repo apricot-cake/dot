@@ -55,13 +55,13 @@ describe('開発用 Chrome のプロセス識別', () => {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        "$ErrorActionPreference = 'Stop'; [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false); . $env:HOLOGRAM_ARGV_HELPER; $lines = [Console]::In.ReadToEnd() | ConvertFrom-Json; $result = @($lines | ForEach-Object { [PSCustomObject]@{ Args = @([HologramChromeArguments]::Parse($_)) } }); ConvertTo-Json -InputObject $result -Depth 4 -Compress",
+        "$ErrorActionPreference = 'Stop'; [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false); . $env:DOT_ARGV_HELPER; $lines = [Console]::In.ReadToEnd() | ConvertFrom-Json; $result = @($lines | ForEach-Object { [PSCustomObject]@{ Args = @([DotChromeArguments]::Parse($_)) } }); ConvertTo-Json -InputObject $result -Depth 4 -Compress",
       ],
       {
         encoding: 'utf8',
         input: JSON.stringify(lines),
         windowsHide: true,
-        env: { ...process.env, HOLOGRAM_ARGV_HELPER: path.join(__dirname, 'read-chrome-processes.ps1') },
+        env: { ...process.env, DOT_ARGV_HELPER: path.join(__dirname, 'read-chrome-processes.ps1') },
       },
     );
     const parsed = JSON.parse(output.replace(/^\uFEFF/, ''));

@@ -81,7 +81,7 @@ static void release_picture(Dav1dPicture *picture, void *cookie) {
     free(block);
 #endif
 }
-void hologramConfigureDav1dBudget(Dav1dSettings *settings) {
+void dotConfigureDav1dBudget(Dav1dSettings *settings) {
     settings->allocator.cookie = &allocation_budget;
     settings->allocator.alloc_picture_callback = allocate_picture;
     settings->allocator.release_picture_callback = release_picture;

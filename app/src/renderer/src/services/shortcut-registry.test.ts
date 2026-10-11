@@ -9,7 +9,7 @@
 // (3) tryRun() の3通りの結末（この id ではない／取ったが何もしない／取って実行した）。
 // 呼び出し側は同じ物理キーに複数の id を数珠つなぎにする (undo-builder.ts の undo/redo の
 // 対など)
-// (4) 他の prefs のモジュール (panels.ts) が使うのと同じ window.hologram.getPrefs/setPref の
+// (4) 他の prefs のモジュール (panels.ts) が使うのと同じ window.dot.getPrefs/setPref の
 // 継ぎ目を通した、永続化の往復
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { comboFromEvent, comboLabel, currentCombo, findConflict, isTypingTarget, list, load, normalizeKey, registerShortcut, resetShortcuts, resetToDefault, setCustomCombo, subscribe, tryRun, type ShortcutEntry } from './shortcut-registry';
@@ -30,7 +30,7 @@ beforeEach(() => {
     store[key] = value;
     return { ok: true };
   };
-  (globalThis as any).window = { hologram: bridge };
+  (globalThis as any).window = { dot: bridge };
   resetShortcuts();
 });
 
@@ -221,7 +221,7 @@ describe('再割り当て（setCustomCombo）', () => {
     expect(list()).toEqual([{ id: 'undo', title: 'shortcutUndo', defaultCombo: 'Ctrl+z', currentCombo: 'Ctrl+y', isCustom: true }]);
   });
 
-  test('割り当ては config.json（window.hologram.setPref）へ永続化される', () => {
+  test('割り当ては config.json（window.dot.setPref）へ永続化される', () => {
     registerShortcut(makeEntry({ id: 'undo', defaultCombo: 'Ctrl+z' }));
     setCustomCombo('undo', 'Ctrl+y');
     expect(store.shortcutOverrides).toEqual({ undo: 'Ctrl+y' });

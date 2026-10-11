@@ -31,8 +31,8 @@ const getBrowse = (): string => store.getState().browseMode;
 // を呼ぶより先に載るので、最初の一覧の読み取りは空になりうる＝load() を蹴っておき、その
 // 解決と、その後のどの書き換えでも読み直す。（onChange は解除しない。LibrarySafetyStatus と
 // 同じで、単一ページのこのアプリではこのコンポーネントが外れることはない。）
-function useFolders(): HologramFolder[] {
-  const [list, setList] = useState<HologramFolder[]>(() => folderAll());
+function useFolders(): DotFolder[] {
+  const [list, setList] = useState<DotFolder[]>(() => folderAll());
   useEffect(() => {
     const sync = () => setList(folderAll().slice());
     folderLoad().then(sync);
@@ -50,7 +50,7 @@ const getPostSidebarState = () => store.getState();
 // ＝ファイルツリーの文法であって、入れ子の行が一段小さく
 // 静かな別種の行になる shadcn の1階層の見本ではない。開閉の三角は自分の当たり判定を持つ。
 // 行そのものに既に意味があるから＝フォルダをクリックすればそこへ行き、開くのは三角だけ。
-function FolderNode({ f, ctx }: { f: HologramFolder; ctx: FolderTreeCtx }) {
+function FolderNode({ f, ctx }: { f: DotFolder; ctx: FolderTreeCtx }) {
   const kids = ctx.kidsOf.get(f.id) || [];
   const isOpen = ctx.expanded.has(f.id);
   const hint = ctx.drop && ctx.drop.id === f.id ? ctx.drop.mode : null;
@@ -152,10 +152,10 @@ interface DropTarget {
   mode: 'into' | 'before' | 'after';
 }
 interface FolderTreeCtx {
-  kidsOf: Map<string | null, HologramFolder[]>;
+  kidsOf: Map<string | null, DotFolder[]>;
   expanded: Set<string>;
   setOpen: (id: string, open: boolean) => void;
-  menu: (e: MouseEvent, f: HologramFolder) => void;
+  menu: (e: MouseEvent, f: DotFolder) => void;
   apply: (id: string) => void;
   dragId: string | null;
   setDrag: (id: string | null) => void;
@@ -180,7 +180,7 @@ export function LeftSidebar() {
   const postSidebarState = useSyncExternalStore(subPostTree, getPostSidebarState);
   const activeFolderId = postSidebarState.activeFolderId;
   const kidsOf = useMemo(() => {
-    const m = new Map<string | null, HologramFolder[]>();
+    const m = new Map<string | null, DotFolder[]>();
     for (const f of folders) {
       const p = f.parentId || null;
       const arr = m.get(p);
@@ -209,7 +209,7 @@ export function LeftSidebar() {
   };
   // 削除は部分木ごと持っていくので、件数をダイアログに出す:「このフォルダを削除」と
   // 「この9個のフォルダを削除」では、ためらうべき量が違う。
-  const deleteFolder = (f: HologramFolder) => {
+  const deleteFolder = (f: DotFolder) => {
     const subs = (function count(id: string): number {
       return (kidsOf.get(id) || []).reduce((n, k) => n + 1 + count(k.id), 0);
     })(f.id);
@@ -221,7 +221,7 @@ export function LeftSidebar() {
       onOk: () => removeFolder(f.id),
     });
   };
-  const folderMenu = (e: MouseEvent, f: HologramFolder) => {
+  const folderMenu = (e: MouseEvent, f: DotFolder) => {
     e.preventDefault();
     const items = [{ label: t('foldNewSub'), act: 'new' }, { label: t('foldRename'), act: 'rename' }, { sep: true }, { label: t('foldDelete'), act: 'delete', danger: true }];
     menuOpen({ x: e.clientX, y: e.clientY, items }, (item) => {

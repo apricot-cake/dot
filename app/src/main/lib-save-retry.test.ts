@@ -65,7 +65,7 @@ test('同 URL の引用・返信は画像の編集状態を維持し、未保存
 });
 
 test('一部保存の再試行でリンクカードと引用の保存済み情報を消さない', async () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-retry-nested-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-retry-nested-'));
   const db = openDatabase(path.join(folder, 'library.db'));
   try {
     for (const file of ['card.png', 'quote-1.png', 'quote-2.png']) fs.writeFileSync(path.join(folder, file), 'saved');

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { t } from '../_shared/i18n.ts';
 import { importFromClipboard } from '../services/clipboard-intake.ts';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotIpc } from '../services/ipc.ts';
 import { libraryEmptyVariant } from '../services/library-status.ts';
 import { resetAllFilters, resetPosterFilters } from '../services/orchestrator.ts';
 import { store, subscribeKey } from '../services/store.ts';
@@ -30,7 +30,7 @@ const EXTENSION_STORE_URL = 'https://chrome.google.com/webstore/category/extensi
 // で、それが「ここには何も無い」と言う3つの画面が3つの別の製品に見えていた原因だった。
 //
 // 両方のバリアント（投稿と投稿者）は viewer からの push ではなく、自分で導くセレクタに
-// たたみ込んである＝hologramStore が必要なものをすべてリアクティブに持っている。共有して
+// たたみ込んである＝dotStore が必要なものをすべてリアクティブに持っている。共有して
 // いた旧 push ブリッジはどこにも呼び手が残らず、削除した。
 //
 // どのバリアントにするかの判断はここではなく services/library-status.ts にある（#682）＝
@@ -82,7 +82,7 @@ export function EmptyState() {
           <EmptyDescription>{t('extGuideDesc')}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button variant="outline" onClick={() => hologramIpc.openExternal(EXTENSION_STORE_URL)}>
+          <Button variant="outline" onClick={() => dotIpc.openExternal(EXTENSION_STORE_URL)}>
             {t('extGuideInstallBtn')}
           </Button>
         </EmptyContent>

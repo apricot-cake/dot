@@ -18,9 +18,9 @@ let dbFile: string;
 let bridge: typeof import('../../native-host/bridge.mts');
 
 beforeAll(async () => {
-  const configDir = process.env.HOLOGRAM_CONFIG_DIR!;
+  const configDir = process.env.DOT_CONFIG_DIR!;
   folder = path.join(configDir, 'acquisition-save-contract');
-  dbFile = path.join(folder, 'hologram.db');
+  dbFile = path.join(folder, 'dot.db');
   fs.mkdirSync(folder, { recursive: true });
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder: folder }));
   bridge = await import('../../native-host/bridge.mts');

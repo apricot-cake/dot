@@ -11,7 +11,7 @@ import { normalizeTagName, tagNameInputIsSafe } from '../../../../../native-host
 import { t } from '../_shared/i18n.ts';
 import { CreateTagDialog } from './CreateTagDialog.tsx';
 import { createTagGroup, showGroupActions } from '../services/tag-group-actions.ts';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotIpc } from '../services/ipc.ts';
 import { onChange as onTagsChanged } from '../services/tags.ts';
 import { WorkCharacterField } from './WorkCharacterField.tsx';
 import { filterTagGroups } from './tag-search.ts';
@@ -57,7 +57,7 @@ export function TagField({ tags, vocabGroups, labels, onAdd, onRemove, onContext
     let alive = true;
     const load = async () => {
       try {
-        const [rows, state] = await Promise.all([hologramIpc.getTagVocab(), hologramIpc.getTagGroups()]);
+        const [rows, state] = await Promise.all([dotIpc.getTagVocab(), dotIpc.getTagGroups()]);
         if (!alive) return;
         setVocab(rows);
         const next = new Map<string, number>();
@@ -102,7 +102,7 @@ export function TagField({ tags, vocabGroups, labels, onAdd, onRemove, onContext
               postIds={postIds}
               rows={vocab}
               reload={async () => {
-                setVocab(await hologramIpc.getTagVocab());
+                setVocab(await dotIpc.getTagVocab());
               }}
             />
             <h3 className="border-t pt-4 text-sm">{t('classificationOther')}</h3>

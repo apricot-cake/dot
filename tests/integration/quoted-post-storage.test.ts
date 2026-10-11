@@ -65,7 +65,7 @@ test('過去の取得失敗を補完し、後の失敗で保存済み画像を�
 });
 
 test('完全書き出しは引用画像と参照情報を運び、引用元を独立した一覧項目にしない', async () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-quote-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-quote-'));
   const { sqlite } = openDatabase(':memory:');
   const { sqlite: imported } = openDatabase(':memory:');
   try {
@@ -91,7 +91,7 @@ test('完全書き出しは引用画像と参照情報を運び、引用元を�
 });
 
 test('参照されなくなった引用元の共有メディアを完全削除する', async () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-quote-cleanup-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-quote-cleanup-'));
   const trashDir = path.join(folder, '.trash');
   const { sqlite } = openDatabase(':memory:');
   try {
@@ -113,7 +113,7 @@ test('参照されなくなった引用元の共有メディアを完全削除�
 });
 
 test.each(['media', 'poster', 'image', 'video', 'trash', 'promoted', 'parent-first'])('引用画像の参照と回収を守る: %s', async (mode) => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-quote-shared-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-quote-shared-'));
   const trashDir = path.join(folder, '.trash');
   const { sqlite } = openDatabase(':memory:');
   try {

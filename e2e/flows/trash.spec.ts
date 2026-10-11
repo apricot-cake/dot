@@ -7,9 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '../lib/harness.ts';
 
-test('選択バーから削除するとグリッドから消えてごみ箱に入る', async ({ launchHologram }) => {
-  const hologram = await launchHologram();
-  const { page } = hologram;
+test('選択バーから削除するとグリッドから消えてごみ箱に入る', async ({ launchDot }) => {
+  const dot = await launchDot();
+  const { page } = dot;
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   const nav = page.locator('[data-slot="sidebar"]').first();
   const trashEntry = nav.getByRole('button', { name: 'ゴミ箱' });
@@ -34,8 +34,8 @@ test('選択バーから削除するとグリッドから消えてごみ箱に�
   await expect(cards).toHaveCount(2);
   await expect(cards.filter({ hasText: '手描きのラフスケッチ' })).toHaveCount(0);
   // ソフト削除: 行は消えるが、メディアは消去されず.trashへ移動する。
-  expect(hologram.readDb((sqlite) => sqlite.prepare('SELECT captureId FROM posts WHERE captureId = ?').get('e2e-0004'))).toBeUndefined();
-  expect(fs.existsSync(path.join(hologram.saveFolder, '.trash', 'e2e-0004', 'e2e-0004.png'))).toBe(true);
+  expect(dot.readDb((sqlite) => sqlite.prepare('SELECT captureId FROM posts WHERE captureId = ?').get('e2e-0004'))).toBeUndefined();
+  expect(fs.existsSync(path.join(dot.saveFolder, '.trash', 'e2e-0004', 'e2e-0004.png'))).toBe(true);
 
   // ゴミ箱はコンテンツ領域内の行き先として開く: 削除された投稿はそこでカード
   // であり、それを選ぶと復元が構えられ、押すと投稿が戻る。
@@ -57,9 +57,9 @@ test('選択バーから削除するとグリッドから消えてごみ箱に�
   await expect(page.locator('[data-slot="trash-view"]').getByText('ゴミ箱は空です').first()).toBeVisible();
 
   // 復元とは、行とメディアがライブラリの保管場所に戻ることを意味する。
-  await expect.poll(() => hologram.readDb((sqlite) => sqlite.prepare('SELECT captureId FROM posts WHERE captureId = ?').get('e2e-0004'))).toEqual({ captureId: 'e2e-0004' });
-  const restoredMedia = hologram.readDb((sqlite) => sqlite.prepare('SELECT file FROM media WHERE postId = ?').get('e2e-0004')) as { file: string };
-  expect(fs.existsSync(path.join(hologram.saveFolder, restoredMedia.file))).toBe(true);
+  await expect.poll(() => dot.readDb((sqlite) => sqlite.prepare('SELECT captureId FROM posts WHERE captureId = ?').get('e2e-0004'))).toEqual({ captureId: 'e2e-0004' });
+  const restoredMedia = dot.readDb((sqlite) => sqlite.prepare('SELECT file FROM media WHERE postId = ?').get('e2e-0004')) as { file: string };
+  expect(fs.existsSync(path.join(dot.saveFolder, restoredMedia.file))).toBe(true);
 
   // ライブラリへ戻る: 復元された投稿は再びグリッド上にある（#471:
   // restore-postはposts-changedを発信するので、再起動は不要）。

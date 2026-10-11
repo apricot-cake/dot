@@ -29,7 +29,7 @@ await build({
     lib: {
       entry: path.join(here, 'src', 'renderer', 'src', 'services', 'theme.ts'),
       formats: ['iife'],
-      name: '__hologramTheme', // side-effect only (pre-paint [data-theme] boot); no window global, no exports read
+      name: '__dotTheme', // side-effect only (pre-paint [data-theme] boot); no window global, no exports read
       fileName: () => 'theme.js',
     },
   },

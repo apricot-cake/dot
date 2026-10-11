@@ -20,7 +20,7 @@ import { posterNameKeywords } from './poster-names.ts';
 //   stickyRecs＝書き換えの結果、絞り込みに当たらなくなっても見えたままにする captureId の Set
 //   sortValue()＝投稿の並び順の Select の今の値
 //   shuffleSeed()＝今のタブのシャッフルの種（'random' の並び順だけが読む）
-//   searchQuery()＝検索ボックスの語（hologramStore に載っている）
+//   searchQuery()＝検索ボックスの語（dotStore に載っている）
 //   buildUsers()＝投稿者の集約（users.ts の産物）
 //   posterQBEval(u) / posterQBTree()＝投稿者のクエリビルダー（遅延させる＝後で宣言する const）
 //   posterSort() / folderSort()＝モードごとの並び順のキー（getter＝再代入される let）
@@ -31,26 +31,26 @@ import { shuffleRank } from './shuffle.ts';
 import { matchingIds } from './search-results.ts';
 
 export interface ListingDeps {
-  allPosts(): HologramPost[];
-  postsById(): Map<string, HologramPost>;
-  mediaFilesOf(p: HologramPost): string[];
-  densityImage(p: HologramPost): string;
-  percentileFn(list: HologramPost[]): (p: HologramPost) => number | null;
-  evalNode(n: HologramQueryNode, item: unknown, predOf: (f: HologramQueryLeaf) => (item: any) => boolean): boolean;
-  treeLeaves(n: HologramQueryNode | null | undefined, out?: HologramQueryLeaf[]): HologramQueryLeaf[];
-  postPredOf(f: HologramQueryLeaf): (p: HologramPost) => boolean;
-  currentTree(): HologramQueryGroup;
+  allPosts(): DotPost[];
+  postsById(): Map<string, DotPost>;
+  mediaFilesOf(p: DotPost): string[];
+  densityImage(p: DotPost): string;
+  percentileFn(list: DotPost[]): (p: DotPost) => number | null;
+  evalNode(n: DotQueryNode, item: unknown, predOf: (f: DotQueryLeaf) => (item: any) => boolean): boolean;
+  treeLeaves(n: DotQueryNode | null | undefined, out?: DotQueryLeaf[]): DotQueryLeaf[];
+  postPredOf(f: DotQueryLeaf): (p: DotPost) => boolean;
+  currentTree(): DotQueryGroup;
   activeFolderId(): string | null;
   stickyRecs: Set<string>;
   sortValue(): string;
   shuffleSeed(): string;
   searchQuery(): string;
-  buildUsers(): HologramUserAgg[];
-  posterQBEval(u: HologramUserAgg): boolean;
-  posterQBTree(): HologramQueryGroup;
+  buildUsers(): DotUserAgg[];
+  posterQBEval(u: DotUserAgg): boolean;
+  posterQBTree(): DotQueryGroup;
   posterSort(): string;
   folderSort(): string;
-  allFolders(): HologramFolder[];
+  allFolders(): DotFolder[];
   filterLabel(f: { type: string; [k: string]: any }): string;
 }
 
@@ -62,7 +62,7 @@ function compareLastViewed(a: { lastViewedAt?: string | null }, b: { lastViewedA
 }
 
 /** 投稿とゴミ箱で共有する表示順。呼び出し元の配列をその場で並べ替える。 */
-export function sortPosts(posts: HologramPost[], options: Pick<ListingDeps, 'sortValue' | 'shuffleSeed' | 'percentileFn'>): HologramPost[] {
+export function sortPosts(posts: DotPost[], options: Pick<ListingDeps, 'sortValue' | 'shuffleSeed' | 'percentileFn'>): DotPost[] {
   const sort = options.sortValue();
   const ascending = isSortAscending(sort);
   const direction = ascending ? -1 : 1;
@@ -115,7 +115,7 @@ export function makeListing(deps: ListingDeps) {
 
   // 投稿グリッドと動的なフォルダが共有する内容のゲート。見せるものを持つレコード
   // （画像／メディア／本文／タイトル）だけが一覧に入る。
-  const hasContent = (p: HologramPost) => !!(p.image || mediaFilesOf(p).length || p.text || p.title);
+  const hasContent = (p: DotPost) => !!(p.image || mediaFilesOf(p).length || p.text || p.title);
 
   function getFilteredPosts(excludeTypes: string[] = []) {
     // 統合したビュー。どの項目（SNS の投稿とライブラリの画像）も対象に入る。外れるのは
@@ -125,7 +125,7 @@ export function makeListing(deps: ListingDeps) {
     // サイドバーの静的フォルダは現在地であり、フィルタのクエリには混ぜない。表示範囲だけは
     // 既存の folder 葉と同じ部分木の意味を使うので、フォルダを開いたときの件数は従来どおり。
     const folderId = activeFolderId();
-    if (folderId) posts = posts.filter(postPredOf({ kind: 'cond', type: 'folder', value: folderId } as HologramQueryLeaf));
+    if (folderId) posts = posts.filter(postPredOf({ kind: 'cond', type: 'folder', value: folderId } as DotQueryLeaf));
     // 検索ボックスの語は今やクエリの木の中の 'text' の葉＝下の evalNode が、他のどの条件とも
     // 並べて評価する（テキストの絞り込みだけの別の段は無い）。
 
@@ -166,7 +166,7 @@ export function makeListing(deps: ListingDeps) {
       );
       list = list.filter((u) => ids.has(u.key));
     }
-    const nameOf = (u: HologramUserAgg) => (u.displayName || u.screenName || '').toLowerCase();
+    const nameOf = (u: DotUserAgg) => (u.displayName || u.screenName || '').toLowerCase();
     list = list.slice();
     // 日付の軸（dim）はクエリの date の
     // 葉から取る（範囲の軸と並び替えの軸が一致する）。無ければ最終投稿日（latest）を使う。
@@ -216,9 +216,9 @@ export function makeListing(deps: ListingDeps) {
   function resetFolderCache() {
     _folderRecCache = new Map();
   }
-  function folderRecords(coll: HologramFolder): HologramPost[] {
+  function folderRecords(coll: DotFolder): DotPost[] {
     if (_folderRecCache && _folderRecCache.has(coll.id)) return _folderRecCache.get(coll.id);
-    let recs: HologramPost[];
+    let recs: DotPost[];
     recs = [];
     for (const cid of coll.items || []) {
       const r = postsById().get(cid);
@@ -227,7 +227,7 @@ export function makeListing(deps: ListingDeps) {
     if (_folderRecCache) _folderRecCache.set(coll.id, recs);
     return recs;
   }
-  function folderThumbsFrom(recs: HologramPost[]) {
+  function folderThumbsFrom(recs: DotPost[]) {
     const files: string[] = [];
     for (const rec of recs) {
       const f = densityImage(rec);
@@ -236,7 +236,7 @@ export function makeListing(deps: ListingDeps) {
     }
     return files;
   }
-  function folderItemCount(coll: HologramFolder) {
+  function folderItemCount(coll: DotFolder) {
     return folderRecords(coll).length;
   }
   function filteredFolders() {
@@ -270,7 +270,7 @@ export function makeListing(deps: ListingDeps) {
 // 可能なオブジェクトを export するのではなく `let` と setter にしてあるのは、ES モジュールの
 // 名前付き export を再代入できるのは、そのモジュール自身だけだから＝bindNamedPosters が
 // 走れば、import した側の束縛はその場で更新される。
-export let namedPosters: (() => HologramUserAgg[]) | null = null;
-export function bindNamedPosters(fn: () => HologramUserAgg[]): void {
+export let namedPosters: (() => DotUserAgg[]) | null = null;
+export function bindNamedPosters(fn: () => DotUserAgg[]): void {
   namedPosters = fn;
 }

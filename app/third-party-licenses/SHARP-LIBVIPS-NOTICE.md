@@ -5,7 +5,7 @@ The Windows desktop distribution contains `@img/sharp-win32-x64` 0.35.5. Its `sh
 - `libvips-42.dll`
 - `libvips-cpp-8.18.7.dll`
 
-The package is licensed as `Apache-2.0 AND LGPL-3.0-or-later`. Its README also identifies included LGPLv3 components. This notice and the accompanying `LGPL-3.0.txt` and `GPL-3.0.txt` apply to those components. Hologram's own code remains available under the MIT License in `LICENSE`.
+The package is licensed as `Apache-2.0 AND LGPL-3.0-or-later`. Its README also identifies included LGPLv3 components. This notice and the accompanying `LGPL-3.0.txt` and `GPL-3.0.txt` apply to those components. dot's own code remains available under the MIT License in `LICENSE`.
 
 ## Source
 
@@ -23,4 +23,4 @@ The installed app keeps the addon and DLLs outside the ASAR archive, under:
 
 `resources/app.asar.unpacked/node_modules/@img/sharp-win32-x64/lib/`
 
-After closing Hologram, you may replace the two DLLs there with a modified, interface-compatible build that uses the same filenames. Hologram does not verify a hash or signature for these files and does not block their replacement. Keep a backup of the original files; an incompatible replacement can prevent image processing from starting. You may modify the LGPL-covered libraries and reverse engineer the combination when debugging such modifications.
+After closing dot, you may replace the two DLLs there with a modified, interface-compatible build that uses the same filenames. dot does not verify a hash or signature for these files and does not block their replacement. Keep a backup of the original files; an incompatible replacement can prevent image processing from starting. You may modify the LGPL-covered libraries and reverse engineer the combination when debugging such modifications.

@@ -3,7 +3,7 @@
 // ガラスのメニューを表示する。右クリックメニューの React コンポーネントが
 // それを購読して描画する。メニューは onPick というコールバック（関数）を
 // 運ぶので、シリアライズ可能なリアクティブストアには属さないという理由で
-// hologramStore とは別に持っている。実体は本物の ES モジュール
+// dotStore とは別に持っている。実体は本物の ES モジュール
 // （named exports）で、利用側（viewer.ts / query-chips.ts /
 // ContextMenu.tsx）から直接 import される。
 //
@@ -11,7 +11,7 @@
 // onPick(item) は viewer 側のアクションを実行する。新しい items 配列を
 // 「返せば」メニューは開いたまま再描画され（トグル行――例: フォルダへの
 // 割り当て）、そうでなければメニューは閉じる。
-let current: HologramContextMenuModel | null = null; // { items, x, y, onPick } | null
+let current: DotContextMenuModel | null = null; // { items, x, y, onPick } | null
 const subs = new Set<() => void>();
 const notify = () => {
   for (const cb of [...subs]) {
@@ -24,11 +24,11 @@ const notify = () => {
 };
 
 // メニューはカーソル（{x, y}）かボタン（{ anchorEl }）のどちらかにぶら下がる
-// ――HologramMenuAnchor 参照。ここでは位置を一切計算しない: 要素の
+// ――DotMenuAnchor 参照。ここでは位置を一切計算しない: 要素の
 // アンカーはそのまま ui kit へ渡され、それが呼び出し場所での旧来の矩形計算
 // を引退させた。
-// biome-ignore lint/suspicious/noConfusingVoidType: void は「メニューを閉じる」を意味する意図した戻り値（globals.d.ts の HologramContextMenu と同じ）
-export function open(model: ({ items?: HologramMenuItem[] } & HologramMenuAnchor) | null, onPick?: (item: HologramMenuItem) => HologramMenuItem[] | void) {
+// biome-ignore lint/suspicious/noConfusingVoidType: void は「メニューを閉じる」を意味する意図した戻り値（globals.d.ts の DotContextMenu と同じ）
+export function open(model: ({ items?: DotMenuItem[] } & DotMenuAnchor) | null, onPick?: (item: DotMenuItem) => DotMenuItem[] | void) {
   current = {
     items: (model && model.items) || [],
     x: (model && model.x) || 0,
@@ -46,7 +46,7 @@ export function close() {
     notify();
   }
 }
-export function pick(item: HologramMenuItem) {
+export function pick(item: DotMenuItem) {
   if (!current || !current.onPick) {
     close();
     return;

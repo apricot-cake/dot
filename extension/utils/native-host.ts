@@ -1,5 +1,5 @@
-export const RELEASE_NATIVE_HOST = 'com.hologram.host';
-export const DEV_NATIVE_HOST = 'com.hologram.host.dev';
+export const RELEASE_NATIVE_HOST = 'com.dot.host';
+export const DEV_NATIVE_HOST = 'com.dot.host.dev';
 export const NATIVE_HOST_PROFILE_KEY = 'nativeHost.profile.v1';
 export const DEVELOPMENT_NATIVE_HOST_PROFILE = 'development';
 

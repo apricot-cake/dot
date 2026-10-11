@@ -1,24 +1,24 @@
 // 手動エクスポートの通知、ローカル復元、整合性検査の IPC をまとめる。
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 
 export function getExportReminder() {
-  return hologramIpc.getExportReminder();
+  return dotIpc.getExportReminder();
 }
 export function setExportReminderEnabled(enabled: boolean) {
-  return hologramIpc.setExportReminderEnabled(enabled);
+  return dotIpc.setExportReminderEnabled(enabled);
 }
 export function setExportReminderThreshold(threshold: number) {
-  return hologramIpc.setExportReminderThreshold(threshold);
+  return dotIpc.setExportReminderThreshold(threshold);
 }
 export function onExportReminderChanged(cb: (state: any) => void) {
-  return hologramIpc.onExportReminderChanged(cb);
+  return dotIpc.onExportReminderChanged(cb);
 }
 export function getIntegrityStatus() {
-  return hologramIpc.getIntegrityStatus();
+  return dotIpc.getIntegrityStatus();
 }
 export function runOrphanRecovery() {
-  return hologramIpc.runOrphanRecovery();
+  return dotIpc.runOrphanRecovery();
 }
 export function onIntegrityCheckDone(cb: (status: any) => void) {
-  return hologramIpc.onIntegrityCheckDone(cb);
+  return dotIpc.onIntegrityCheckDone(cb);
 }

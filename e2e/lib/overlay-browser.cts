@@ -30,15 +30,15 @@ interface OverlayBrowser {
 
 async function launchOverlayBrowser(options: { locale?: string } = {}): Promise<OverlayBrowser> {
   // 意図的に決して登録されない、実行ごとに一意なホスト名。これが無いと、ステージングされた
-  // 拡張機能は`com.hologram.host`と話し続けてしまう。開発マシンにはこれが実際に
+  // 拡張機能は`com.dot.host`と話し続けてしまう。開発マシンにはこれが実際に
   // インストールされている――インストーラーはChromeだけでなくChromiumにも登録する
   // （native-host/install.mts）――ので、保存を押すと実際のホストに届いてしまい、クリーンな
   // マシンでの同じ実行は届かず、オーバーレイがどの失敗を報告すべきかについて2つの実行が
   // 食い違ってしまっていた。「ホストが見つからない」で失敗するならどのマシンでも同じになり、
   // ユーザーがインストール済みのホストにも触れずに済む。
   const extensionDir = stageExtension({
-    tempPrefix: 'hologram-overlay-e2e-ext-',
-    nativeHostName: `com.hologram.host.overlay_e2e_${process.pid}`,
+    tempPrefix: 'dot-overlay-e2e-ext-',
+    nativeHostName: `com.dot.host.overlay_e2e_${process.pid}`,
   });
   const session = await launchExtensionBrowser({
     extensionDir,
@@ -100,9 +100,9 @@ const RECORDER_SOURCE = `(() => {
   new MutationObserver((records) => {
     for (const r of records) {
       if (r.type === 'childList') {
-        for (const n of r.addedNodes) if (n instanceof Element && n.hasAttribute('data-hologram-overlay')) log.push({ t: performance.now(), type: 'add', host: describe(r.target) });
-        for (const n of r.removedNodes) if (n instanceof Element && n.hasAttribute('data-hologram-overlay')) log.push({ t: performance.now(), type: 'remove', host: describe(r.target) });
-      } else if (r.type === 'attributes' && r.target instanceof Element && !r.target.hasAttribute('data-hologram-overlay')) {
+        for (const n of r.addedNodes) if (n instanceof Element && n.hasAttribute('data-dot-overlay')) log.push({ t: performance.now(), type: 'add', host: describe(r.target) });
+        for (const n of r.removedNodes) if (n instanceof Element && n.hasAttribute('data-dot-overlay')) log.push({ t: performance.now(), type: 'remove', host: describe(r.target) });
+      } else if (r.type === 'attributes' && r.target instanceof Element && !r.target.hasAttribute('data-dot-overlay')) {
         // オーバーレイがPAGE要素に対して行う唯一のスタイル書き込みは、コントロールが
         // 載っている間だけ借りるホストのpositionだ。フィクスチャ自身がstyle属性に
         // 触れることは決してないので、ここに現れるすべてのエントリはオーバーレイが
@@ -137,7 +137,7 @@ async function openFixture(overlay: OverlayBrowser, url: string, html: string): 
   // ちゃんと見えていることを証明する。
   const alive = await page.evaluate(async () => {
     const el = document.createElement('div');
-    el.setAttribute('data-hologram-overlay', '');
+    el.setAttribute('data-dot-overlay', '');
     document.body.appendChild(el);
     el.remove();
     // 2件のエントリが事後条件だ。待ち切るのではなくフレームごとにポーリングする＝

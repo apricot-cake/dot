@@ -5,7 +5,7 @@
 // gridSize が確定・永続化されるか。下限では ×N バッジのような chrome が
 // 引っ込む（サムネイルを覆わないように）。ズームがカーソル下の投稿を画面上で
 // 同じ高さに保つかどうかも計測する（#282）。これは本物のアプリではなく、
-// 別の設定を持つ独立した HOLOGRAM_SMOKE プロセスなので、利用者がメインの
+// 別の設定を持つ独立した DOT_SMOKE プロセスなので、利用者がメインの
 // アプリを操作中でも衝突しない（docs/開発ガイド.md）。test-app-taggroups.cts と
 // 同じハーネス。
 //
@@ -23,8 +23,8 @@ const electronPath = resolveElectron();
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-overview-zoom-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-overview-zoom-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -238,9 +238,9 @@ const evalJs = evalSource(async ({ waitFor, waitStable, neverHappens }) => {
   // 引く前の値を読んでしまう。代わりに設定値が画面上のものに追いつくのを
   // 待つ（伸縮が丸め落とす1pxの範囲内で一致する）。
   let persistedSize = Number.NaN;
-  // window.hologram は preload のブリッジ。scripts/ にはこれの宣言が無いので、
+  // window.dot は preload のブリッジ。scripts/ にはこれの宣言が無いので、
   // このハーネスがそれを読む唯一の場所で形を名指ししている。
-  const prefs = () => (window as unknown as { hologram: { getPrefs(): Promise<{ gridSize: number }> } }).hologram.getPrefs();
+  const prefs = () => (window as unknown as { dot: { getPrefs(): Promise<{ gridSize: number }> } }).dot.getPrefs();
   await waitFor(
     '永続化された gridSize が画面上のセルに追いつくこと',
     async () => {
@@ -272,9 +272,9 @@ const evalJs = evalSource(async ({ waitFor, waitStable, neverHappens }) => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

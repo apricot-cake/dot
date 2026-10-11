@@ -3,7 +3,7 @@
 // 値そのものはアプリ自身のトークンから生成される。
 // scripts/gen-extension-tokens.cts を参照。このモジュールは拡張機能のコー
 // ドがそれらへアクセスする経路で、意図して解決済みの色ではなく
-// `var(--hologram-…)` の参照を渡す＝この参照はブラウザのテーマが変わる
+// `var(--dot-…)` の参照を渡す＝この参照はブラウザのテーマが変わる
 // たびに再解決されるので、ライト/ダークの切り替えは JavaScript の誰かが
 // 気付いたり再描画したりしなくても、すでに画面にある UI に届く。
 //
@@ -47,45 +47,45 @@ export const actionBadge = generatedActionBadge;
 // （tests/integration/extension-tokens.test.ts が強制する）。
 export const token = {
   // 浮かんでいる画面そのもの
-  surface: 'var(--hologram-surface)',
-  ink: 'var(--hologram-ink)',
-  inkMuted: 'var(--hologram-ink-muted)',
-  overlayBorder: 'var(--hologram-overlay-border)',
-  overlayShadow: 'var(--hologram-overlay-shadow)',
-  radius: 'var(--hologram-radius)',
+  surface: 'var(--dot-surface)',
+  ink: 'var(--dot-ink)',
+  inkMuted: 'var(--dot-ink-muted)',
+  overlayBorder: 'var(--dot-overlay-border)',
+  overlayShadow: 'var(--dot-overlay-shadow)',
+  radius: 'var(--dot-radius)',
   // state
-  accent: 'var(--hologram-accent)',
-  accentSoft: 'var(--hologram-accent-soft)',
-  onAccent: 'var(--hologram-on-accent)',
-  success: 'var(--hologram-success)',
-  onSuccess: 'var(--hologram-on-success)',
-  warning: 'var(--hologram-warning)',
-  onWarning: 'var(--hologram-on-warning)',
-  danger: 'var(--hologram-danger)',
-  onDanger: 'var(--hologram-on-danger)',
-  badgeNeutral: 'var(--hologram-badge-neutral)',
-  hover: 'var(--hologram-hover)',
+  accent: 'var(--dot-accent)',
+  accentSoft: 'var(--dot-accent-soft)',
+  onAccent: 'var(--dot-on-accent)',
+  success: 'var(--dot-success)',
+  onSuccess: 'var(--dot-on-success)',
+  warning: 'var(--dot-warning)',
+  onWarning: 'var(--dot-on-warning)',
+  danger: 'var(--dot-danger)',
+  onDanger: 'var(--dot-on-danger)',
+  badgeNeutral: 'var(--dot-badge-neutral)',
+  hover: 'var(--dot-hover)',
   // カードではなく写真の上に乗るコンパクトな操作。リムはカードのもの
   // で、塗りは retry を除くすべての面について下の半透明ディスク。
   // retry だけは不透明な `danger` を取る＝その塗り自体が状態を表すから
   // だ（#526。理由とアルファの上下限は tokens.source.css で論じてい
   // る）。
-  controlSurface: 'var(--hologram-control-surface)',
-  controlSurfaceHover: 'var(--hologram-control-surface-hover)',
-  controlHoverGlow: 'var(--hologram-control-hover-glow)',
+  controlSurface: 'var(--dot-control-surface)',
+  controlSurfaceHover: 'var(--dot-control-surface-hover)',
+  controlHoverGlow: 'var(--dot-control-hover-glow)',
   // カードのものではなく自前の影（#310）: ぼかし36px・オフセット下12px
   // は24pxのディスクより幅が広く、自分の高さの半分ぶん下にはみ出す。
   // tokens.source.css で、これがなぜ印ではなく elevation として読めて
   // しまうのかを論じている。
-  controlShadow: 'var(--hologram-control-shadow)',
+  controlShadow: 'var(--dot-control-shadow)',
   // type + motion
-  fontSans: 'var(--hologram-font-sans)',
-  durationBase: 'var(--hologram-duration-base)',
-  durationFast: 'var(--hologram-duration-fast)',
-  easeOut: 'var(--hologram-ease-out)',
+  fontSans: 'var(--dot-font-sans)',
+  durationBase: 'var(--dot-duration-base)',
+  durationFast: 'var(--dot-duration-fast)',
+  easeOut: 'var(--dot-ease-out)',
 } as const;
 
-const TOKENS_STATE = Symbol.for('hologram.tokens-stylesheet');
+const TOKENS_STATE = Symbol.for('dot.tokens-stylesheet');
 interface TokensState {
   css: string;
   sheet: CSSStyleSheet | null;

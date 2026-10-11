@@ -1,4 +1,4 @@
-// hologramIpc（services/ipc.ts。preload のブリッジの上に置いた P4 の IPC→サービスの
+// dotIpc（services/ipc.ts。preload のブリッジの上に置いた P4 の IPC→サービスの
 // 継ぎ目）とテーマのランタイム（services/theme-api.ts）に対する薄いラッパー。
 // app/src/main/index.ts と app/src/preload/index.ts には手を入れない＝コンポーネントが
 // 話す相手は、素の設定画面が使っていたのとまったく同じ IPC。ただし他のレンダラーの
@@ -6,15 +6,15 @@
 
 import { get as themeGet, set as themeSet } from '../services/theme-api.ts';
 import { get as uiFontGet, apply as uiFontApply, set as uiFontSet } from '../services/ui-font-api.ts';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotIpc } from '../services/ipc.ts';
 import type { AppPrefs } from '../../../main/ipc-payloads.ts';
 
 // AppPrefs ではなく Partial にしてある: 素の dev サーバーでの代替は {} で解決するし、
 // ここの呼び出し側はどれも、欠けているメンバーを「未設定」として扱っている。
-export const getPrefs = (): Promise<Partial<AppPrefs>> => (hologramIpc.getPrefs ? hologramIpc.getPrefs() : Promise.resolve({}));
-export const setPref = (...args: Parameters<typeof hologramIpc.setPref>) => (hologramIpc.setPref ? hologramIpc.setPref(...args) : Promise.resolve());
-export const getAppInfo = () => (hologramIpc.getAppInfo ? hologramIpc.getAppInfo() : Promise.resolve(null));
-export const openExternal = (url: string) => hologramIpc.openExternal(url);
+export const getPrefs = (): Promise<Partial<AppPrefs>> => (dotIpc.getPrefs ? dotIpc.getPrefs() : Promise.resolve({}));
+export const setPref = (...args: Parameters<typeof dotIpc.setPref>) => (dotIpc.setPref ? dotIpc.setPref(...args) : Promise.resolve());
+export const getAppInfo = () => (dotIpc.getAppInfo ? dotIpc.getAppInfo() : Promise.resolve(null));
+export const openExternal = (url: string) => dotIpc.openExternal(url);
 
 // テーマのランタイムは services/theme-api.ts にある（[data-theme] を当て、setPref で
 // 永続化し、localStorage に控えを持ち、OS に追従する）。読むのも動かすのもそのモジュール

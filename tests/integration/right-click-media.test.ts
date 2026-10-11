@@ -11,12 +11,12 @@ import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
 
 // bridge.mts は読み込み時に configDir を解決するので、先に config.json を置いてから動的に
-// import する（setup が用意した HOLOGRAM_CONFIG_DIR のサンドボックスを使う）。
+// import する（setup が用意した DOT_CONFIG_DIR のサンドボックスを使う）。
 let handleSaveMedia: any;
 let saveFolder: string;
 
 beforeAll(async () => {
-  const configDir = process.env.HOLOGRAM_CONFIG_DIR as string;
+  const configDir = process.env.DOT_CONFIG_DIR as string;
   saveFolder = path.join(configDir, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder }));
@@ -67,7 +67,7 @@ describe('成功時', () => {
   test('png と inbox エンベロープがディスクに書かれる（sidecar は書かれない）', () => {
     expect(fs.existsSync(path.join(saveFolder, 'items', '1717500000000-ab01', '1717500000000-ab01.png'))).toBe(true);
     expect(fs.existsSync(path.join(saveFolder, '1717500000000-ab01.json'))).toBe(false);
-    expect(fs.existsSync(path.join(saveFolder, '.hologram-inbox', 'new', '1717500000000-ab01.json'))).toBe(true);
+    expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000000-ab01.json'))).toBe(true);
   });
 
   // media は「落とした1枚」＝このレコードがどの絵を持っているかの記録 (#334)。呼び出し側が
@@ -75,7 +75,7 @@ describe('成功時', () => {
   // ライトボックスは media があればそれを読み、無ければ image へ落ちる（records.ts の
   // artworkFile/groupFilesOf）ので、両者が同じ1枚を指していても重複は生まれない。
   test('レコードは image と、落とした1枚だけの media を持つ', () => {
-    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.hologram-inbox', 'new', '1717500000000-ab01.json'), 'utf8'));
+    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000000-ab01.json'), 'utf8'));
     expect(envelope.record.image).toBe('items/1717500000000-ab01/1717500000000-ab01.png');
     expect(envelope.record.media).toHaveLength(1);
     expect(envelope.record.media[0]).toMatchObject({
@@ -89,7 +89,7 @@ describe('成功時', () => {
   });
 
   test('API 由来のメタデータが保たれる', () => {
-    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.hologram-inbox', 'new', '1717500000000-ab01.json'), 'utf8'));
+    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000000-ab01.json'), 'utf8'));
     expect(envelope.record).toMatchObject({ platform: 'pixiv', title: 'T', screenName: '77', likes: 5 });
   });
 
@@ -129,7 +129,7 @@ describe('動画', () => {
 
     expect(res.file).toBe('items/1717500000002-ab03/1717500000002-ab03-media-0.mp4');
     expect(fs.existsSync(path.join(saveFolder, 'items', '1717500000002-ab03', '1717500000002-ab03-media-0.mp4'))).toBe(true);
-    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.hologram-inbox', 'new', '1717500000002-ab03.json'), 'utf8'));
+    const envelope = JSON.parse(fs.readFileSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000002-ab03.json'), 'utf8'));
     expect(envelope.record.image).toBeNull();
     expect(envelope.record.video).toBe('items/1717500000002-ab03/1717500000002-ab03-media-0.mp4');
     expect(envelope.record.mediaType).toBe('video');
@@ -149,7 +149,7 @@ describe('失敗時', () => {
 
     await expect(handleSaveMedia({ captureId: '1717500000001-ab02', mediaUrl: 'https://x/y', metadata: {} })).rejects.toThrow();
     expect(fs.existsSync(path.join(saveFolder, '1717500000001-ab02.json'))).toBe(false);
-    expect(fs.existsSync(path.join(saveFolder, '.hologram-inbox', 'new', '1717500000001-ab02.json'))).toBe(false);
+    expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000001-ab02.json'))).toBe(false);
     // 一時ファイルも残らない（この経路は本文を1バイトも書く前に失敗する）
     expect(fs.readdirSync(saveFolder).filter((f) => f.endsWith('.tmp'))).toEqual([]);
   });
@@ -166,9 +166,9 @@ describe('receipt の補助I/O', () => {
     }) as typeof fs.renameSync);
     const ack = await handleSaveMedia({ captureId: '1717500000003-ab04', mediaUrl: 'https://example.com/io.png', metadata: { url: 'https://example.com/io' } });
     expect(ack.ok).toBe(true);
-    expect(fs.existsSync(path.join(saveFolder, '.hologram-inbox', 'new', '1717500000003-ab04.json'))).toBe(true);
+    expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000003-ab04.json'))).toBe(true);
     rename.mockRestore();
-    const receiptFile = path.join(saveFolder, '.hologram-inbox', 'requests', '1717500000003-ab04', 'result.json');
+    const receiptFile = path.join(saveFolder, '.dot-inbox', 'requests', '1717500000003-ab04', 'result.json');
     const processing = JSON.parse(fs.readFileSync(receiptFile, 'utf8'));
     fs.writeFileSync(receiptFile, JSON.stringify({ ...processing, ownerPid: 2147483647 }));
     await expect(handleSaveMedia({ captureId: '1717500000003-ab04', requestNonce: 'f'.repeat(32), mediaUrl: 'https://example.com/different.png', metadata: { url: 'https://example.com/different' } })).rejects.toThrow(/different save payload/);
@@ -177,7 +177,7 @@ describe('receipt の補助I/O', () => {
   test('期限切れcompleted receiptをbounded compactionで除去する', async () => {
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));
     const oldId = '1717500000004-ab05';
-    const oldDir = path.join(saveFolder, '.hologram-inbox', 'requests', oldId);
+    const oldDir = path.join(saveFolder, '.dot-inbox', 'requests', oldId);
     fs.mkdirSync(oldDir, { recursive: true });
     const oldFile = path.join(oldDir, 'result.json');
     fs.writeFileSync(oldFile, JSON.stringify({ state: 'failed', error: 'old', completedAt: 1 }));
@@ -190,7 +190,7 @@ describe('receipt の補助I/O', () => {
   test('mkdir直後に中断した空claimは猶予後に回収できる', async () => {
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));
     const id = '1717500000006-ab07';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     const old = new Date(Date.now() - 91_000);
     fs.utimesSync(dir, old, old);
@@ -201,7 +201,7 @@ describe('receipt の補助I/O', () => {
   test('owner終了後のpartial tmp receiptをclaim世代ごと回収できる', async () => {
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));
     const id = '1717500000014-ab15';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'result.json.tmp-999999'), '{"state":"processing"');
     const old = new Date(Date.now() - 91_000);
@@ -212,7 +212,7 @@ describe('receipt の補助I/O', () => {
   test('回収者が終了して残したstale recovery lockも期限後に回収できる', async () => {
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));
     const id = '1717500000009-ab10';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     const lock = path.join(dir, 'recovery.lock');
     fs.writeFileSync(lock, JSON.stringify({ ownerPid: 2147483647, startedAt: Date.now() - 91_000, token: 'dead' }));
@@ -224,7 +224,7 @@ describe('receipt の補助I/O', () => {
 
   test('10分超でもprocessing ownerが生存中ならgenerationを奪わない', async () => {
     const id = '1717500000011-ab12';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'result.json'), JSON.stringify({ state: 'processing', ownerPid: process.pid, startedAt: Date.now() - 60 * 60_000, generation: 'live-generation', requestNonce: null, payloadHash: '' }));
     await expect(handleSaveMedia({ captureId: id, mediaUrl: 'https://example.com/live-owner.png', metadata: { url: 'https://example.com/live-owner' } })).rejects.toThrow(/still processing/);
@@ -232,7 +232,7 @@ describe('receipt の補助I/O', () => {
 
   test('90秒超でもrecovery lock ownerが生存中ならlockを奪わない', async () => {
     const id = '1717500000012-ab13';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'recovery.lock'), JSON.stringify({ ownerPid: process.pid, startedAt: Date.now() - 60 * 60_000, token: 'live-lock-generation' }));
     const old = new Date(Date.now() - 91_000);
@@ -244,7 +244,7 @@ describe('receipt の補助I/O', () => {
   test('固定SQLiteロックの所有者を奪わず、要求ディレクトリにも触れない', async () => {
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));
     const id = '1717500000013-ab14';
-    const root = path.join(saveFolder, '.hologram-inbox', 'request-locks');
+    const root = path.join(saveFolder, '.dot-inbox', 'request-locks');
     fs.mkdirSync(root, { recursive: true });
     const lock = new DatabaseSync(path.join(root, `${id}.sqlite`));
     lock.exec('BEGIN EXCLUSIVE');
@@ -254,7 +254,7 @@ describe('receipt の補助I/O', () => {
       const req = { captureId: id, mediaUrl: 'https://example.com/generation-race.png', metadata: { url: 'https://example.com/generation-race' } };
       await expect(handleSaveMedia(req)).rejects.toMatchObject({ code: 'request-in-progress' });
       expect(busy.mock.results.some((result) => result.type === 'throw')).toBe(true);
-      expect(fs.existsSync(path.join(saveFolder, '.hologram-inbox', 'requests', id))).toBe(false);
+      expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'requests', id))).toBe(false);
       lock.close();
       released = true;
       expect(await handleSaveMedia(req)).toMatchObject({ ok: true, captureId: id });
@@ -266,7 +266,7 @@ describe('receipt の補助I/O', () => {
 
   test('300件の保存でも固定ロックは256個以内で、要求ごとの旧ファイルを増やさない', async () => {
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));
-    const root = path.join(saveFolder, '.hologram-inbox', 'request-locks');
+    const root = path.join(saveFolder, '.dot-inbox', 'request-locks');
     const before = fs.existsSync(root)
       ? fs
           .readdirSync(root)
@@ -292,7 +292,7 @@ describe('receipt の補助I/O', () => {
 
   test('死亡ownerの同時回収はfresh generationを奪わず1processだけ実行する', async () => {
     const id = '1717500000008-ab09';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'result.json'), JSON.stringify({ state: 'processing', ownerPid: 2147483647, startedAt: Date.now() - 20 * 60_000, generation: 'old', requestNonce: null, payloadHash: '' }));
     let release!: () => void;
@@ -315,7 +315,7 @@ describe('receipt の補助I/O', () => {
 
   test('回収後のinterrupted cleanupがEPERMでも保存成功ackを維持する', async () => {
     const id = '1717500000010-ab11';
-    const dir = path.join(saveFolder, '.hologram-inbox', 'requests', id);
+    const dir = path.join(saveFolder, '.dot-inbox', 'requests', id);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'result.json'), JSON.stringify({ state: 'processing', ownerPid: 2147483647, startedAt: 1, generation: 'dead', requestNonce: null, payloadHash: '' }));
     vi.stubGlobal('fetch', async () => new Response(png, { status: 200, headers: { 'content-type': 'image/png' } }));

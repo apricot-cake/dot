@@ -4,7 +4,7 @@ import { downloadQuotedPost } from '../native-host/quoted-storage.mts';
 import { createByteBudget } from '../native-host/media-download.mts';
 
 const file = process.argv[2];
-if (!file) throw new Error('Pass hologram.db path');
+if (!file) throw new Error('Pass dot.db path');
 const db = new Database(file);
 try {
   if (Number(db.pragma('user_version', { simple: true })) !== 48) throw new Error('Expected schema 48');

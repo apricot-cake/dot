@@ -4,7 +4,7 @@
 // フラットな葉のシャドウを持つ。自分自身の view は持たない: 画面上の
 // チップはフィルタバーのコンポーネント（FilterChips）で、それは
 // orchestrator の activeFilters() が、このモジュールが ctx.storeKey の下で
-// hologramStore へ映す木から導出する。viewer.js は今も変更まわりの
+// dotStore へ映す木から導出する。viewer.js は今も変更まわりの
 // オーケストレーション（ctx.onChange）を持つ――移ったのは木のドメイン
 // 自体だけ。
 //
@@ -24,20 +24,20 @@ import { store } from './store.ts';
 
 // ファイル冒頭のコメントに記した ctx 契約のローカルな形
 // （createQueryBuilder の ctx: any は緩いままにしている――レンダラー
-// プロジェクトからは HologramQueryLeaf/HologramQueryGroup が見えないため
+// プロジェクトからは DotQueryLeaf/DotQueryGroup が見えないため
 // ――ので、これはこのモジュール自身の本体のためだけに型付けしている）。
 interface QbCtx {
   // このビルダーが2つのクエリ木のどちらを持つか。（素の文字列ではなく）
   // ユニオン型にしていることが、下の syncShadow が計算されたキーを通して
   // 書き込めるようにしている。
   storeKey?: 'postQueryTree' | 'posterQueryTree' | 'trashQueryTree';
-  predOf: (f: HologramQueryLeaf) => (item: any) => boolean;
+  predOf: (f: DotQueryLeaf) => (item: any) => boolean;
   onChange: () => void;
   singleValueTypes?: string[];
   noDupTypes?: string[];
   multiValueTypes?: string[];
   standaloneTypes?: string[];
-  onLeafMutated?: (node: HologramQueryLeaf) => void;
+  onLeafMutated?: (node: DotQueryLeaf) => void;
   // post では ID なし `__none` が「タグなし」番兵。poster にはその概念がなく、
   // 同じ値は保存済み name-only の実タグとして通常の名前 fallback を使う。
   tagNoneIsSentinel?: boolean;
@@ -62,9 +62,9 @@ export function createQueryBuilder(ctx: QbCtx) {
   // それを比較し、どちらかが知らないときだけ名前へフォールバックする。
   const sameLeafOptions = { tagNoneIsSentinel: ctx.tagNoneIsSentinel !== false };
   const qHasTag = (tagId: number | null | undefined, value: string) => hasSameLeaf(tree, { type: 'tag', value, tagId }, sameLeafOptions);
-  const removeCondsMatching = (pred: (c: HologramQueryLeaf) => boolean) => removeCondsMatchingQ(tree, pred);
+  const removeCondsMatching = (pred: (c: DotQueryLeaf) => boolean) => removeCondsMatchingQ(tree, pred);
   // 下の `.shadow()` が公開する、フラットな（重複除去済みの）葉のシャドウを
-  // 作り直す。木を ctx.storeKey の下で hologramStore へも映す。毎回新しい
+  // 作り直す。木を ctx.storeKey の下で dotStore へも映す。毎回新しい
   // ディープクローンで（木は下の query.ts の呼び出しでその場変更される
   // ので、同じ参照を push してもストアの identity-equality ガードを
   // 決して通らない――selectedSet のスライスと同じ問題、同じ修正）。これが
@@ -95,7 +95,7 @@ export function createQueryBuilder(ctx: QbCtx) {
   // 導出されるもの――利用者が自分でそれを組み立てることは決してない）。
   // ファセット形でない木（永続化された改訂③の入れ子）では代わりに最上位
   // （AND）に着地する。
-  function addFilter(filter: { type: string; [k: string]: any }): HologramQueryLeaf | null {
+  function addFilter(filter: { type: string; [k: string]: any }): DotQueryLeaf | null {
     if (isRemovedFilter(filter)) return null;
     // 単一値の type（単一選択）: 新しいものは、木のどこにあっても既存のものを置き換える。
     if (singleValueTypes.includes(filter.type)) removeCondsMatching((c) => c.type === filter.type);
@@ -120,7 +120,7 @@ export function createQueryBuilder(ctx: QbCtx) {
     removeCondsMatching((c) => sameLeaf(c, f, sameLeafOptions));
     refresh();
   }
-  function removeNode(node: HologramQueryLeaf) {
+  function removeNode(node: DotQueryLeaf) {
     if (ctx.onLeafMutated) ctx.onLeafMutated(node); // view に整合を取らせる（例: 編集中のテキストの葉の結び付けを外す）
     detachNode(node, treeParentMap(tree));
     cleanupTree(tree);
@@ -134,7 +134,7 @@ export function createQueryBuilder(ctx: QbCtx) {
     // される――render()（描画のたびにそれを再主張していた）が無くなった
     // 今、唯一の正規化ポイント。他のあらゆる変更経路は形を保つ: facetAdd は
     // 本物のグループノードを構築し、detach/cleanup はそれらを縮めるだけ。
-    setTree: (t: HologramQueryGroup | null | undefined) => {
+    setTree: (t: DotQueryGroup | null | undefined) => {
       tree = t ? normalizeTree(JSON.parse(JSON.stringify(t))) : emptyTree();
       cleanupTree(tree);
       canonicalizeFacet(tree, facetOpts);

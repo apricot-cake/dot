@@ -1,5 +1,5 @@
 // タグの移動先メニューを描画側へ渡す。グループ作成も同じメニューから行う。
-let current: HologramTagGroupMenuModel | null = null; // モデル、または null
+let current: DotTagGroupMenuModel | null = null; // モデル、または null
 const subs = new Set<() => void>();
 const notify = () => {
   for (const cb of [...subs]) {
@@ -11,7 +11,7 @@ const notify = () => {
   }
 };
 
-export function open(model: HologramTagGroupMenuModel) {
+export function open(model: DotTagGroupMenuModel) {
   current = model;
   notify();
 }

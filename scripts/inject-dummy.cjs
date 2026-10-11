@@ -7,7 +7,7 @@
 //   (from repo root) node_modules/.bin/electron scripts/inject-dummy.cjs  [saveFolder]
 //
 // With no folder argument it writes to the configured save folder. Images AND the
-// library database (<saveFolder>/hologram.db, #176) both go there —
+// library database (<saveFolder>/dot.db, #176) both go there —
 // **CLOSE THE APP FIRST**: the database has a single writer and this tool takes
 // that role for the duration.
 //
@@ -34,7 +34,7 @@ function resolveFolder() {
   } catch {
     /* no config */
   }
-  return defaultLibraryDir(); // SAME default the app uses (was ~/Hologram, which the app never watches)
+  return defaultLibraryDir(); // SAME default the app uses (was ~/dot, which the app never watches)
 }
 
 const COLORS = { x: '#14171a', bluesky: '#0085ff' };
@@ -104,7 +104,7 @@ app.whenReady().then(async () => {
   // the dummy rows from drifting away from the shape real producers write.
   const { openDatabase } = await import('../app/src/main/lib-db.ts');
   const { makeTagResolver, preparePostStmts, writePost } = await import('../app/src/main/lib-db-record-writer.ts');
-  const handle = openDatabase(path.join(folder, 'hologram.db')); // #176: inside the save folder now, not configDir
+  const handle = openDatabase(path.join(folder, 'dot.db')); // #176: inside the save folder now, not configDir
   const stmts = preparePostStmts(handle.sqlite);
   const resolveTagId = makeTagResolver(handle.sqlite);
 

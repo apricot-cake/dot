@@ -15,7 +15,7 @@ import { MAX_CLASSIFIED_TAG_VOCABULARY, PortableClassifiedTagVocabulary } from '
 let directory: string;
 let handle: ReturnType<typeof openDatabase>;
 beforeEach(() => {
-  directory = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-classification-'));
+  directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-classification-'));
   handle = openDatabase(path.join(directory, 'test.db'));
   handle.sqlite.prepare("INSERT INTO posts(captureId,capturedAt,updatedAt) VALUES('p','2026-01-01','2026-01-01')").run();
 });

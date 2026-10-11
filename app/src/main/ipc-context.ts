@@ -45,7 +45,7 @@ export interface DbHandle {
  * JSON で、どの読み手も取り出した値を既に自分で守っているため（本物のゲートは
  * ipc-config.ts の環境設定の許可リスト）。
  */
-export interface HologramConfig {
+export interface DotConfig {
   saveFolder?: string;
   extensionId?: string;
   [key: string]: any;
@@ -97,8 +97,8 @@ export interface IpcContext {
   searchFullText(query: string, limit?: number): Promise<FullTextHit[]>;
 
   // --- 設定 ---
-  readConfig(): HologramConfig;
-  writeConfig(cfg: HologramConfig): void;
+  readConfig(): DotConfig;
+  writeConfig(cfg: DotConfig): void;
   /**
    * 設定のキャッシュを捨てる（#61）。他の何かに config.json を書かせるハンドラ
    * だけが必要とする——extensionId を永続化するインストーラのこと。

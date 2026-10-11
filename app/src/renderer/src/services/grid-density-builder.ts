@@ -8,14 +8,14 @@ import type { ZoomAnchor } from './zoom-anchor.ts';
 import type { AppPrefs } from '../../../main/ipc-payloads.ts';
 
 export interface GridDensityDeps {
-  hologramIpc: { setPref(key: string, value: unknown): void };
-  hologramPostGridSource: { setLiveColumnWidth(px: number | null): void; setZoomAnchor(anchor: ZoomAnchor | null): void };
-  hologramTrashGridSource: { setLiveColumnWidth(px: number | null): void };
+  dotIpc: { setPref(key: string, value: unknown): void };
+  dotPostGridSource: { setLiveColumnWidth(px: number | null): void; setZoomAnchor(anchor: ZoomAnchor | null): void };
+  dotTrashGridSource: { setLiveColumnWidth(px: number | null): void };
   renderPosts(inPlace?: boolean): void;
   renderPosters(): void;
 }
 
-export interface HologramSizeTrack {
+export interface DotSizeTrack {
   min: number;
   max: number;
   value: number;
@@ -23,17 +23,17 @@ export interface HologramSizeTrack {
   single: boolean;
 }
 
-type HologramSizeKey = 'gridSize' | 'posterGridSize';
+type DotSizeKey = 'gridSize' | 'posterGridSize';
 
 // viewSizeState/posterSizeState が返すもの＝生きている値、その範囲、確定した値の行き先。
-// 名前を付けてあるのは、この2つのリテラルが string へ広がらず HologramSizeKey のまま
+// 名前を付けてあるのは、この2つのリテラルが string へ広がらず DotSizeKey のまま
 // 型付けされるようにするため。
 interface SizeState {
   get(): number;
   set(v: number): void;
   min: number;
   max: number;
-  pref: HologramSizeKey;
+  pref: DotSizeKey;
 }
 
 export function makeGridDensity(deps: GridDensityDeps) {
@@ -68,19 +68,19 @@ export function makeGridDensity(deps: GridDensityDeps) {
     st.set(Math.max(st.min, Math.min(st.max, px)));
     if (!commit) {
       // ドラッグ中の実時間の再配置（masonic は columnWidth が変わると positioner を
-      // 作り直す）は、hologramStore ではなく意図した脇道を通す＝ドラッグの入力を毎回
+      // 作り直す）は、dotStore ではなく意図した脇道を通す＝ドラッグの入力を毎回
       // ストアへ書くと、pointermove のたびに再計算と通知が走り、何の得も無い。
-      const grid = store.getState().browseMode === 'trash' ? deps.hologramTrashGridSource : deps.hologramPostGridSource;
+      const grid = store.getState().browseMode === 'trash' ? deps.dotTrashGridSource : deps.dotPostGridSource;
       grid.setLiveColumnWidth(st.get());
       return;
     }
-    deps.hologramIpc.setPref(st.pref, st.get());
-    // 確定したサイズは hologramStore へ写る＝投稿グリッドの source が、そこから
+    deps.dotIpc.setPref(st.pref, st.get());
+    // 確定したサイズは dotStore へ写る＝投稿グリッドの source が、そこから
     // columnWidth/itemHeightEstimate を導く。ドラッグ中の上書きは消しておく。そうしないと、
     // 後のビューの変更（別のキーを読む）が古い値を見てしまう。
     store.setState({ [st.pref]: st.get() });
-    deps.hologramPostGridSource.setLiveColumnWidth(null);
-    deps.hologramTrashGridSource.setLiveColumnWidth(null);
+    deps.dotPostGridSource.setLiveColumnWidth(null);
+    deps.dotTrashGridSource.setLiveColumnWidth(null);
     // その場での再配置。サイズの変更は同じ投稿の集合を並べ直すだけ。ここでのフラグの意味は
     // それ＝約9千件のレコードを絞り込み直さずグループ化済みの集合を使い回し、登場の
     // アニメーションも飛ばす。これが無いと、ズームの1目盛りごと（そしてスライダーを離す
@@ -92,15 +92,15 @@ export function makeGridDensity(deps: GridDensityDeps) {
 
   // グリッド自身の箱を実測したもの。溝は計算済みスタイルではなく、配置自身の定数＝隙間を
   // 描くのは masonic で、入れ物には隙間が無い。
-  function postGridMetrics(): HologramGridMetrics | null {
+  function postGridMetrics(): DotGridMetrics | null {
     const W = gridWidth(store.getState().browseMode === 'trash' ? 'trash' : 'post');
     if (!W) return null;
     return { W, g: POST_GUTTER };
   }
 
-  let _dragMetrics: HologramGridMetrics | null = null; // サイズのドラッグ1回の間だけキャッシュするグリッドの寸法
+  let _dragMetrics: DotGridMetrics | null = null; // サイズのドラッグ1回の間だけキャッシュするグリッドの寸法
 
-  function computeSizeTrack(): HologramSizeTrack | null {
+  function computeSizeTrack(): DotSizeTrack | null {
     const st = viewSizeState();
     const m = postGridMetrics();
     if (!m) return null;
@@ -194,7 +194,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
   // 値が同じでも毎回新しいオブジェクトを作る。グリッドの島はアンカーの同一性で構え直し、
   // 下の適用はそれぞれ別の再配置で、その間ずっと位置を保ち続ける必要があるため。
   function pushZoomAnchor(a: ZoomAnchor | null) {
-    deps.hologramPostGridSource.setZoomAnchor(a && { ...a });
+    deps.dotPostGridSource.setZoomAnchor(a && { ...a });
   }
 
   function applyPendingZoom() {
@@ -274,15 +274,15 @@ export function makeGridDensity(deps: GridDensityDeps) {
     if (sig === _shapeSig) return;
     _shapeSig = sig;
     const shape = currentShape();
-    deps.hologramIpc.setPref('showInfo', shape.info);
-    deps.hologramIpc.setPref('showAvatar', shape.avatar);
+    deps.dotIpc.setPref('showInfo', shape.info);
+    deps.dotIpc.setPref('showAvatar', shape.avatar);
     // 「情報を表示」はグリッドの下限を上げるので、俯瞰のサイズにいるグリッドはそれに
     // つられて上がる必要がある。そうしないとメタデータの塊が 48px の列に描かれてしまう。
     const clamped = clampGridSize(gridSize, shape.info);
     if (clamped !== gridSize) {
       gridSize = clamped;
       store.setState({ gridSize: gridSize });
-      deps.hologramIpc.setPref('gridSize', gridSize);
+      deps.dotIpc.setPref('gridSize', gridSize);
     }
     clearTimeout(_displayRenderT);
     _displayRenderT = setTimeout(() => deps.renderPosts(), 0);
@@ -307,7 +307,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
   // スライダーのトラックは素の px ではなく列数に対応する（投稿のタイルのスライダーと同じ）。
   // 自動で埋める minmax(size,1fr) のグリッドは列を伸ばすので、最小値を変えても、配置が動くのは
   // 列数のしきい値のところだけ。右が大きい＝列が少ない。
-  function posterGridMetrics(): HologramGridMetrics | null {
+  function posterGridMetrics(): DotGridMetrics | null {
     const W = gridWidth('poster');
     if (!W) return null;
     // 溝は今や入れ物の CSS ではなく masonic のモデルにある（services/grid.ts）＝式は1つで、
@@ -315,7 +315,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
     return { W, g: posterGutterFor(currentPosterShape()) };
   }
 
-  function computePosterSizeTrack(): HologramSizeTrack | null {
+  function computePosterSizeTrack(): DotSizeTrack | null {
     const st = posterSizeState();
     const m = posterGridMetrics();
     if (!m) return null;
@@ -333,10 +333,10 @@ export function makeGridDensity(deps: GridDensityDeps) {
     if (!m) return;
     const size = Math.max(st.min, Math.min(st.max, sizeFor(trackCols(value, min, max), m)));
     st.set(size);
-    // hologramStore へ写す＝投稿者グリッドの source がそこから columnWidth を導く。
+    // dotStore へ写す＝投稿者グリッドの source がそこから columnWidth を導く。
     // 投稿グリッドが gridSize でやっているのと同じ。
     store.setState({ [st.pref]: size });
-    deps.hologramIpc.setPref(st.pref, size);
+    deps.dotIpc.setPref(st.pref, size);
   }
 
   let _posterShapeSig = posterShapeSnapshot();
@@ -347,12 +347,12 @@ export function makeGridDensity(deps: GridDensityDeps) {
     if (sig === _posterShapeSig) return;
     _posterShapeSig = sig;
     const shape = currentPosterShape();
-    deps.hologramIpc.setPref('posterShowInfo', shape.info);
+    deps.dotIpc.setPref('posterShowInfo', shape.info);
     const clamped = clampPosterGridSize(posterGridSize, shape.info);
     if (clamped !== posterGridSize) {
       posterGridSize = clamped;
       store.setState({ posterGridSize: posterGridSize });
-      deps.hologramIpc.setPref('posterGridSize', posterGridSize);
+      deps.dotIpc.setPref('posterGridSize', posterGridSize);
     }
     clearTimeout(_posterDisplayRenderT);
     _posterDisplayRenderT = setTimeout(() => deps.renderPosters(), 0);
@@ -373,13 +373,13 @@ export function makeGridDensity(deps: GridDensityDeps) {
       _shapeSig = shapeSnapshot();
       _posterShapeSig = posterShapeSnapshot();
     }
-    // 投稿者グリッドのサイズも hologramStore へ写す。上のブロックが今戻したばかりの
+    // 投稿者グリッドのサイズも dotStore へ写す。上のブロックが今戻したばかりの
     // 「情報を表示」のスイッチに対して丸めた上で。
     if (Number.isFinite(prefs.posterGridSize)) {
       posterGridSize = clampPosterGridSize(prefs.posterGridSize as number, currentPosterShape().info);
       store.setState({ posterGridSize: posterGridSize });
     }
-    // 投稿グリッドのサイズも hologramStore へ写る（setViewSize を参照）。グリッドの保存
+    // 投稿グリッドのサイズも dotStore へ写る（setViewSize を参照）。グリッドの保存
     // された幅は、今の「情報を表示」のスイッチに対して丸める。そのスイッチは上のブロックが
     // 既に戻している。
     if (Number.isFinite(prefs.gridSize)) {

@@ -13,7 +13,7 @@ import { store, subscribeKey } from '../services/store.ts';
 // 通常の empty/EmptyState.tsx の 'firstRun' 版は意図して使わない。#302 以降 posts テーブルは
 // 保存フォルダから独立して DB にあり、フォルダが無くなっても postGroups は空にならない＝
 // そのままでは、何が起きたかを説明する代わりに、グリッドが全カードを壊れたサムネイルで描画
-// してしまう。hologramStore の 'libraryMissing'/'libraryMissingPath' は起動時に App.tsx の
+// してしまう。dotStore の 'libraryMissing'/'libraryMissingPath' は起動時に App.tsx の
 // LibraryStatusGate が入れる（services/library-path.ts の getLibraryStatus。呼ぶたびに
 // statSync し直す＝push の経路は無い。index.ts の refreshLibraryStatus のコメントを参照）。
 // ここでは再試行・フォルダの再指定のあとに入れ直す。

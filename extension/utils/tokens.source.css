@@ -47,11 +47,11 @@
      報告、2026-07-29)。代わりに各テーマを塗りの方へ寄せる（白い
      surface では明るく、暗い方では暗く）ことで、帯から出ずに線を静かに
      できる。 */
-  --hologram-overlay-border: #8f8f8f;
-  --hologram-overlay-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --dot-overlay-border: #8f8f8f;
+  --dot-overlay-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 
   /* 24pxのディスクの影で、上のものとは別物だ（#310）。これまで280pxの
-     カードと隅の操作は --hologram-overlay-shadow を共有していたが、影は
+     カードと隅の操作は --dot-overlay-shadow を共有していたが、影は
      それを落とすものと一緒にはズームしない＝ぼかし36px・オフセット下
      12pxでは、カードの影はディスクより幅が広く、自分自身の高さの半分ぶ
      ん下にずれて座る。結果は2つあり、どちらもこの操作にとっては誤りだ
@@ -70,22 +70,22 @@
      ではそれ以上何も要らない。ダークの方がアルファが大きいのは、それが
      乗っている画像が平均して、ダークテーマのブラウザを使って見られてい
      るであろうものだからだ。 */
-  --hologram-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --dot-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 
   /* 状態。塗りごとに自前のインクを持たせ、白を共有しない＝警告として読ませる琥珀色は
      どの段でも白を載せるには明るすぎるし、ダークテーマの赤はさらに明るい（アプリの
      --destructive は shadcn のランプと同じくダークで明るくなる）。対にして持たせることが、
      塗りを暗くせずにグリフを読めるまま保つ方法で、暗くすればその状態がその状態として
      読めなくなる。 */
-  --hologram-success: #067647;
-  --hologram-on-success: #ffffff;
-  --hologram-warning: #b45309;
-  --hologram-on-warning: #ffffff;
-  --hologram-on-danger: #ffffff;
-  --hologram-on-accent: #ffffff;
+  --dot-success: #067647;
+  --dot-on-success: #ffffff;
+  --dot-warning: #b45309;
+  --dot-on-warning: #ffffff;
+  --dot-on-danger: #ffffff;
+  --dot-on-accent: #ffffff;
 
   /* 保存中のバッジに使うアクセントの派生色。 */
-  --hologram-accent-soft: rgba(37, 99, 235, 0.14);
+  --dot-accent-soft: rgba(37, 99, 235, 0.14);
 
   /* コンパクトな操作はカードではなく写真の上に乗るので、このディスクが
      隅のほぼすべての面が乗る土台になる:
@@ -113,23 +113,23 @@
      から目に見える余裕を保ちつつ、それでも写真を透かして見せる。
      tests/integration/extension-tokens.test.ts はこれを両極端の背景に合成し、将来
      の値が読めなくなったら失敗する。 */
-  --hologram-control-surface: rgba(255, 255, 255, 0.72);
+  --dot-control-surface: rgba(255, 255, 255, 0.72);
   /* ホバー時の持ち上がりも同じアルファで: 保存ボタンは操作を提示するが、
      それでも画像の上に乗っているので、ホバーによって半透明を強調と引き
      換えにしてはいけない。まさにユーザーが見ているその場所だからだ
      （ユーザー報告、2026-07-29）。持ち上がるのは色（アプリ自身のホバー
      用の画面色）とハローとスケールだ。 */
-  --hologram-control-surface-hover: rgba(245, 245, 245, 0.72);
-  --hologram-control-hover-glow: rgba(0, 0, 0, 0.14);
-  --hologram-badge-neutral: rgba(0, 0, 0, 0.08);
+  --dot-control-surface-hover: rgba(245, 245, 245, 0.72);
+  --dot-control-hover-glow: rgba(0, 0, 0, 0.14);
+  --dot-badge-neutral: rgba(0, 0, 0, 0.08);
 
   /* 書体。アプリからは取っていない: アプリの --font-sans は Geist
      Variable で、これは日本語をカバーしないバンドル済みの Web フォント
      であり、こちらの文字列は日本語が主体だ。それを出荷すると、一文の中
      で2つの書体デザインが混ざるラベルと引き換えに、すべてのホストペー
      ジで web_accessible_resource の @font-face を持つことになる。 */
-  --hologram-font-sans: -apple-system, 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Noto Sans JP', system-ui, sans-serif;
-  --hologram-font-mono: ui-monospace, 'SF Mono', 'Roboto Mono', 'Cascadia Code', Consolas, monospace;
+  --dot-font-sans: -apple-system, 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Noto Sans JP', system-ui, sans-serif;
+  --dot-font-mono: ui-monospace, 'SF Mono', 'Roboto Mono', 'Cascadia Code', Consolas, monospace;
 }
 
 [data-theme="dark"] {
@@ -137,20 +137,20 @@
      せることでここでは線を静かにできる。帯の下限を決めているのは
      #171717 ではなくホストページなので、塗りに対する3:1は依然として
      成り立つ。 */
-  --hologram-overlay-border: #707070;
-  --hologram-overlay-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --hologram-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --dot-overlay-border: #707070;
+  --dot-overlay-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --dot-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 
-  --hologram-success: #3ecf8e;
-  --hologram-on-success: #052e1b;
-  --hologram-warning: #f5b544;
-  --hologram-on-warning: #3d2606;
-  --hologram-on-danger: #45090c;
+  --dot-success: #3ecf8e;
+  --dot-on-success: #052e1b;
+  --dot-warning: #f5b544;
+  --dot-on-warning: #3d2606;
+  --dot-on-danger: #45090c;
 
-  --hologram-accent-soft: rgba(37, 99, 235, 0.28);
+  --dot-accent-soft: rgba(37, 99, 235, 0.28);
 
-  --hologram-control-surface: rgba(23, 23, 23, 0.72);
-  --hologram-control-surface-hover: rgba(38, 38, 38, 0.72);
-  --hologram-control-hover-glow: rgba(255, 255, 255, 0.16);
-  --hologram-badge-neutral: rgba(255, 255, 255, 0.12);
+  --dot-control-surface: rgba(23, 23, 23, 0.72);
+  --dot-control-surface-hover: rgba(38, 38, 38, 0.72);
+  --dot-control-hover-glow: rgba(255, 255, 255, 0.16);
+  --dot-badge-neutral: rgba(255, 255, 255, 0.12);
 }

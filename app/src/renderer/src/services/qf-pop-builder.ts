@@ -19,7 +19,7 @@ export interface QfPopDeps {
   posterRemoveFilter(index: number): void;
   addFilter(filter: { type: string; [k: string]: any }): void;
   removeFilter(index: number): void;
-  buildUsers(): HologramUserAgg[];
+  buildUsers(): DotUserAgg[];
 }
 
 export function makeQfPop(deps: QfPopDeps) {
@@ -27,7 +27,7 @@ export function makeQfPop(deps: QfPopDeps) {
   // 値エディタからヘッドレスに呼ばれる（開いたフライアウトは無い）――
   // QB の変更自身の refresh() が再描画を駆動するので、ここで再描画すべき
   // ものは何も無い。
-  function onQfPick(cat: string, it: HologramQfPopItem) {
+  function onQfPick(cat: string, it: DotQfPopItem) {
     const v = it.v;
     // ポスターのフライアウトはポスタークエリの木の最上位の葉をトグルする。
     // Work/Character/Tag はすべて1つのタグの葉タイプへ写像される（kind は
@@ -42,7 +42,7 @@ export function makeQfPop(deps: QfPopDeps) {
         // 削除はシャドウの索引を通る。下の post の分岐とまったく同じ:
         // removeFilter は sameLeaf で一致判定し（両側が id を持てば id で）
         // かつ refresh する。素の removeCondsMatching はそれをしない。
-        const i = deps.posterShadow().findIndex((f) => sameLeaf(f as HologramQueryLeaf, { type: 'tag', value: v, tagId: it.tagId }, { tagNoneIsSentinel: false }));
+        const i = deps.posterShadow().findIndex((f) => sameLeaf(f as DotQueryLeaf, { type: 'tag', value: v, tagId: it.tagId }, { tagNoneIsSentinel: false }));
         if (i >= 0) deps.posterRemoveFilter(i);
         else {
           const label = typeof it.l === 'string' && it.l !== v ? it.l : undefined;
@@ -68,7 +68,7 @@ export function makeQfPop(deps: QfPopDeps) {
     // タグは追加・選択表示と同じ sameLeaf の同一性を使う。これにより id 付き
     // `__none` と id 無し番兵を、値が同じでも別々にトグルできる。
     const target = isEntityTag ? { type: 'tag', value: v, tagId: it.tagId } : { type: vtype, value: v };
-    const i = deps.postShadow().findIndex((f) => sameLeaf(f as HologramQueryLeaf, target));
+    const i = deps.postShadow().findIndex((f) => sameLeaf(f as DotQueryLeaf, target));
     if (i >= 0) {
       deps.removeFilter(i);
     } else if (isEntityTag) {

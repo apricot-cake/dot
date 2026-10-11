@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('タブは矢印でフォーカスを移し、Enter と Space で切り替えられる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('タブは矢印でフォーカスを移し、Enter と Space で切り替えられる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.keyboard.press('Control+t');
   const tabs = page.locator('[data-slot="tab-strip"]').getByRole('tab');
   await expect(tabs).toHaveCount(2);
@@ -19,8 +19,8 @@ test('タブは矢印でフォーカスを移し、Enter と Space で切り替�
   await expect(panel).toHaveAttribute('id', (await tabs.last().getAttribute('aria-controls')) as string);
 });
 
-test('IME の Enter はタグ追加と名前入力の確定に使わない', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('IME の Enter はタグ追加と名前入力の確定に使わない', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="post-card"]').first().click();
   const inspector = page.locator('[data-slot="inspector"]');
   await inspector.getByRole('tab', { name: 'タグ', exact: true }).click();
@@ -46,8 +46,8 @@ test('IME の Enter はタグ追加と名前入力の確定に使わない', asy
   await expect(inspector.locator('summary').filter({ hasText: '変換中の名前' })).toBeVisible();
 });
 
-test('詳細パネルのサイズ変更キーは投稿選択を変えない', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('詳細パネルのサイズ変更キーは投稿選択を変えない', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const cards = page.locator('[data-slot="post-card"]');
   await cards.first().click();
   const selectionBefore = await cards.evaluateAll((elements) => elements.map((element) => element.getAttribute('data-selected')));

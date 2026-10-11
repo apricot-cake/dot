@@ -30,8 +30,8 @@ let handle: any;
 let destFolder: string;
 
 beforeEach(() => {
-  handle = openDatabase(path.join(mkTempDir('hologram-archive-import-db-'), 'test.db'));
-  destFolder = mkTempDir('hologram-archive-import-dest-');
+  handle = openDatabase(path.join(mkTempDir('dot-archive-import-db-'), 'test.db'));
+  destFolder = mkTempDir('dot-archive-import-dest-');
 });
 
 afterEach(() => {
@@ -43,7 +43,7 @@ afterEach(() => {
 // 一番早い手段であり、読み戻すのは yauzl の役目。
 let seq = 0;
 function zipFileOf(buf: Buffer) {
-  const p = path.join(mkTempDir('hologram-archive-import-zip-'), `fixture-${seq++}.zip`);
+  const p = path.join(mkTempDir('dot-archive-import-zip-'), `fixture-${seq++}.zip`);
   fs.writeFileSync(p, buf);
   return p;
 }
@@ -72,11 +72,11 @@ describe('importCompleteZipToDb: 空DBへの完全インポート', () => {
     const stmts = preparePostStmts(handle.sqlite),
       tags = makeTagResolver(handle.sqlite);
     for (const captureId of ['collections', 'normal']) writePost(stmts, tags, { captureId, text: captureId });
-    const zipPath = path.join(mkTempDir('hologram-reserved-roundtrip-'), 'export.zip');
+    const zipPath = path.join(mkTempDir('dot-reserved-roundtrip-'), 'export.zip');
     await writeCompleteZip(handle.sqlite, destFolder, null, zipPath);
-    const restored = openDatabase(path.join(mkTempDir('hologram-reserved-restored-'), 'test.db'));
+    const restored = openDatabase(path.join(mkTempDir('dot-reserved-restored-'), 'test.db'));
     try {
-      const result = await importCompleteZipToDb(restored.sqlite, zipPath, mkTempDir('hologram-reserved-media-'));
+      const result = await importCompleteZipToDb(restored.sqlite, zipPath, mkTempDir('dot-reserved-media-'));
       expect(result.ok).toBe(true);
       expect(result.skipped).toBe(0);
       expect(restored.sqlite.prepare('SELECT captureId,text FROM posts ORDER BY captureId').all()).toEqual([
@@ -102,11 +102,11 @@ describe('importCompleteZipToDb: 空DBへの完全インポート', () => {
     writer.setPosterTags({ tags: { 'saved-author': ['作者タグ'] } });
     writer.setPosterProfiles({ profiles: [PosterProfileSchema.parse({ posterKey: 'saved-author', contentHash: 'hash', provenance: 'fixture', firstObservedAt: '2026-01-01', lastObservedAt: '2026-01-01', displayName: '保存作者' })] });
     writer.setTabs({ tabs: [{ id: 'saved-tab', pinned: false, title: '保存タブ', state: {} }], activeTabId: 'saved-tab' });
-    const zipPath = path.join(mkTempDir('hologram-collision-roundtrip-'), 'export.zip');
+    const zipPath = path.join(mkTempDir('dot-collision-roundtrip-'), 'export.zip');
     await writeCompleteZip(handle.sqlite, destFolder, null, zipPath);
-    const restored = openDatabase(path.join(mkTempDir('hologram-collision-restored-'), 'test.db'));
+    const restored = openDatabase(path.join(mkTempDir('dot-collision-restored-'), 'test.db'));
     try {
-      const result = await importCompleteZipToDb(restored.sqlite, zipPath, mkTempDir('hologram-collision-media-'));
+      const result = await importCompleteZipToDb(restored.sqlite, zipPath, mkTempDir('dot-collision-media-'));
       expect(result.ok).toBe(true);
       expect(result.skipped).toBe(0);
       expect(restored.sqlite.prepare('SELECT captureId,text FROM posts ORDER BY captureId').all()).toEqual([...ids].sort().map((captureId) => ({ captureId, text: captureId })));
@@ -146,25 +146,25 @@ describe('importCompleteZipToDb: 空DBへの完全インポート', () => {
     writePost(preparePostStmts(handle.sqlite), makeTagResolver(handle.sqlite), raw);
     fs.writeFileSync(path.join(destFolder, 'banner.png'), 'banner bytes');
     const expected = handle.sqlite.prepare('SELECT bio,links,banner,bannerFile FROM poster_profiles WHERE userId=?').get(raw.userId);
-    const zipPath = path.join(mkTempDir('hologram-profile-roundtrip-'), 'export.zip');
+    const zipPath = path.join(mkTempDir('dot-profile-roundtrip-'), 'export.zip');
     await writeCompleteZip(handle.sqlite, destFolder, null, zipPath);
     const zip = await JSZip.loadAsync(fs.readFileSync(zipPath));
     const canonical = JSON.parse(await zip.file('library/poster-profiles.json')!.async('string'));
     expect(canonical.profiles[0]).toMatchObject(expected);
     const post = JSON.parse(await zip.file('library/' + raw.captureId + '.json')!.async('string'));
     expect(post.bio).toBeUndefined(); // 投稿用 PostView と正規プロフィールは別の表現。
-    const restored = openDatabase(path.join(mkTempDir('hologram-profile-restored-'), 'test.db'));
+    const restored = openDatabase(path.join(mkTempDir('dot-profile-restored-'), 'test.db'));
     try {
-      expect((await importCompleteZipToDb(restored.sqlite, zipPath, mkTempDir('hologram-profile-restored-media-'))).ok).toBe(true);
+      expect((await importCompleteZipToDb(restored.sqlite, zipPath, mkTempDir('dot-profile-restored-media-'))).ok).toBe(true);
       expect(restored.sqlite.prepare('SELECT bio,links,banner,bannerFile FROM poster_profiles WHERE userId=?').get(raw.userId)).toEqual(expected);
     } finally {
       restored.sqlite.close();
     }
-    const local = openDatabase(path.join(mkTempDir('hologram-profile-local-'), 'test.db'));
+    const local = openDatabase(path.join(mkTempDir('dot-profile-local-'), 'test.db'));
     try {
       writePost(preparePostStmts(local.sqlite), makeTagResolver(local.sqlite), { ...raw, captureId: 'local-profile', bio: 'ローカルの現在値', profileLinks: [], banner: 'https://example.test/local.png', bannerFile: 'local.png' });
       const before = local.sqlite.prepare('SELECT bio,links,banner,bannerFile FROM poster_profiles WHERE userId=?').get(raw.userId);
-      expect((await importCompleteZipToDb(local.sqlite, zipPath, mkTempDir('hologram-profile-local-media-'))).ok).toBe(true);
+      expect((await importCompleteZipToDb(local.sqlite, zipPath, mkTempDir('dot-profile-local-media-'))).ok).toBe(true);
       expect(local.sqlite.prepare('SELECT bio,links,banner,bannerFile FROM poster_profiles WHERE userId=?').get(raw.userId)).toEqual(before);
     } finally {
       local.sqlite.close();
@@ -473,11 +473,11 @@ describe('importCompleteZipToDb: 非空DBへはマージ（置換ではない）
     expect(first.folders.find((f: any) => f.id === 'legacy-static')).toMatchObject({ kind: 'static', parentId: 'legacy-parent', items: ['static-member'] });
     expect(first.folders.find((f: any) => f.id === 'transitional')?.kind).toBe('dynamic');
 
-    const exported = path.join(mkTempDir('hologram-legacy-roundtrip-'), 'roundtrip.zip');
+    const exported = path.join(mkTempDir('dot-legacy-roundtrip-'), 'roundtrip.zip');
     await writeCompleteZip(handle.sqlite, destFolder, null, exported);
-    const secondHandle = openDatabase(path.join(mkTempDir('hologram-legacy-roundtrip-db-'), 'test.db'));
+    const secondHandle = openDatabase(path.join(mkTempDir('dot-legacy-roundtrip-db-'), 'test.db'));
     try {
-      await importCompleteZipToDb(secondHandle.sqlite, exported, mkTempDir('hologram-legacy-roundtrip-dest-'));
+      await importCompleteZipToDb(secondHandle.sqlite, exported, mkTempDir('dot-legacy-roundtrip-dest-'));
       const roundtripped = createDbWriter(secondHandle.sqlite).getFolders();
       const byId = new Map(roundtripped.folders.map((folder: any) => [folder.id, folder]));
       const membership = new Map(roundtripped.folders.map((folder: any) => [folder.id, new Set(folder.items)]));
@@ -572,7 +572,7 @@ describe('importCompleteZipToDb: .trash/ の復元', () => {
   test('.trash/ 配下はファイルシステムへ復元され、DBのpostsには書かれない', async () => {
     // これが complete のエクスポートだと示すのは manifest（#485 でその判定は main へ移った）。
     // 本物の includeTrash のエクスポートは、.trash/ と一緒に必ず manifest を持つ。
-    const zipPath = await buildZip({ 'hologram-export.json': '{"app":"Hologram","kind":"complete"}', '.trash/cap-9.json': JSON.stringify({ captureId: 'cap-9' }), '.trash/cap-9.jpg': 'TRASHED' });
+    const zipPath = await buildZip({ 'dot-export.json': '{"app":"dot","kind":"complete"}', '.trash/cap-9.json': JSON.stringify({ captureId: 'cap-9' }), '.trash/cap-9.jpg': 'TRASHED' });
     const res = await importCompleteZipToDb(handle.sqlite, zipPath, destFolder);
     expect(res.imported).toBe(2);
     expect(fs.readFileSync(path.join(destFolder, '.trash', 'cap-9.json'), 'utf8')).toContain('cap-9');
@@ -586,7 +586,7 @@ describe('完全ZIPのゴミ箱レコードの置換指示', () => {
     const { sqlite } = handle;
     writePost(preparePostStmts(sqlite), makeTagResolver(sqlite), { captureId: 'local-post', text: 'KEEP' });
     const incoming = { captureId: 'imported-trash', replaces: 'local-post', text: 'RESTORE', tags: ['kept-tag'], userKind: 'media', tagReviewed: true, localViewCount: 7, trashedAt: '2026-01-01T00:00:00Z' };
-    const zipPath = await buildZip({ 'hologram-export.json': '{}', [`.trash/imported-trash.${extension}`]: JSON.stringify(incoming), '.trash/imported-trash.jpg': 'MEDIA' });
+    const zipPath = await buildZip({ 'dot-export.json': '{}', [`.trash/imported-trash.${extension}`]: JSON.stringify(incoming), '.trash/imported-trash.jpg': 'MEDIA' });
     await importCompleteZipToDb(sqlite, zipPath, destFolder);
     const stored = JSON.parse(fs.readFileSync(path.join(destFolder, '.trash', `imported-trash.${extension}`), 'utf8'));
     expect(stored).toEqual({ ...incoming, replaces: null });

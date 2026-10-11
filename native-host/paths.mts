@@ -7,10 +7,10 @@
 // には自前のファイルだけでなく、Chromium 自身が userData に置くもの（Cache、
 // Local Storage、Preferences、…）も入る。
 //
-// 優先順: HOLOGRAM_CONFIG_DIR（明示指定）が勝ち、無ければ Windows の既定である
-// %APPDATA%\Hologram（Roaming AppData＝Electron 自身の既定）を使う。
+// 優先順: DOT_CONFIG_DIR（明示指定）が勝ち、無ければ Windows の既定である
+// %APPDATA%\dot（Roaming AppData＝Electron 自身の既定）を使う。
 //
-// Windows はかつて MSIX のストレージ仮想化を避けるため ~/.hologram（ホーム直下の
+// Windows はかつて MSIX のストレージ仮想化を避けるため ~/.dot（ホーム直下の
 // ドットファイル）を既定にしていた。MSIX パッケージ化されたデスクトップアプリの
 // ホストの中から起動されると、
 // 子プロセスの %APPDATA%/HKCU への書き込みがパッケージ専用の LocalCache へ黙って
@@ -24,12 +24,12 @@
 //
 // #232 は移行コードを意図して入れずに出した。リリース前なので、既存の設定ディレクトリは
 // 作者自身のマシンにしかなく、一度だけ手で運用作業として移した（アプリが持ち続ける
-// 設計ではない）。新しい位置が空のときに旧 ~/.hologram を読む退避を足してはいけない。
+// 設計ではない）。新しい位置が空のときに旧 ~/.dot を読む退避を足してはいけない。
 // 同じ形の以前の試み（migrateConfigDirFromAppData、891a6ba で削除）は、恒久的に何も
 // しないまま居座ったうえに実害があった。設定前の起動が、置き去りにされた古い設定を
 // 拾いかねなかった。
 //
-// HOLOGRAM_CONFIG_DIR 自体は今や別の理由で残っている。仮想化避けではなく、テストの
+// DOT_CONFIG_DIR 自体は今や別の理由で残っている。仮想化避けではなく、テストの
 // 隔離（テストやサンドボックスの実行ごとに自前の mkdtemp ディレクトリを指す）。
 //
 // ライブラリの既定は別の話で、動かさない。#232 を参照＝その理由づけはこの話ではなく
@@ -38,11 +38,11 @@
 import path from 'node:path';
 import os from 'node:os';
 
-export const APP_NAME = 'Hologram';
+export const APP_NAME = 'dot';
 const LIBRARY_DIR_NAME = 'Library';
 
 export function configDir(): string {
-  if (process.env.HOLOGRAM_CONFIG_DIR) return process.env.HOLOGRAM_CONFIG_DIR;
+  if (process.env.DOT_CONFIG_DIR) return process.env.DOT_CONFIG_DIR;
   if (process.platform === 'win32') {
     // homedir() + 'AppData/Roaming' を繋ぐのではなく環境変数から読む。フォルダ
     // リダイレクトや移動プロファイルは %APPDATA% をその既定の相対パスから動かすので、
@@ -52,7 +52,7 @@ export function configDir(): string {
   throw new Error(`Unsupported platform: ${process.platform}`);
 }
 
-// ライブラリ（キャプチャ）の既定フォルダ＝Windows のホーム直下にある Hologram/Library。ユーザーが
+// ライブラリ（キャプチャ）の既定フォルダ＝Windows のホーム直下にある dot/Library。ユーザーが
 // 保存フォルダを明示的に選ぶまで、ブリッジとアプリの両方がこれを使う。configDir() とは
 // 必ず分ける。ライブラリは元のメディアを蓄積して大きくなりうるので、
 // 小さな設定ディレクトリに混ぜず、自前のトップレベルのフォルダに置く。

@@ -3,7 +3,7 @@
 //   generation() — _allPostsGeneration（allPosts を置き換えるたびに進み、
 //                  buildUsers のキャッシュを無効化する）
 //   userKey(p) / hostOf(url) — query.js から
-export function makeUsers(deps: { allPosts(): HologramPost[]; profiles?(): Array<Record<string, any>>; generation(): number | string; userKey(p: HologramPost): string; hostOf(url: string | null | undefined): string }) {
+export function makeUsers(deps: { allPosts(): DotPost[]; profiles?(): Array<Record<string, any>>; generation(): number | string; userKey(p: DotPost): string; hostOf(url: string | null | undefined): string }) {
   const { allPosts, generation, userKey } = deps;
 
   // 投稿を投稿者ごとにグループ化する。投稿は新しい順に届くので、最初の
@@ -14,7 +14,7 @@ export function makeUsers(deps: { allPosts(): HologramPost[]; profiles?(): Array
   // だけ作り直す。
   //
   let _buildUsersGen: number | string = -1,
-    _cachedUsers: HologramUserAgg[] | null = null;
+    _cachedUsers: DotUserAgg[] | null = null;
   function buildUsers() {
     if (_buildUsersGen === generation() && _cachedUsers) return _cachedUsers;
     const map = new Map<string, any>();
@@ -88,7 +88,7 @@ export function makeUsers(deps: { allPosts(): HologramPost[]; profiles?(): Array
       if (profile.following != null) u.following = profile.following;
       if (profile.authorCreatedAt) u.authorCreatedAt = profile.authorCreatedAt;
     }
-    const byPlatform = new Map<string, HologramUserAgg[]>();
+    const byPlatform = new Map<string, DotUserAgg[]>();
     for (const user of map.values()) {
       if (!user.platform || user.followers == null) continue;
       const list = byPlatform.get(user.platform) || [];

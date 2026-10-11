@@ -1,4 +1,4 @@
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { promptName } from '../prompt/Prompt.tsx';
 import { open as openConfirm } from './confirm.ts';
 import type { Translate } from './translation.ts';
@@ -75,7 +75,7 @@ export function makeTagGroupMenu(deps: TagGroupMenuDeps) {
         if (item.act === 'rename') {
           promptName(t('tagRename'), tag, async (name) => {
             try {
-              const result = await hologramIpc.renameTag(tagId, name);
+              const result = await dotIpc.renameTag(tagId, name);
               if (result.ok) onChanged?.();
               else if ('collision' in result)
                 openConfirm({
@@ -85,7 +85,7 @@ export function makeTagGroupMenu(deps: TagGroupMenuDeps) {
                   cancelLabel: t('tagMgmtCancel'),
                   async onOk() {
                     try {
-                      const merged = await hologramIpc.mergeTags(tagId, result.collision.tagId);
+                      const merged = await dotIpc.mergeTags(tagId, result.collision.tagId);
                       if (merged.ok) onChanged?.();
                       else reportError();
                     } catch {
@@ -106,7 +106,7 @@ export function makeTagGroupMenu(deps: TagGroupMenuDeps) {
             cancelLabel: t('tagMgmtCancel'),
             async onOk() {
               try {
-                const result = await hologramIpc.deleteTags([tagId]);
+                const result = await dotIpc.deleteTags([tagId]);
                 if (result.ok) onChanged?.();
                 else reportError();
               } catch {

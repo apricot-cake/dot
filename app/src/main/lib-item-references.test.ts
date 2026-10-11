@@ -9,7 +9,7 @@ import * as publisherModule from './archive-file-publisher.ts';
 let folder: string, trash: string;
 const id = 'legacy-post';
 beforeEach(() => {
-  folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-restore-references-'));
+  folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-restore-references-'));
   trash = path.join(folder, '.trash');
   fs.mkdirSync(trash);
 });

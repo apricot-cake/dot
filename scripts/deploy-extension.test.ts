@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 function fixture(oldBuild = 'old') {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-extension-deploy-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-extension-deploy-'));
   roots.push(root);
   const output = path.join(root, 'chrome-mv3');
   const stamp = path.join(root, 'config', 'extension-build.json');

@@ -16,7 +16,7 @@ let root: string;
 const makeAppDir = (name: string, main?: string | number) => {
   const dir = path.join(root, name);
   fs.mkdirSync(dir, { recursive: true });
-  if (main !== undefined) fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'hologram-fixture', main }));
+  if (main !== undefined) fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'dot-fixture', main }));
   return dir;
 };
 
@@ -28,7 +28,7 @@ const writeEntry = (dir: string, rel: string) => {
 };
 
 beforeAll(() => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-electron-path-'));
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-electron-path-'));
 });
 
 afterAll(() => {

@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('サイズのつまみは連続して動き、カードは列数の境目で変わる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('サイズのつまみは連続して動き、カードは列数の境目で変わる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.getByRole('button', { name: '表示', exact: true }).click();
   const thumb = page.getByRole('slider');
   await thumb.focus();

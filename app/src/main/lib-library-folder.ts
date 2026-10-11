@@ -9,7 +9,7 @@ import { TRASH_SUBDIR } from './lib-save-folder-path.ts';
 import { INBOX_DIRNAME } from '../../../native-host/inbox.mts';
 import { IMPORTABLE_MEDIA } from '../../../native-host/importable-media.mts';
 
-export const DB_FILENAME = 'hologram.db';
+export const DB_FILENAME = 'dot.db';
 export type LibraryClassification = 'has-db' | 'empty' | 'evidence-no-db' | 'reject';
 
 export function classifyLibraryFolder(dir: string): LibraryClassification {

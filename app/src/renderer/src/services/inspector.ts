@@ -1,7 +1,7 @@
 // インスペクタの表示モデルを保持する。表示対象は inspector-controller が
 // 画面と選択状態から導出し、このキャッシュを更新する。
 // 同じ対象の更新では openId を保持し、入力中のタグ欄などを再マウントしない。
-let current: HologramInspectorModel | null = null;
+let current: DotInspectorModel | null = null;
 let seq = 0;
 const subs = new Set<() => void>();
 const notify = () => {
@@ -14,12 +14,12 @@ const notify = () => {
   }
 };
 
-export function open(model: Omit<HologramInspectorModel, 'openId'>) {
-  // Omit<> は HologramInspectorModel の `[extra: string]: any` という
+export function open(model: Omit<DotInspectorModel, 'openId'>) {
+  // Omit<> は DotInspectorModel の `[extra: string]: any` という
   // インデックスシグネチャに潰れてしまう（インデックス型への Pick/Omit は
   // 名前付きの必須プロパティを失う）ので、この cast は実行時に構造として
   // 真であることを復元しているだけ。
-  current = { ...model, openId: ++seq } as HologramInspectorModel;
+  current = { ...model, openId: ++seq } as DotInspectorModel;
   notify();
 }
 export function refresh(partial: Record<string, unknown>) {

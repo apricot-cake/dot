@@ -10,7 +10,7 @@ function isWithin(parent: string, target: string): boolean {
 
 function verificationRoot(): string {
   const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-  const root = path.resolve(process.env.HOLOGRAM_VERIFICATION_DIR || path.join(localAppData, 'Hologram', 'verification'));
+  const root = path.resolve(process.env.DOT_VERIFICATION_DIR || path.join(localAppData, 'dot', 'verification'));
   if (isWithin(repoRoot, root)) throw new Error(`検証成果物の保存先をリポジトリ内には置けません: ${root}`);
   return root;
 }

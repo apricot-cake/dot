@@ -1,6 +1,6 @@
 'use strict';
 // app-harness の「EVAL_RESULT」通信形式の共有デコーダ: test-app-* のハーネス
-// は HOLOGRAM_SMOKE_EVAL に JS の式の文字列を設定して実際の Electron プロ
+// は DOT_SMOKE_EVAL に JS の式の文字列を設定して実際の Electron プロ
 // セスを spawn し、アプリはその結果を JSON.stringify して
 // `EVAL_RESULT "<escaped>"` としてログに出す（二重エンコードすることで、
 // ペイロード内の改行/引用符がログの1行を生き延びる）。これはそれを読み

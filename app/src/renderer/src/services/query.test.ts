@@ -1,5 +1,5 @@
 import { SEARCH_FIELD_MAX_LENGTH, searchFields } from '../../../shared/search-fields.ts';
-const searchValues = (p: HologramPost) => Object.values(searchFields(p));
+const searchValues = (p: DotPost) => Object.values(searchFields(p));
 import { postView } from '../../../../../tests/helpers/test-post-view.ts';
 // query.ts のロジック単体テスト。条件木の評価（evalNode）、葉ごとの述語
 // （makePostPredOf / makePosterPredOf）、ローカル日の日付境界（localDayRange）、
@@ -11,9 +11,9 @@ import * as R from './records';
 
 // これらのフィクスチャを「たまたま通る形」でなく契約にしているのが戻り値の型。
 // 型注釈が無いと `kind` が `string` へ広がり、どの呼び出し側も
-// HologramQueryLeaf / HologramQueryGroup に黙って一致しなくなる (#635)。
-const leaf = (type: string, value?: unknown, extra?: object): HologramQueryLeaf => ({ kind: 'cond', type, value, ...extra });
-const group = (op: 'and' | 'or', children: HologramQueryNode[], neg?: boolean): HologramQueryGroup => ({ kind: 'group', op, neg: !!neg, children });
+// DotQueryLeaf / DotQueryGroup に黙って一致しなくなる (#635)。
+const leaf = (type: string, value?: unknown, extra?: object): DotQueryLeaf => ({ kind: 'cond', type, value, ...extra });
+const group = (op: 'and' | 'or', children: DotQueryNode[], neg?: boolean): DotQueryGroup => ({ kind: 'group', op, neg: !!neg, children });
 const dLocal = (s: string) => new Date(s); // ローカル時刻として解釈した Date で投稿を組む
 
 const post = (over?: object) =>
@@ -56,7 +56,7 @@ beforeEach(() => {
     postMatcher: (q: string) => {
       searchCalls.push(q);
       const nq = q === 'ﾈｺ' ? 'ネコ' : q;
-      return (p: HologramPost) => searchValues(p).join(' ').includes(nq);
+      return (p: DotPost) => searchValues(p).join(' ').includes(nq);
     },
   });
 });
@@ -369,18 +369,18 @@ describe('text: URL 照合', () => {
 // 投稿側の makePostPredOf に対応する投稿者側。deps は posterTagEntriesOf
 // （キー→その投稿者の実効タグの実体、#810）と folderById（id→{items}）。
 describe('makePosterPredOf', () => {
-  const entry = (id: number | null, name: string, label = name): HologramTagEntry => ({ id, name, label });
+  const entry = (id: number | null, name: string, label = name): DotTagEntry => ({ id, name, label });
   // 作画 は id を持たない＝タグを編集してから書き込みが返るまでの間、投稿者の行が
   // 取る形。Ave Mujica は普通の実体。
   const posterTags = new Map([['x:@aaa', [entry(null, '作画'), entry(7, 'Ave Mujica')]]]);
   const posterPredOf = Q.makePosterPredOf({
     posterTagEntriesOf: (key: string) => posterTags.get(key) || [],
   });
-  // これらのケースが読む欄だけでなく、HologramUserAgg の全メンバーを埋める。要点は
+  // これらのケースが読む欄だけでなく、DotUserAgg の全メンバーを埋める。要点は
   // 戻り値の型 (#635)。14欄のうち6欄しか持たないフィクスチャは buildUsers が絶対に
   // 作らない形を試すことになり、しかも緑のまま通ってしまう。特に
   // `members`/`platforms` は、posterPredOf の platform の葉が実際に照合する先。
-  const poster = (over?: Partial<HologramUserAgg>): HologramUserAgg => {
+  const poster = (over?: Partial<DotUserAgg>): DotUserAgg => {
     const m = {
       key: 'x:@aaa',
       platform: 'x',
@@ -421,7 +421,7 @@ describe('makePosterPredOf', () => {
     const homonymPredOf = Q.makePosterPredOf({
       posterTagEntriesOf: (key: string) => (key === 'p:a' ? [entry(A, 'alice', 'alice(東方)')] : [entry(B, 'alice', 'alice(紅魔郷)')]),
     });
-    const p = (key: string): HologramUserAgg => poster({ key, platform: '', latest: '', lastCapture: '', authorCreatedAt: '' });
+    const p = (key: string): DotUserAgg => poster({ key, platform: '', latest: '', lastCapture: '', authorCreatedAt: '' });
 
     test('id を持つ葉は同名のもう一方に当たらない', () => {
       expect(homonymPredOf({ kind: 'cond', type: 'tag', value: 'alice', tagId: A })(p('p:a'))).toBe(true);
@@ -799,9 +799,9 @@ describe('木の変異ドメイン', () => {
 
   test('cloneTree は深くコピーし、_ で始まる一時フィールドを全階層で落とす', () => {
     // 戻り値の型注釈ではなく `as` を使う。このケースの主題がまさに `_compiled` /
-    // `_memo` で、HologramQueryGroup は index signature を宣言していない。注釈を付けた
+    // `_memo` で、DotQueryGroup は index signature を宣言していない。注釈を付けた
     // リテラルはこれらを持っているせいで弾かれてしまう。
-    const dirty = { kind: 'group', op: 'and', neg: false, _compiled: () => 1, children: [{ kind: 'cond', type: 'text', value: 'q', _memo: { big: true } }] } as HologramQueryGroup;
+    const dirty = { kind: 'group', op: 'and', neg: false, _compiled: () => 1, children: [{ kind: 'cond', type: 'text', value: 'q', _memo: { big: true } }] } as DotQueryGroup;
     const clean = Q.cloneTree(dirty);
 
     expect(clean).not.toBe(dirty);
@@ -862,7 +862,7 @@ describe('ファセットのドメイン', () => {
       expect(t.children[0]).toMatchObject({ kind: 'group', op: 'and' });
       expect(t.children[0].children).toHaveLength(2);
       // children[1] は葉のはず、というのがこの並べ替えの主張そのもの＝union の絞り込みで書く。
-      expect((t.children[1] as HologramQueryLeaf).type).toBe('date');
+      expect((t.children[1] as DotQueryLeaf).type).toBe('date');
       expect(t.children[2].neg).toBe(true);
     });
 

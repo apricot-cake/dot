@@ -3,10 +3,10 @@ import { expect, test } from '../lib/harness.ts';
 import { openDatabase } from '../../app/src/main/lib-db.ts';
 import { preparePostStmts, makeTagResolver, writePost } from '../../app/src/main/lib-db-record-writer.ts';
 
-test('画像なしでも最新6件を表示し、本文から投稿詳細を開ける', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('画像なしでも最新6件を表示し、本文から投稿詳細を開ける', async ({ launchDot }) => {
+  const { page } = await launchDot({
     seed: ({ saveFolder }) => {
-      const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+      const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
       try {
         const stmts = preparePostStmts(sqlite),
           tags = makeTagResolver(sqlite);

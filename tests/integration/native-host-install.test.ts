@@ -15,7 +15,7 @@ let linkedExe: string;
 let packagedExe: string;
 
 beforeAll(() => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-host-install-'));
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-host-install-'));
   const main = path.join(root, 'main');
   const linked = path.join(root, 'linked');
 
@@ -25,7 +25,7 @@ beforeAll(() => {
 
   mainExe = path.join(main, 'app', 'node_modules', 'electron', 'dist', 'electron.exe');
   linkedExe = path.join(linked, 'app', 'node_modules', 'electron', 'dist', 'electron.exe');
-  packagedExe = path.join(root, 'installed', 'Hologram.exe');
+  packagedExe = path.join(root, 'installed', 'dot.exe');
 });
 
 afterAll(() => {

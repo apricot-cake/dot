@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('投稿者メニューは区切り線なしで上下の余白を揃える', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('投稿者メニューは区切り線なしで上下の余白を揃える', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: '投稿者' }).click();
   await page.locator('[data-slot="poster-card"]').first().click({ button: 'right' });
   const menu = page.getByRole('menu');

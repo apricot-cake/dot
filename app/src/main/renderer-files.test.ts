@@ -47,7 +47,7 @@ describe('mimeForBundleFile', () => {
   });
 
   test('知らない拡張子は推測しない＝null（nosniff と組で「読めない」に倒す）', () => {
-    expect(mimeForBundleFile('hologram.db')).toBeNull();
+    expect(mimeForBundleFile('dot.db')).toBeNull();
     expect(mimeForBundleFile('LICENSE')).toBeNull();
     expect(mimeForBundleFile('')).toBeNull();
   });

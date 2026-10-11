@@ -52,8 +52,8 @@ describe('findOrphanMedia / findMissingMedia', () => {
   let handle: { db: any; sqlite: any };
 
   beforeAll(() => {
-    saveFolder = mkTempDir('hologram-integrity-save-');
-    handle = openDatabase(path.join(mkTempDir('hologram-integrity-db-'), 'test.db'));
+    saveFolder = mkTempDir('dot-integrity-save-');
+    handle = openDatabase(path.join(mkTempDir('dot-integrity-db-'), 'test.db'));
   });
 
   test('DBに行の無いcaptureId命名のファイルはorphanとして検出される', () => {
@@ -171,8 +171,8 @@ describe('直下サイドカーの扱い（#511）', () => {
   let handle: { db: any; sqlite: any };
 
   beforeAll(() => {
-    saveFolder = mkTempDir('hologram-integrity-sidecar-');
-    handle = openDatabase(path.join(mkTempDir('hologram-integrity-sidecar-db-'), 'test.db'));
+    saveFolder = mkTempDir('dot-integrity-sidecar-');
+    handle = openDatabase(path.join(mkTempDir('dot-integrity-sidecar-db-'), 'test.db'));
   });
 
   test('メディアとサイドカーが揃っている孤児はメディア側のファイルで報告される（.jsonをimageに入れない）', () => {
@@ -277,8 +277,8 @@ describe('recoverOrphanRecords', () => {
   const one = (sql: string, ...args: any[]) => handle.sqlite.prepare(sql).get(...args);
 
   beforeAll(() => {
-    saveFolder = mkTempDir('hologram-integrity-synth-save-');
-    handle = openDatabase(path.join(mkTempDir('hologram-integrity-synth-db-'), 'test.db'));
+    saveFolder = mkTempDir('dot-integrity-synth-save-');
+    handle = openDatabase(path.join(mkTempDir('dot-integrity-synth-db-'), 'test.db'));
   });
 
   test('孤児メディアから最小postsレコードを書く（url null・source=orphan-recovery・capturedAtはID由来）', () => {
@@ -336,9 +336,9 @@ describe('recoverOrphanRecords', () => {
 
 describe('復元リハーサル（#301受け入れ条件: DB消失→スナップショット＋リプレイ＋最小レコード合成）', () => {
   test('inbox経由の投稿はリプレイで、直書き（ZIPインポート相当）の投稿は孤児合成で、両方とも復活する', async () => {
-    const saveFolder = mkTempDir('hologram-rehearsal-save-');
-    const dbDir = mkTempDir('hologram-rehearsal-db-');
-    const dbFile = path.join(dbDir, 'hologram.db');
+    const saveFolder = mkTempDir('dot-rehearsal-save-');
+    const dbDir = mkTempDir('dot-rehearsal-db-');
+    const dbFile = path.join(dbDir, 'dot.db');
     let handle = openDatabase(dbFile);
 
     // (a) inbox 経由で入った投稿＝#299 のリプレイで救えるはずの経路
@@ -353,7 +353,7 @@ describe('復元リハーサル（#301受け入れ条件: DB消失→スナッ�
     expect(handle.sqlite.prepare('SELECT 1 FROM posts WHERE captureId = ?').get('1700000001001-ff02')).toBeTruthy();
 
     // スナップショット (lib-db-snapshot.ts)＝backup API で静止した複製を作る
-    const snapshotFile = path.join(mkTempDir('hologram-backup-rehearsal-'), 'hologram.db');
+    const snapshotFile = path.join(mkTempDir('dot-backup-rehearsal-'), 'dot.db');
     await snapshotDatabase(handle.sqlite, snapshotFile);
     expect(fs.existsSync(snapshotFile)).toBe(true);
 

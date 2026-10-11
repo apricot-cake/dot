@@ -7,7 +7,7 @@
 const cp = require('node:child_process');
 
 const MEDIA = /\.(?:png|jpe?g|gif|webp|avif|heic|mp4|m4v|webm|mov|mkv|avi|mp3|wav|flac|ogg|opus|zip|7z|rar|tar|gz|sqlite|db)$/i;
-const FORBIDDEN_PATH = /(?:^|\/)(?:tmp|verification|captures?|screenshots?|recordings?|artifacts?|playwright-report|test-results|\.sandbox|\.local-app|\.probe66)(?:\/|$)|(?:^|\/)[^/]+\.library(?:\/|$)|(?:^|\/)(?:hologram\.db(?:-(?:wal|shm))?|capture\.log)$/i;
+const FORBIDDEN_PATH = /(?:^|\/)(?:tmp|verification|captures?|screenshots?|recordings?|artifacts?|playwright-report|test-results|\.sandbox|\.local-app|\.probe66)(?:\/|$)|(?:^|\/)[^/]+\.library(?:\/|$)|(?:^|\/)(?:dot\.db(?:-(?:wal|shm))?|capture\.log)$/i;
 const ALLOWED_MEDIA = [/^app\/assets\/icon\.png$/, /^assets\/icon(?:-master)?\.png$/, /^extension\/public\/icons\/icon(?:16|32|48|128)\.png$/, /^e2e\/visual\/[^/]+\.spec\.ts-snapshots\/[^/]+\.png$/];
 
 function normalize(file: string): string {
@@ -45,9 +45,9 @@ function main(argv: string[]) {
     return reason ? [`${normalize(file)}: ${reason}`] : [];
   });
   if (!violations.length) return;
-  console.error('[hologram] 公開リポジトリへ追加できないファイルがあります:');
+  console.error('[dot] 公開リポジトリへ追加できないファイルがあります:');
   for (const violation of violations) console.error(`  - ${violation}`);
-  console.error('実ライブラリと UI 検証の成果物は %LOCALAPPDATA%\\Hologram\\verification など、リポジトリ外へ置いてください。');
+  console.error('実ライブラリと UI 検証の成果物は %LOCALAPPDATA%\\dot\\verification など、リポジトリ外へ置いてください。');
   process.exitCode = 1;
 }
 
@@ -57,7 +57,7 @@ if (require.main === module) {
   try {
     main(process.argv.slice(2));
   } catch (error) {
-    console.error(`[hologram] ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`[dot] ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   }
 }

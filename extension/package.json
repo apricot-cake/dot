@@ -1,8 +1,8 @@
 {
-  "name": "hologram-extension",
+  "name": "dot-extension",
   "private": true,
   "version": "0.1.0",
-  "description": "Hologram browser extension (MV3), built by WXT",
+  "description": "dot browser extension (MV3), built by WXT",
   "type": "module",
   "overrides": {
     "brace-expansion": "^5.0.8"

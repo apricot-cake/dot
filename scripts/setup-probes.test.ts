@@ -34,7 +34,7 @@ function writeLockEntry(entry: Record<string, unknown> | undefined) {
 }
 
 beforeEach(() => {
-  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-setup-probe-'));
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-setup-probe-'));
 });
 
 afterEach(() => {

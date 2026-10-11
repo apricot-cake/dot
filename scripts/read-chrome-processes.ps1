@@ -6,7 +6,7 @@ Add-Type -TypeDefinition @'
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-public static class HologramChromeArguments {
+public static class DotChromeArguments {
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr CommandLineToArgvW(string commandLine, out int count);
     [DllImport("kernel32.dll")]
@@ -31,7 +31,7 @@ public static class HologramChromeArguments {
 
 if ($MyInvocation.InvocationName -ne '.') {
     $chromeProcesses = @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | ForEach-Object {
-        [PSCustomObject]@{ ProcessId = $_.ProcessId; Args = @([HologramChromeArguments]::Parse($_.CommandLine)) }
+        [PSCustomObject]@{ ProcessId = $_.ProcessId; Args = @([DotChromeArguments]::Parse($_.CommandLine)) }
     })
     ConvertTo-Json -InputObject $chromeProcesses -Depth 4 -Compress
 }

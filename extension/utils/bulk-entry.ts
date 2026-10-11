@@ -14,7 +14,7 @@ interface BulkEntryReservationState {
 // resident.content と executeScript された bulk.js は別々の bundle だが、同じ
 // isolated world の globalThis を共有する。module local に置くと各 bundle が
 // setup 中の予約を別々に取得できてしまうため、realm 共通のシンボルに置く。
-const RESERVATION_STATE = Symbol.for('hologram.bulk-entry-reservation');
+const RESERVATION_STATE = Symbol.for('dot.bulk-entry-reservation');
 const scope = globalThis as typeof globalThis & { [RESERVATION_STATE]?: BulkEntryReservationState };
 const reservationState = (scope[RESERVATION_STATE] ??= {});
 
@@ -40,7 +40,7 @@ export async function startBulkEntry(reservation = reserveBulkEntry()): Promise<
     if (!site || !(await site.isBulkCapturePage?.()) || reservationState.owner !== reservation.owner) return false;
     const i18n = await createI18n();
     if (reservationState.owner !== reservation.owner || typeof window.__snsPostSaveCleanup === 'function') return false;
-    window.dispatchEvent(new Event('hologram:bulk-start'));
+    window.dispatchEvent(new Event('dot:bulk-start'));
     startBulkCapture(site, i18n);
     started = true;
     return true;

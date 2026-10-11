@@ -2,8 +2,8 @@ import { Tabs } from '@base-ui/react/tabs';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { ChevronLeft, ChevronRight, Bookmark, ExternalLink, Eye, Heart, MessageCircle, PanelRight, Repeat2 } from 'lucide-react';
 import { get, subscribe } from '../services/inspector.ts';
-import { hologramImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
+import { dotIpc } from '../services/ipc.ts';
 import { open as openMenu } from '../services/menu.ts';
 import { t } from '../_shared/i18n.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -65,7 +65,7 @@ function ExternalTextLink({ text, href, label, onClick }: { text?: string; href?
         event.stopPropagation();
         if (!href) return;
         openMenu({ items: [{ label: t('ctxCopyLink'), act: 'copyLink' }], x: event.clientX, y: event.clientY }, (item) => {
-          if (item.act === 'copyLink') void hologramIpc.copyText(href);
+          if (item.act === 'copyLink') void dotIpc.copyText(href);
         });
       }}
     >
@@ -76,7 +76,7 @@ function ExternalTextLink({ text, href, label, onClick }: { text?: string; href?
   );
 }
 
-function TagsSection({ m }: { m: HologramInspectorModel }) {
+function TagsSection({ m }: { m: DotInspectorModel }) {
   return <AssignedTagsSection tags={m.tags} label={m.labels.tags} />;
 }
 
@@ -100,7 +100,7 @@ function EngagementItems({ items }: { items?: Array<{ kind: keyof typeof ENGAGEM
 }
 
 // 本文は全幅で表示し、元の改行を保つ。
-function PostTags({ m }: { m: HologramInspectorModel }) {
+function PostTags({ m }: { m: DotInspectorModel }) {
   const [open, setOpen] = useState(false);
   const inline = new Set(hashtagParts(m.bodyText || '', m.hashtags || []).map((part) => part.tag));
   const tags = (m.hashtags || []).filter((tag) => m.platformLabel === 'pixiv' || !inline.has(tag));
@@ -160,7 +160,7 @@ function AssignedTagsSection({ tags, label }: { tags: string[]; label?: string }
   );
 }
 
-function InspectorPreviews({ items }: { items: NonNullable<HologramInspectorModel['previews']> }) {
+function InspectorPreviews({ items }: { items: NonNullable<DotInspectorModel['previews']> }) {
   const [index, setIndex] = useState(0);
   const item = items[index];
   const stacked = items.length > 1;
@@ -193,8 +193,8 @@ function InspectorPreviews({ items }: { items: NonNullable<HologramInspectorMode
 
 // 投稿の詳細。m はビルダーが解決とローカライズを済ませた欄をすべて運ぶ（日付は整形済み・
 // MSG の文字列は選択済み）。
-function PostInspector({ m }: { m: HologramInspectorModel }) {
-  const imageView = useSyncExternalStore(hologramImageTabSource.subscribe, imageViewIsActive);
+function PostInspector({ m }: { m: DotInspectorModel }) {
+  const imageView = useSyncExternalStore(dotImageTabSource.subscribe, imageViewIsActive);
   const hasAuthor = !!(m.authorName || m.avatarSrc);
   const authorName = (
     <span data-slot="inspector-author-name" className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">
@@ -240,7 +240,7 @@ function PostInspector({ m }: { m: HologramInspectorModel }) {
           フォーム上で座っているのと同じ位置。 */}
       {m.quotedCards && m.quotedCards.length ? (
         <div className="flex flex-col gap-1.5">
-          {m.quotedCards.map((c: HologramQuotedCardModel, i: number) => (
+          {m.quotedCards.map((c: DotQuotedCardModel, i: number) => (
             <QuotedPostCard key={i} m={c} />
           ))}
         </div>
@@ -300,7 +300,7 @@ function PostInspector({ m }: { m: HologramInspectorModel }) {
   );
 }
 
-function PosterNameHistory({ names }: { names?: HologramInspectorModel['previousNames'] }) {
+function PosterNameHistory({ names }: { names?: DotInspectorModel['previousNames'] }) {
   if (!names?.length) return null;
   return (
     <>
@@ -332,7 +332,7 @@ function PosterNameHistory({ names }: { names?: HologramInspectorModel['previous
 }
 
 // 投稿者の詳細。
-function PosterInspector({ m }: { m: HologramInspectorModel }) {
+function PosterInspector({ m }: { m: DotInspectorModel }) {
   return (
     <div data-slot="inspector-poster" className="flex min-w-0 flex-col gap-3">
       {m.bannerSrc ? <img className="h-24 w-full rounded-md border border-border object-cover" src={m.bannerSrc} alt="" /> : null}

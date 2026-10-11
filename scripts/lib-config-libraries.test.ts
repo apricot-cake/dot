@@ -19,7 +19,7 @@ async function freshModule(): Promise<Config> {
 }
 
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-libconfig-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-libconfig-'));
   env.dir = dir;
 });
 

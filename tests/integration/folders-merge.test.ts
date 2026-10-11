@@ -110,7 +110,7 @@ describe('完全ZIPの取り込み: folders.json の合流', () => {
   let col: any;
 
   beforeAll(async () => {
-    const { dest, sqlite } = freshLib('hologram-foldmerge-', {
+    const { dest, sqlite } = freshLib('dot-foldmerge-', {
       folders: [{ id: 'c-local', name: 'Local', kind: 'static', created: null, items: ['x'] }],
       activeId: 'c-local',
     });
@@ -142,7 +142,7 @@ describe('完全ZIPの取り込み: 同じ id での名前ローカル優先・i
 
   beforeAll(async () => {
     const { dest, sqlite } = freshLib(
-      'hologram-foldmerge2-',
+      'dot-foldmerge2-',
       {
         folders: [{ id: 'c1', name: 'L', kind: 'static', created: null, items: ['a'] }],
         activeId: null,

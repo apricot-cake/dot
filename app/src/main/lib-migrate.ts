@@ -258,7 +258,7 @@ async function relocateLibrary(src, dest, deps) {
   const { readConfig, writeConfig, emit, afterFlip, stillCurrent, closeDb, openDb, defaultLibraryDir } = deps;
   const sweepDelayMs = typeof deps.sweepDelayMs === 'number' ? deps.sweepDelayMs : 60000;
 
-  // 0) #176: hologram.db は今やライブラリフォルダの中にあるので、copyLibraryInto がこれから
+  // 0) #176: dot.db は今やライブラリフォルダの中にあるので、copyLibraryInto がこれから
   //    コピーするファイルの1つ。先に閉じる＝まだ書き込まれているデータベースをファイル単位で
   //    コピーしたものは、作りからして整合しない。閉じると WAL のチェック
   //    ポイントが打たれるので、コピーされるもの（本体のファイルと、まだ何か残っていれば

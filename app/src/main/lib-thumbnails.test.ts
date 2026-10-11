@@ -24,7 +24,7 @@ let safePath: string;
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  dir = await fs.mkdtemp(path.join(os.tmpdir(), 'hologram-asset-prepared-'));
+  dir = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-asset-prepared-'));
   safePath = path.join(dir, 'safe-output.webp');
   await fs.writeFile(safePath, 'safe-derived-image');
   mocks.saveFolder = dir;

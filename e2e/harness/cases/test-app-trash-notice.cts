@@ -33,8 +33,8 @@ const { evalSource } = require('../../../scripts/lib-wait.cts');
 
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-trashnotice-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-trashnotice-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -65,7 +65,7 @@ seedLibrary(configDir, [
   },
 ]);
 
-process.env.HOLOGRAM_CONFIG_DIR = configDir;
+process.env.DOT_CONFIG_DIR = configDir;
 const bridge = require(path.join(__dirname, '../../../native-host/bridge.mts'));
 
 // 「拡張機能は今何を見ているか」を1回読む。まずキャッシュを捨てるのは、
@@ -90,16 +90,16 @@ const evalJs = evalSource(
     // 状態をサンプルするようにする。
     // biome-ignore lint/plugin: the 1500ms saved-index debounce is the spec — nothing is observable until it elapses.
     const settle = () => sleep(1900);
-    await w.hologram.listPosts();
+    await w.dot.listPosts();
     await settle();
-    await w.hologram.deletePost(args.image);
+    await w.dot.deletePost(args.image);
     await settle();
-    w.__afterDelete = (await w.hologram.listTrash()).length;
-    await w.hologram.restorePost(args.image);
+    w.__afterDelete = (await w.dot.listTrash()).length;
+    await w.dot.restorePost(args.image);
     await settle();
-    await w.hologram.deletePost(args.image);
+    await w.dot.deletePost(args.image);
     await settle();
-    await w.hologram.emptyTrash();
+    await w.dot.emptyTrash();
     await settle();
     return 'done ' + w.__afterDelete;
   },
@@ -108,9 +108,9 @@ const evalJs = evalSource(
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 // 各段階は、アプリがそこに達した時に採取される: ハーネスは eval をステップ

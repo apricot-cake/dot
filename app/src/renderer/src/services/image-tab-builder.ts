@@ -5,7 +5,7 @@ import type { Translate } from './translation.ts';
 // タブに image エントリを push する（離れるのはナビの戻る）。中クリックは
 // 履歴が単一の image エントリであるバックグラウンドタブを開く（戻るは
 // 無効のまま――確認済み（保留項目1））。このモジュールが持つのは view の
-// 表示・非表示（hologramStore の 'activeImageTab' → ImageTabHost
+// 表示・非表示（dotStore の 'activeImageTab' → ImageTabHost
 // コンポーネントが React モデル全体をそこから導出する）、ギャラリー索引
 // （push ではなく replace――確認済み（保留項目2））、タブタイトルの刻印
 // （_autoTitle）。スタック自体は tabs-builder.ts の nav にある（deps として
@@ -19,22 +19,22 @@ import { store } from './store.ts';
 
 export interface ImageTabBuilderDeps {
   t: Translate;
-  getPostById(id: string): HologramPost | undefined;
-  viewedPostIdAt(g: HologramPostGroup, idx: number): string | null;
+  getPostById(id: string): DotPost | undefined;
+  viewedPostIdAt(g: DotPostGroup, idx: number): string | null;
   recordView(captureId: string): void;
   closeTab(id: string | null | undefined): void;
   getActiveTabId(): string | null;
   setActiveTabId(id: string | null): void;
-  mutateTabs(fn: (arr: HologramTab[]) => HologramTab[] | undefined): void;
+  mutateTabs(fn: (arr: DotTab[]) => DotTab[] | undefined): void;
   saveActiveTabState(): void;
   contentScrollTop(): number;
   nav: {
     saveScrollTop(y: number): void;
-    adopt(t: HologramTab | null | undefined): void;
+    adopt(t: DotTab | null | undefined): void;
     applyCurrent(): void;
-    push(e: HologramNavEntry): void;
-    replace(e: HologramNavEntry): void;
-    current(): HologramNavEntry | null;
+    push(e: DotNavEntry): void;
+    replace(e: DotNavEntry): void;
+    current(): DotNavEntry | null;
     canBack(): boolean;
   };
   navBack(): void;
@@ -43,7 +43,7 @@ export interface ImageTabBuilderDeps {
 
 type ImageEntry = { kind?: string; state?: { recs?: unknown; idx?: unknown } };
 
-function imageEntryFor(t: HologramTab): ImageEntry | null {
+function imageEntryFor(t: DotTab): ImageEntry | null {
   const hist = t._navHist;
   if (!Array.isArray(hist) || !hist.length) return null;
   const idx = typeof t._navIdx === 'number' ? t._navIdx : hist.length - 1;
@@ -79,7 +79,7 @@ export function makePostViewRecorder(recordView: (captureId: string) => void) {
 // タブの image 名は、保存されたラベルではなく今の image エントリの投影。
 // ライブラリが変わった後は開いているすべての image タブを再評価し、削除は
 // 中立の名前へフォールバックし、レコードの復元はその名前を復元する。
-export function refreshImageTabTitles(tabs: HologramTab[], activeTabId: string | null, activeEntry: HologramNavEntry | null, getPostById: (id: string) => HologramPost | undefined, fallback: string): boolean {
+export function refreshImageTabTitles(tabs: DotTab[], activeTabId: string | null, activeEntry: DotNavEntry | null, getPostById: (id: string) => DotPost | undefined, fallback: string): boolean {
   let changed = false;
   for (const t of tabs) {
     const entry = t.id === activeTabId ? activeEntry : imageEntryFor(t);
@@ -102,9 +102,9 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
   // 着く。キャッシュされたグループ（_g）はもう無い――解決はマップ検索。
   const resolveGroup = (recs: string[]) => imageTabGroup({ id: deps.getActiveTabId() || '', recs }, (id) => deps.getPostById(id));
 
-  const imageEntry = (recs: string[], idx: number): HologramNavEntry => ({ u: navEntryUrl('image', { recs, idx }), kind: 'image', state: { recs, idx } });
+  const imageEntry = (recs: string[], idx: number): DotNavEntry => ({ u: navEntryUrl('image', { recs, idx }), kind: 'image', state: { recs, idx } });
 
-  // view の identity を hologramStore へ公開する――services/image-tab.ts が
+  // view の identity を dotStore へ公開する――services/image-tab.ts が
   // React モデル全体をここから導出する（ライブラリの変化については
   // posts-data.ts と、インスペクタの状態については 'inspectedKey' と
   // 掛け合わせて）。
@@ -137,7 +137,7 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
       return changed ? arr : undefined;
     });
     if (!changed) return;
-    if (activeTitle) document.title = activeTitle + ' — Hologram';
+    if (activeTitle) document.title = activeTitle + ' — dot';
     deps.persistTabsDebounced();
   }
 
@@ -146,7 +146,7 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
   // ＋コマンドのゲーティング用のこのローカルフラグだけ。
   let imageViewShowing = false;
   const postViewRecorder = makePostViewRecorder(deps.recordView);
-  function recordVisiblePost(g: HologramPostGroup | null, idx: number, force: boolean) {
+  function recordVisiblePost(g: DotPostGroup | null, idx: number, force: boolean) {
     const postId = g ? deps.viewedPostIdAt(g, idx) : null;
     if (force) postViewRecorder.enter(postId);
     else postViewRecorder.move(postId);
@@ -160,7 +160,7 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
     recordVisiblePost(g, idx, true);
     const title = g ? imageTabTitleOf(g, deps.t('imgTabFallback')) : deps.t('imgTabFallback');
     stampTabTitle(title);
-    document.title = title + ' — Hologram';
+    document.title = title + ' — dot';
   }
   function hideImageView() {
     if (!imageViewShowing) return;
@@ -169,7 +169,7 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
     store.setState({ activeImageTab: null }); // → ImageTabHost は何も描画せず、コンテンツ列が戻ってくる
   }
 
-  function openImageEntry(g: HologramPostGroup, mediaIndex?: number) {
+  function openImageEntry(g: DotPostGroup, mediaIndex?: number) {
     const { recs, idx } = imageEntrySelection(g);
     if (!recs.length) return;
     const selected = mediaIndex ?? idx;
@@ -217,7 +217,7 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
   // ある普通のタブ（中クリック＝「image view を直接開いた新しいタブ」＝
   // 履歴1件――確認済み（保留項目1））。既定ではバックグラウンド
   // （ブラウザ流: 中クリックはグリッドに留まらせる）。
-  function addImageTab(g: HologramPostGroup, opts?: { activate?: boolean }) {
+  function addImageTab(g: DotPostGroup, opts?: { activate?: boolean }) {
     const { recs, idx } = imageEntrySelection(g);
     if (!recs.length) return;
     const id = genTabId();
@@ -229,7 +229,7 @@ export function makeImageTabController(deps: ImageTabBuilderDeps) {
       state: null,
       _navHist: [JSON.stringify(imageEntry(recs, idx))],
       _navIdx: 0,
-    } as HologramTab;
+    } as DotTab;
     // 現在のタブの隣に挿入する。
     deps.mutateTabs((arr) => {
       const ai = arr.findIndex((tt) => tt.id === deps.getActiveTabId());

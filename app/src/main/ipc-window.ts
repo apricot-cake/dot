@@ -73,11 +73,11 @@ function register(ctx: IpcContext) {
     const w = new BrowserWindow({
       width,
       height,
-      // ヘッドレスのハーネスの実行（HOLOGRAM_SMOKE=1）は、主ウィンドウを含めてすべての
+      // ヘッドレスのハーネスの実行（DOT_SMOKE=1）は、主ウィンドウを含めてすべての
       // ウィンドウを隠して作る＝検証の実行が、開発者の使っている画面を乗っ取ってはいけない。
       // ウィンドウは今までどおり文書を読み込んで動かすので、上の asset:// の防ぎは端から端まで
       // 試験できる。
-      show: process.env.HOLOGRAM_SMOKE !== '1' && !hideBackgroundWindows(process.argv, process.env),
+      show: process.env.DOT_SMOKE !== '1' && !hideBackgroundWindows(process.argv, process.env),
       useContentSize: true,
       autoHideMenuBar: true,
       backgroundColor: '#101113',

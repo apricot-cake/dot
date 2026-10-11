@@ -32,7 +32,7 @@ export const POSTER_FACET_OPTS = { multiValueTypes: ['tag'], standaloneTypes: ['
 // createQueryBuilder 自身の ctx と同じやり方で注入される。
 export interface PostQueryBuilderDeps {
   onChange: () => void;
-  onLeafMutated: (n: HologramQueryLeaf) => void;
+  onLeafMutated: (n: DotQueryLeaf) => void;
   tagIdOf?: (name: string) => number | undefined;
   storeKey?: 'postQueryTree' | 'trashQueryTree';
 }
@@ -59,9 +59,9 @@ export function makePostQueryBuilder(deps: PostQueryBuilderDeps) {
   //     なった今、「プラットフォーム無し」から「出自が一切無い」（解決
   //     できるホストも無い）へ狭められた。
   const stripWww = (h: string) => h.replace(/^www\./, '');
-  const predOf = (f: HologramQueryLeaf): ((p: HologramPost) => boolean) => {
-    if (f.type === 'domain') return (p: HologramPost) => !p.platform && stripWww(hostOf(p.url)) === f.value;
-    if (f.type === 'platform' && f.value === '__none') return (p: HologramPost) => !p.platform && !hostOf(p.url);
+  const predOf = (f: DotQueryLeaf): ((p: DotPost) => boolean) => {
+    if (f.type === 'domain') return (p: DotPost) => !p.platform && stripWww(hostOf(p.url)) === f.value;
+    if (f.type === 'platform' && f.value === '__none') return (p: DotPost) => !p.platform && !hostOf(p.url);
     return basePredOf(f);
   };
   const qb = createQueryBuilder({
@@ -93,7 +93,7 @@ export function makePostQueryBuilder(deps: PostQueryBuilderDeps) {
 
 export interface PosterQueryBuilderDeps {
   onChange: () => void;
-  posterTagEntriesOf: (key: string) => HologramTagEntry[];
+  posterTagEntriesOf: (key: string) => DotTagEntry[];
 }
 
 // poster 側のビルダーインスタンス: 同じビルダー（createQueryBuilder）を、

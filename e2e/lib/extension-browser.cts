@@ -27,7 +27,7 @@ const { chromium } = require('playwright');
 
 const ROOT = path.join(__dirname, '../..');
 const SOURCE_EXTENSION = path.join(ROOT, 'extension', '.output', 'chrome-mv3-test');
-const PRODUCTION_NATIVE_HOST = 'com.hologram.host';
+const PRODUCTION_NATIVE_HOST = 'com.dot.host';
 
 interface StageExtensionOptions {
   nativeHostName?: string;
@@ -69,7 +69,7 @@ function stageExtension(options: StageExtensionOptions = {}): string {
   if (!fs.existsSync(path.join(SOURCE_EXTENSION, 'manifest.json'))) {
     throw new Error(`${SOURCE_EXTENSION} に拡張機能のビルドが無い — 先に \`npm run ext:build:test\` を実行すること`);
   }
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), options.tempPrefix || 'hologram-extension-e2e-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), options.tempPrefix || 'dot-extension-e2e-'));
   copyDirectory(SOURCE_EXTENSION, directory);
 
   if (options.nativeHostName && options.nativeHostName !== PRODUCTION_NATIVE_HOST) {
@@ -145,7 +145,7 @@ interface ExtensionBrowser {
 
 async function launchExtensionBrowser(options: LaunchExtensionOptions): Promise<ExtensionBrowser> {
   const ownsProfile = !options.userDataDir;
-  const profileDir = options.userDataDir || fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-extension-e2e-profile-'));
+  const profileDir = options.userDataDir || fs.mkdtempSync(path.join(os.tmpdir(), 'dot-extension-e2e-profile-'));
   let context: any;
   try {
     context = await chromium.launchPersistentContext(profileDir, {

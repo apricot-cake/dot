@@ -46,7 +46,7 @@
 // ようなありふれたホスト側のルールがインラインスタイルに勝つので、隅
 // は1つのスタイルシートの差で箱を完全に失いかねなかった。#310 は何も
 // 移動させずにこれを解決した＝サブツリーに挿入されるのは、自分専用の
-// 小さな shadow root を持つ <hologram-corner-control> という host 要
+// 小さな shadow root を持つ <dot-corner-control> という host 要
 // 素で、ディスクはその中に住む（overlay/control.ts）。ホストの CSS は
 // shadow ツリーの中は選択できないので、露出したまま残る唯一の面は
 // host 要素自身の箱になり、それはインライン !important で書く（作者
@@ -172,7 +172,7 @@ export async function startOverlay(): Promise<() => void> {
         controls.push({
           face: anchor.face,
           hostShadowRootExposed: anchor.el.shadowRoot !== null,
-          hostFaceExposed: anchor.el.hasAttribute('data-hologram-face'),
+          hostFaceExposed: anchor.el.hasAttribute('data-dot-face'),
           tag: anchor.control.tagName,
           label: anchor.control.getAttribute('aria-label'),
           tabIndex: anchor.control.tabIndex,
@@ -835,7 +835,7 @@ export async function startOverlay(): Promise<() => void> {
         anchor.accessibleName = accessibleName;
         // テストのために名前を付けている。テストはローカライズされ
         // た名前を読めない（隅はブラウザのロケールに従う）＝重複警告
-        // のボタンに対して data-hologram-choice が果たすのと同じ役割
+        // のボタンに対して data-dot-choice が果たすのと同じ役割
         // だ。
       } else if (!face && (born || anchor.face !== null)) {
         drawEmptyFace(anchor);
@@ -974,7 +974,7 @@ export async function startOverlay(): Promise<() => void> {
   // を切断し、このモジュールが取り付けたすべての listener とタイマー
   // を外す。
   //
-  // 意図して残すもの: 共有の <hologram-extension-ui> host 要素。これ
+  // 意図して残すもの: 共有の <dot-extension-ui> host 要素。これ
   // は空で不活性な pointer-events:none の固定レイヤーで（ui-root.ts
   // がその理由ですでに起動をまたいで残し続けている）、右クリックからの
   // 一括取り込みも同じ層を使う。それが描いているかもしれない層を空にすると、

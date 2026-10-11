@@ -2,7 +2,7 @@ import { compactDate, formatCount } from './format.ts';
 import { treeLeaves } from './query.ts';
 import { sortOption } from './sort-direction.ts';
 
-export function posterSortValue(user: HologramUserAgg, sort: string, tree: HologramQueryGroup) {
+export function posterSortValue(user: DotUserAgg, sort: string, tree: DotQueryGroup) {
   switch (sortOption(sort)) {
     case 'local-views-desc':
       return { kind: 'views', label: formatCount(user.localViewCount || 0) };

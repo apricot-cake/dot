@@ -14,9 +14,9 @@ afterEach(() => {
 });
 
 function library() {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-no-screenshots-'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-no-screenshots-'));
   dirs.push(folder);
-  const handle = openDatabase(path.join(folder, 'hologram.db'));
+  const handle = openDatabase(path.join(folder, 'dot.db'));
   handles.push(handle);
   return { folder, sqlite: handle.sqlite };
 }

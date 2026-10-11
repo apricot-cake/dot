@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('詳細は選択とパネルの開閉に追従し、複数選択の古い内容を残さない', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('詳細は選択とパネルの開閉に追従し、複数選択の古い内容を残さない', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const cards = page.locator('[data-slot="post-card"]');
   const cat = cards.filter({ hasText: '猫が机の上で寝ている' });
   const sea = cards.filter({ hasText: '青い空と海の写真です' });

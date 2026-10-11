@@ -1,9 +1,9 @@
 import type { Translate } from './translation.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import type { PosterTagRow, TagGroupMember } from '../../../main/ipc-payloads.ts';
 export type TagGroupStore = Record<number, TagGroupMember>;
 export type PosterTagStore = Record<string, PosterTagRow>;
-export function makeTags(deps: { tagGroups(): TagGroupStore; tagLabels(): Record<string, string>; posterTags(): PosterTagStore; allPosts(): HologramPost[]; t: Translate }) {
+export function makeTags(deps: { tagGroups(): TagGroupStore; tagLabels(): Record<string, string>; posterTags(): PosterTagStore; allPosts(): DotPost[]; t: Translate }) {
   const { tagGroups, tagLabels, posterTags, allPosts, t: t18n } = deps;
 
   function tagGroupOf(tagId: number | null | undefined): string | null {
@@ -26,7 +26,7 @@ export function makeTags(deps: { tagGroups(): TagGroupStore; tagLabels(): Record
     const labels = tagLabels();
     return (labels && labels[groupId]) || '';
   }
-  function entriesOfRow(row: PosterTagRow | undefined): HologramTagEntry[] {
+  function entriesOfRow(row: PosterTagRow | undefined): DotTagEntry[] {
     if (!row) return [];
     return row.tags.map((name, i) => ({ id: row.tagIds[i] ?? null, name, label: name }));
   }
@@ -35,11 +35,11 @@ export function makeTags(deps: { tagGroups(): TagGroupStore; tagLabels(): Record
     const row = posterTags()[key];
     return row && Array.isArray(row.tags) ? row.tags : [];
   }
-  function posterTagEntriesOf(key: string): HologramTagEntry[] {
+  function posterTagEntriesOf(key: string): DotTagEntry[] {
     return entriesOfRow(posterTags()[key]);
   }
-  function posterFilterVocab(): HologramTagEntry[] {
-    const m = new Map<string, HologramTagEntry>();
+  function posterFilterVocab(): DotTagEntry[] {
+    const m = new Map<string, DotTagEntry>();
     for (const row of Object.values(posterTags()))
       for (const e of entriesOfRow(row)) {
         const k = e.id != null ? 'i:' + e.id : 'n:' + e.name;
@@ -69,7 +69,7 @@ export function makeTags(deps: { tagGroups(): TagGroupStore; tagLabels(): Record
     if (general.length) out.push({ id: null, name: t18n('tagUncategorized'), tags: general });
     return out;
   }
-  function inspectorTagPickerData(_selectedTags: string[] | null | undefined, _recordsForSource: HologramPost[] | null | undefined, scope?: string) {
+  function inspectorTagPickerData(_selectedTags: string[] | null | undefined, _recordsForSource: DotPost[] | null | undefined, scope?: string) {
     const vocabGroups = groupedTagVocab({ scope: (scope || 'post') as 'post' | 'poster' }).map((g) => ({
       id: g.id,
       name: g.name,
@@ -90,8 +90,8 @@ export let tagGroupOf: ((tagId: number | null | undefined) => string | null) | n
 export function bindTagGroupOf(fn: (tagId: number | null | undefined) => string | null): void {
   tagGroupOf = fn;
 }
-export let posterFilterVocab: (() => HologramTagEntry[]) | null = null;
-export function bindPosterFilterVocab(fn: () => HologramTagEntry[]): void {
+export let posterFilterVocab: (() => DotTagEntry[]) | null = null;
+export function bindPosterFilterVocab(fn: () => DotTagEntry[]): void {
   posterFilterVocab = fn;
 }
 let tagGroups: TagGroupStore = {};
@@ -119,7 +119,7 @@ export function onChange(cb: (groupId?: string) => void) {
 }
 async function readTagGroups(): Promise<{ memberships: TagGroupStore; labels: Record<string, string> }> {
   try {
-    const r = await hologramIpc.getTagGroups();
+    const r = await dotIpc.getTagGroups();
     const memberships: TagGroupStore = {};
     for (const row of (r && r.memberships) || []) if (row && Number.isInteger(row.id)) memberships[row.id] = row;
     return { memberships, labels: (r && r.labels) || {} };
@@ -129,7 +129,7 @@ async function readTagGroups(): Promise<{ memberships: TagGroupStore; labels: Re
 }
 async function readPosterTags(): Promise<PosterTagStore> {
   try {
-    const r = await hologramIpc.getPosterTags();
+    const r = await dotIpc.getPosterTags();
     return (r && r.tags) || {};
   } catch {
     return {};
@@ -137,7 +137,7 @@ async function readPosterTags(): Promise<PosterTagStore> {
 }
 async function writePosterTags() {
   try {
-    await hologramIpc.setPosterTags({ tags: posterTagNames() });
+    await dotIpc.setPosterTags({ tags: posterTagNames() });
     posterTags = await readPosterTags();
     notify('poster');
   } catch {
@@ -164,7 +164,7 @@ export function load() {
   return loadPromise;
 }
 try {
-  hologramIpc.onOrgChanged(async (groupId) => {
+  dotIpc.onOrgChanged(async (groupId) => {
     if (groupId === 'tag-groups') {
       const tt = await readTagGroups();
       tagGroups = tt.memberships;
@@ -179,7 +179,7 @@ try {
   /* ブリッジ無し（Node の単体テスト） */
 }
 export async function setTagGroup(tagId: number, groupId: string | null) {
-  const result = await hologramIpc.setTagGroup(tagId, groupId || null);
+  const result = await dotIpc.setTagGroup(tagId, groupId || null);
   if (!result.ok) throw new Error('Could not change tag group');
   const state = await readTagGroups();
   tagGroups = state.memberships;
@@ -189,9 +189,9 @@ export async function setTagGroup(tagId: number, groupId: string | null) {
 export async function setTagGroupLabel(groupId: string, label: string | null | undefined) {
   const name = label?.trim();
   if (!name) return;
-  const state = await hologramIpc.getTagGroups();
+  const state = await dotIpc.getTagGroups();
   const labels = { ...state.labels, [groupId]: name };
-  const result = await hologramIpc.setTagGroups(state.memberships, labels);
+  const result = await dotIpc.setTagGroups(state.memberships, labels);
   if (!result.ok) throw new Error('Could not rename tag group');
   tagLabels = labels;
   notify('group');

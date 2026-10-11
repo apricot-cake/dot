@@ -28,7 +28,7 @@
 // 起きないこと」を見張るように作られているので、開発中に CSP を外すと実際に
 // ビーコンが飛ぶことを確認した（つまりこれは偽陰性ではない）。
 //
-// 画面を占有しない: HOLOGRAM_SMOKE=1 の下ではビューアウィンドウも隠して
+// 画面を占有しない: DOT_SMOKE=1 の下ではビューアウィンドウも隠して
 // 作られる。
 
 const { spawn } = require('node:child_process');
@@ -158,8 +158,8 @@ async function main() {
   });
   await new Promise((r) => beaconSrv.listen(beaconPort, '127.0.0.1', r as any));
 
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-assetcsp-'));
-  const configDir = path.join(tmp, 'Hologram');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-assetcsp-'));
+  const configDir = path.join(tmp, 'dot');
   const saveFolder = path.join(tmp, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.mkdirSync(saveFolder, { recursive: true });
@@ -202,7 +202,7 @@ async function main() {
   // 必要がある。
   const evalJs = evalSource(
     async ({ sleep, neverHappens }, args) => {
-      const h = (window as any).hologram;
+      const h = (window as any).dot;
       // 層1: SVG はきっぱり拒まれる。ラスタは今まで通り開く（SMOKE 下では隠れる）。
       const svgRefused = (await h.openImageWindow(args.svg)) === false;
       const rasterAccepted = (await h.openImageWindow(args.png)) === true;
@@ -247,9 +247,9 @@ async function main() {
 
   const env = Object.assign({}, process.env, {
     APPDATA: tmp,
-    HOLOGRAM_CONFIG_DIR: configDir,
-    HOLOGRAM_SMOKE: '1',
-    HOLOGRAM_SMOKE_EVAL: evalJs,
+    DOT_CONFIG_DIR: configDir,
+    DOT_SMOKE: '1',
+    DOT_SMOKE_EVAL: evalJs,
   });
 
   const child = spawn(resolveElectron(), ['.', `--remote-debugging-port=${cdpPort}`], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

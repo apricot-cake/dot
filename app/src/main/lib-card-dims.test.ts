@@ -63,7 +63,7 @@ function webpVP8X(w: number, h: number, animated = false) {
 
 const dirs: string[] = [];
 function mkFolder(): string {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-card-dims-'));
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-card-dims-'));
   dirs.push(d);
   return d;
 }

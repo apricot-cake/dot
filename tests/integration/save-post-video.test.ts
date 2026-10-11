@@ -32,7 +32,7 @@ let saveFolder: string;
 let record: any;
 
 beforeAll(async () => {
-  const configDir = process.env.HOLOGRAM_CONFIG_DIR as string;
+  const configDir = process.env.DOT_CONFIG_DIR as string;
   saveFolder = path.join(configDir, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder }));
@@ -57,7 +57,7 @@ beforeAll(async () => {
   } finally {
     vi.unstubAllGlobals();
   }
-  record = JSON.parse(fs.readFileSync(path.join(saveFolder, '.hologram-inbox', 'new', `${CAPTURE_ID}.json`), 'utf8')).record;
+  record = JSON.parse(fs.readFileSync(path.join(saveFolder, '.dot-inbox', 'new', `${CAPTURE_ID}.json`), 'utf8')).record;
 });
 
 describe('保存されたレコードの形', () => {

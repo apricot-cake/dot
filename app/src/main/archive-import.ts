@@ -18,7 +18,7 @@ interface Boundary {
 
 async function startWorker(executable: string, stage: string) {
   const actor = await registerArchiveActor(stage);
-  const child = utilityProcess.fork(path.join(path.dirname(fileURLToPath(import.meta.url)), 'archive-import-worker.js'), [`--hologram-archive-stage=${stage}`, `--hologram-archive-actor=${actor}`], { serviceName: 'Hologram archive import', stdio: 'ignore' });
+  const child = utilityProcess.fork(path.join(path.dirname(fileURLToPath(import.meta.url)), 'archive-import-worker.js'), [`--dot-archive-stage=${stage}`, `--dot-archive-actor=${actor}`], { serviceName: 'dot archive import', stdio: 'ignore' });
   let exited = false;
   const exitPromise = new Promise<void>((resolve) =>
     child.once('exit', () => {

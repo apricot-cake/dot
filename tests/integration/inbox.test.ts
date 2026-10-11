@@ -10,7 +10,7 @@ import { normalizePostRecord } from '../../native-host/post-record.mts';
 
 const dirs: string[] = [];
 function mkSaveFolder() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-inbox-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-inbox-'));
   dirs.push(dir);
   return dir;
 }
@@ -31,7 +31,7 @@ describe('buildEnvelope', () => {
   const envelope = buildEnvelope(rec);
 
   test('format/version/kind/eventId が確定値', () => {
-    expect(envelope).toMatchObject({ format: 'hologram-inbox', version: 1, kind: 'post.capture', eventId: rec.captureId });
+    expect(envelope).toMatchObject({ format: 'dot-inbox', version: 1, kind: 'post.capture', eventId: rec.captureId });
   });
 
   test('payloadSha256 は record の JSON に対する sha256', () => {
@@ -54,7 +54,7 @@ describe('buildEnvelope', () => {
 });
 
 describe('ensureInboxDirs / パス解決', () => {
-  test('tmp/new/segments が saveFolder/.hologram-inbox の下に作られる', () => {
+  test('tmp/new/segments が saveFolder/.dot-inbox の下に作られる', () => {
     const folder = mkSaveFolder();
     ensureInboxDirs(folder);
 

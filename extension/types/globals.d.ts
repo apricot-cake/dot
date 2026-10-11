@@ -3,7 +3,7 @@
 interface Window {
   __snsPostSaveActive?: boolean;
   __snsPostSaveCleanup?: () => void;
-  __hologramDiag?: Record<string, unknown>;
+  __dotDiag?: Record<string, unknown>;
 }
 
 declare module '*?inline' {

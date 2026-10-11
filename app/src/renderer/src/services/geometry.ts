@@ -14,12 +14,12 @@
 // 与えられた最小列サイズで何列入るか（auto-fill minmax の計算――masonic
 // の columnWidth は最小値で、列は埋めるよう伸びる。旧来の CSS グリッドと
 // 同じ列数の式）。
-export const colsFor = (size: number, m: HologramGridMetrics) => Math.max(1, Math.floor((m.W + m.g) / (size + m.g)));
+export const colsFor = (size: number, m: DotGridMetrics) => Math.max(1, Math.floor((m.W + m.g) / (size + m.g)));
 // 目標の列数にぴったり収まる列サイズ。
-export const sizeFor = (n: number, m: HologramGridMetrics) => Math.floor((m.W - (n - 1) * m.g) / n);
+export const sizeFor = (n: number, m: DotGridMetrics) => Math.floor((m.W - (n - 1) * m.g) / n);
 // ぴったり収まるサイズが max 以下に収まる最小の列数。ceil を使う――floor
 // だと、サイズが頭打ちのまま二度と再フローしない切れ目を提供してしまう。
-export const minColsFor = (max: number, m: HologramGridMetrics) => Math.max(1, Math.ceil((m.W + m.g) / (max + m.g)));
+export const minColsFor = (max: number, m: DotGridMetrics) => Math.max(1, Math.ceil((m.W + m.g) / (max + m.g)));
 
 // 生の px ではなく「列数」に対応するサイズスライダーのトラックを導出する:
 // 伸縮するグリッドは列数のしきい値でしかレイアウトを動かさないので、各
@@ -31,7 +31,7 @@ export const minColsFor = (max: number, m: HologramGridMetrics) => Math.max(1, M
 // { nBig, nSmall, single, value } を返す。single＝幾何学的に可能な列数が
 // 1つしかない（1段しかないスライダーは何も伝えないので、呼び出し側が
 // 隠す）。
-export function sliderTrack(st: { min: number; max: number; size: number }, m: HologramGridMetrics, opts?: { minCols?: number }) {
+export function sliderTrack(st: { min: number; max: number; size: number }, m: DotGridMetrics, opts?: { minCols?: number }) {
   const nBig = (opts && opts.minCols) || minColsFor(st.max, m);
   const nSmall = Math.max(nBig, colsFor(st.min, m));
   const n = Math.min(nSmall, Math.max(nBig, colsFor(st.size, m)));

@@ -35,7 +35,7 @@ const one = (sql: string, ...args: any[]) => handle.sqlite.prepare(sql).get(...a
 const all = (sql: string, ...args: any[]) => handle.sqlite.prepare(sql).all(...args);
 
 beforeAll(async () => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-replaces-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-replaces-'));
   folder = path.join(dir, 'library');
   trashDir = path.join(folder, '.trash');
   fs.mkdirSync(folder, { recursive: true });

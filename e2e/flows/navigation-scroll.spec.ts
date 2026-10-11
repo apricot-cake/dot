@@ -1,9 +1,9 @@
 import { expect, test } from '../lib/harness.ts';
 import { FIXTURE_POSTS } from '../lib/library.ts';
 
-test('スクロールしてビューアを開き戻ると元の位置を復元する', async ({ launchHologram }) => {
+test('スクロールしてビューアを開き戻ると元の位置を復元する', async ({ launchDot }) => {
   const posts = Array.from({ length: 40 }, (_, i) => ({ ...FIXTURE_POSTS[0], captureId: `viewer-scroll-${i}` }));
-  const { page } = await launchHologram({ posts });
+  const { page } = await launchDot({ posts });
   const scroller = page.locator('[data-slot="content-scroll"]');
   await scroller.evaluate((el) => {
     el.scrollTop = 600;
@@ -24,9 +24,9 @@ test('スクロールしてビューアを開き戻ると元の位置を復元�
   await expect.poll(() => scroller.evaluate((el) => el.scrollTop)).toBe(previousTop);
 });
 
-test('投稿者へ移動して戻ると投稿一覧のスクロール位置を復元する', async ({ launchHologram }) => {
+test('投稿者へ移動して戻ると投稿一覧のスクロール位置を復元する', async ({ launchDot }) => {
   const posts = Array.from({ length: 40 }, (_, i) => ({ ...FIXTURE_POSTS[0], captureId: `scroll-${i}`, screenName: `author_${i}`, displayName: `投稿者${i}` }));
-  const { page } = await launchHologram({ posts });
+  const { page } = await launchDot({ posts });
   const scroller = page.locator('[data-slot="content-scroll"]');
   const scrollTop = () => scroller.evaluate((el) => el.scrollTop);
   await page.locator('[data-slot="post-card"]').first().click();

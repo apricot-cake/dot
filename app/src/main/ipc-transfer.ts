@@ -254,7 +254,7 @@ function register(ctx: IpcContext) {
       // complete 形式のエクスポートは投稿を DB から読む（imagesOnly は従来どおり単純な
       // ディスクコピーのまま——もともと sidecar／整理情報は含んでいなかった）。
       // #32 St1: 呼び出したウィンドウを親にする。ctx.getWin()（主ウィンドウ）ではない。
-      const res = await dialog.showSaveDialog(BrowserWindow.fromWebContents(_e.sender) as BrowserWindow, { defaultPath: `hologram-${imagesOnly ? 'images' : 'export'}-${exportStamp()}.zip` });
+      const res = await dialog.showSaveDialog(BrowserWindow.fromWebContents(_e.sender) as BrowserWindow, { defaultPath: `dot-${imagesOnly ? 'images' : 'export'}-${exportStamp()}.zip` });
       if (res.canceled || !res.filePath) return { saved: false };
       // アーカイブは選ばれたパスへ直接ストリームする（yazl: メモリ使用量が有界＋ZIP64）
       // ＝ライブラリ全体がメモリに乗ることはなく、4 GiB 超のアーカイブも壊れない。
@@ -427,7 +427,7 @@ function register(ctx: IpcContext) {
     // #32 St1: 呼び出したウィンドウを親にする。ctx.getWin()（主ウィンドウ）ではない。
     // 実アプリでは必ず main のネイティブ picker が選ぶ。隔離済み E2E の SMOKE
     // プロセスだけは、その専用 config と同じ一時ディレクトリを環境から注入する。
-    const smokePick = process.env.HOLOGRAM_SMOKE === '1' ? process.env.HOLOGRAM_SMOKE_PICK_SAVE_FOLDER : undefined;
+    const smokePick = process.env.DOT_SMOKE === '1' ? process.env.DOT_SMOKE_PICK_SAVE_FOLDER : undefined;
     const res = smokePick ? { canceled: false, filePaths: [smokePick] } : await dialog.showOpenDialog(BrowserWindow.fromWebContents(_e.sender) as BrowserWindow, { properties: ['openDirectory', 'createDirectory'] });
     if (!isCurrentSaveFolderFlow(_e.sender, flow)) return { ok: false, canceled: true };
     if (res.canceled || !res.filePaths || !res.filePaths[0]) {
@@ -435,7 +435,7 @@ function register(ctx: IpcContext) {
       return { ok: false, canceled: true };
     }
     const chosen = res.filePaths[0];
-    // 親フォルダの下に Hologram/Library を置く。Hologram や Library 自体を
+    // 親フォルダの下に dot/Library を置く。dot や Library 自体を
     // 選んだ場合は、その階層を重複して作らない。
     const dest = libraryDestinationDir(chosen);
     const v = validateSaveFolder(dest);
@@ -453,7 +453,7 @@ function register(ctx: IpcContext) {
       const messages = cloudWarningMessages();
       const options = {
         type: 'warning' as const,
-        title: 'Hologram',
+        title: 'dot',
         message: messages.saveFolderCloudWarn.replace('{name}', cloudProvider),
         detail: messages.saveFolderCloudWarnDesc,
         buttons: [messages.saveFolderCloudWarnOk, messages.confirmCancel],

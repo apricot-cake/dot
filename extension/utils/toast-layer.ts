@@ -1,6 +1,6 @@
 // 通知をネイティブのトップレイヤーへ載せる。モーダルの外側は inert に
 // なるため、モーダル表示中は ShadowRoot のホストもその内側へ移す。
-const STATE_KEY = Symbol.for('hologram.toast-layer');
+const STATE_KEY = Symbol.for('dot.toast-layer');
 interface ToastLayerState {
   stack: HTMLElement;
   host: HTMLElement;

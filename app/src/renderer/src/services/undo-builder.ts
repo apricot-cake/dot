@@ -27,11 +27,11 @@ import { store } from './store.ts';
 export interface UndoBuilderDeps {
   showToast(msg: unknown): void;
   t: Translate;
-  getPostById(id: string): HologramPost | undefined;
+  getPostById(id: string): DotPost | undefined;
   markPostsMutated(): void;
   renderPosts(keepLimit?: boolean): void;
-  getViewGroups(): HologramPostGroup[];
-  showDetail(g: HologramPostGroup): void;
+  getViewGroups(): DotPostGroup[];
+  showDetail(g: DotPostGroup): void;
   refreshPosterTagFields(key: string): void;
   onFolderMembershipChanged(): void;
 }
@@ -46,7 +46,7 @@ function nextList(current: readonly string[] | null | undefined, change: Directe
 
 export function makeUndoController(deps: UndoBuilderDeps) {
   async function applyPostTags(changes: DirectedChange[]) {
-    const writes: Array<{ rec: HologramPost; next: string[]; image: string }> = [];
+    const writes: Array<{ rec: DotPost; next: string[]; image: string }> = [];
     for (const c of changes) {
       const rec = deps.getPostById(c.target); // 差分キャッシュのマップ経由で O(1)（allPosts は同じレコード参照を保持している）
       // 「今の」タグ一覧が住む場所はこのレコードだけ。これが無いと差分を

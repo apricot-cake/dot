@@ -138,7 +138,7 @@ async function buildZipBytes(files: Record<string, string | Buffer>) {
 }
 
 beforeAll(async () => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-zipbomb-'));
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-zipbomb-'));
   const files: Record<string, string> = {};
   for (let i = 0; i < SMALL_N; i++) files[`library/z${i}.bin`] = `tiny${i}`;
   smallBytes = await buildZipBytes(files);

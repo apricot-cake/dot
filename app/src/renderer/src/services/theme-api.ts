@@ -13,7 +13,7 @@
 // （light/dark）はそこから解決される――'auto' は prefers-color-scheme
 // 経由で OS を追いかける。
 
-const KEY = 'hologram-theme';
+const KEY = 'dot-theme';
 let mql: MediaQueryList | null = null;
 try {
   mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
@@ -49,9 +49,9 @@ export function set(p: string, persist?: boolean): string {
   } catch (_e) {
     /* 握りつぶす */
   }
-  if (persist !== false && window.hologram && window.hologram.setPref) {
+  if (persist !== false && window.dot && window.dot.setPref) {
     try {
-      window.hologram.setPref('theme', pref);
+      window.dot.setPref('theme', pref);
     } catch (_e) {
       /* 握りつぶす */
     }
@@ -67,7 +67,7 @@ export function resolve(): string {
 // theme を ?theme= として渡す。無ければ localStorage のキャッシュへ、
 // それも無ければ 'auto' へフォールバックする――それから適用する（起動時の
 // [data-theme] パスと何度実行しても同じ。起動処理がもう触らないタイトル
-// バーのオーバーレイもここで設定する）。preload の window.hologram はどの
+// バーのオーバーレイもここで設定する）。preload の window.dot はどの
 // ページスクリプトが走るよりも前に存在するので、config の整合には準備完了
 // を待つゲートは要らない。
 let initial: string | null = null;
@@ -102,8 +102,8 @@ if (mql) {
 // config.json と一度だけ整合させる。旧来の DOMContentLoaded 待ちは、
 // 旧来の #themeSelect の配線のためだけに存在していた（削除済み: React の
 // 外観セクションがコントロールを持つ）。
-if (window.hologram && window.hologram.getPrefs) {
-  window.hologram
+if (window.dot && window.dot.getPrefs) {
+  window.dot
     .getPrefs()
     .then(function (p) {
       if (!p || !p.theme) return;

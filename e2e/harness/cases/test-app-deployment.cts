@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
 const { waitFor } = require('../../../scripts/lib-wait.cts');
 const { electronPath: resolveElectron } = require('../../../scripts/lib-electron-path.cts');
 const root = path.resolve(__dirname, '../../..');
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-deploy-test-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-deploy-test-'));
 const appDir = path.join(tmp, 'app');
 const config = path.join(tmp, 'config');
 const electron = resolveElectron();
@@ -20,11 +20,11 @@ fs.cpSync(path.join(root, 'app', 'out'), path.join(appDir, 'out'), { recursive: 
 fs.copyFileSync(path.join(root, 'app', 'package.json'), path.join(appDir, 'package.json'));
 fs.symlinkSync(path.join(root, 'node_modules'), path.join(tmp, 'node_modules'), 'junction');
 fs.symlinkSync(path.join(root, 'native-host'), path.join(tmp, 'native-host'), 'junction');
-const env: NodeJS.ProcessEnv = { ...process.env, HOLOGRAM_CONFIG_DIR: config, HOLOGRAM_SANDBOX: '1', HOLOGRAM_START_MINIMIZED: '1' };
-delete env.HOLOGRAM_SMOKE;
+const env: NodeJS.ProcessEnv = { ...process.env, DOT_CONFIG_DIR: config, DOT_SANDBOX: '1', DOT_START_MINIMIZED: '1' };
+delete env.DOT_SMOKE;
 delete env.ELECTRON_RENDERER_URL;
 const launch = (args: string[]) => spawn(electron, [appDir, ...args], { env, windowsHide: true, stdio: ['ignore', 'ignore', 'inherit'] });
-const signalQuit = () => new Promise((resolve) => launch(['--hologram-quit']).once('close', resolve));
+const signalQuit = () => new Promise((resolve) => launch(['--dot-quit']).once('close', resolve));
 
 (async () => {
   let started = false;

@@ -18,7 +18,7 @@ import path from 'node:path';
 import type { SavedEntry } from '../../../native-host/protocol.mts';
 import { postKeyOf } from '../../../native-host/post-key.mts';
 
-const SAVED_INDEX_FORMAT = 'hologram-bridge-saved-index';
+const SAVED_INDEX_FORMAT = 'dot-bridge-saved-index';
 // v2（#334）: エントリは素の captureId 文字列ではなく、投稿の保存済みメディア
 // URL を持つオブジェクトになった。v3（#34）は media と並行する `owners` を
 // 追加。v4（#158）は `entries` の隣に `trashed` の map を追加。ブリッジは

@@ -1,7 +1,7 @@
 // 仮想化した投稿者グリッド＝共有の VirtualGridHost に載せる投稿者のセル。React が描画と窓の
 // 制御をし、カードの上でのジェスチャはすべて React が持つ（#618: ジェスチャは今や prop なので、
 // コンテナ側の委譲リスナが読み返すための `data-index` をセルはもう持たない）。posterList と
-// 件数の印は今も orchestrator.ts が持つ。詳細表示中の強調は modelOf ではなく hologramStore
+// 件数の印は今も orchestrator.ts が持つ。詳細表示中の強調は modelOf ではなく dotStore
 // から導く。
 //
 // 投稿者をどのセルとして描くかはモデルの投稿者の形から決まる（#630）＝グリッドか行か、
@@ -19,7 +19,7 @@ import type { PosterShape } from '../services/display.ts';
 import { posterClickBackground } from '../services/orchestrator.ts';
 import { store, subscribeKey } from '../services/store.ts';
 
-// 詳細表示のリングは、modelOf のクロージャ読みのモデルに乗せず hologramStore の
+// 詳細表示のリングは、modelOf のクロージャ読みのモデルに乗せず dotStore の
 // 'inspectedKey' から直に導く（本物の購読）＝投稿側の双子は grid/Grid.tsx の Cell を参照。
 const subInspected = (cb: () => void) => subscribeKey('inspectedKey', cb);
 const getInspected = () => store.getState().inspectedKey;
@@ -63,7 +63,7 @@ function PlatformTag({ platform, pfName, className }: { platform?: string | null
  * 何も無い＝それが俯瞰そのもの（#141）で、素のサムネイルのグリッドの投稿者側の双子であり、
  * レイアウトがこのセルを正方形と呼べる理由でもある。
  */
-function PosterCard({ c, shape, group, actions }: { c: PosterCardModel; shape: PosterShape; group: unknown; actions?: HologramCardActions }) {
+function PosterCard({ c, shape, group, actions }: { c: PosterCardModel; shape: PosterShape; group: unknown; actions?: DotCardActions }) {
   const MetricIcon = c.sortValue?.kind === 'views' ? Eye : c.sortValue?.kind === 'posts' ? SquarePen : c.sortValue?.kind === 'followers' ? Users : null;
   return (
     <div data-slot="poster-card" data-inspected={c.inspected || undefined} className={cn(cellChrome({ selected: c.inspected }, false), 'flex w-full flex-col rounded-lg')} {...cellHandlers(actions, group)}>
@@ -108,6 +108,6 @@ function PosterCell({ index, data, width }: GridCellProps) {
 // 変わるたびにホストがジェスチャを構え直すため。
 const onBackgroundClick = () => posterClickBackground();
 
-export function PostersHost({ model }: { model: HologramGridModel }) {
+export function PostersHost({ model }: { model: DotGridModel }) {
   return <VirtualGridHost model={model} cell={PosterCell} onBackgroundClick={onBackgroundClick} />;
 }

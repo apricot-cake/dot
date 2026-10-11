@@ -13,7 +13,7 @@ const DIAG_PREFIX = 'diaglog_';
 
 function profileDirectory(kind: string): string {
   if (kind === 'development') {
-    const root = process.env.HOLOGRAM_EXTENSION_DEV_PROFILE || path.join(os.homedir(), '.hologram-ext-profile');
+    const root = process.env.DOT_EXTENSION_DEV_PROFILE || path.join(os.homedir(), '.dot-ext-profile');
     return path.join(root, 'Default');
   }
   if (kind === 'daily') {
@@ -49,7 +49,7 @@ async function readDiagnostics(kind: string): Promise<unknown[]> {
   const source = storageDirectory(kind);
   if (!fs.existsSync(source)) return [];
 
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-extension-storage-'));
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-extension-storage-'));
   const copy = path.join(temp, 'storage');
   try {
     fs.cpSync(source, copy, { recursive: true, filter: (file) => path.basename(file) !== 'LOCK' });

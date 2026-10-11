@@ -52,7 +52,7 @@ const legitEntries = (zip: JSZip) => {
 };
 
 beforeAll(() => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-zipslip-'));
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-zipslip-'));
 });
 
 afterAll(() => {

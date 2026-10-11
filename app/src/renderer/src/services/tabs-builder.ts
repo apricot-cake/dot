@@ -4,7 +4,7 @@ import { isEditing as isImageEditing } from './image-edit-controls.ts';
 // 旧 viewer.ts のモノリスから切り出したもの。undo-builder.ts ／ selection-builder.ts と
 // 同じ形をしている。状態機械（makeNavHistory と、tabs.json の直列化・復元の対）は
 // tab-state.ts に手を触れず置いたまま＝このモジュールはその使い手で、viewer.ts の
-// 埋め込みの結線を置き換える。加えて、hologramStore に載った tabs/activeTabId の
+// 埋め込みの結線を置き換える。加えて、dotStore に載った tabs/activeTabId の
 // アクセサ（かつての viewer.ts のローカル）と、ストリップが呼ぶタブの操作
 // （switchTab/addTab/closeTab/duplicateTab/showTabMenu）も持つ。ストリップ自身は
 // 今や自分の DOM イベントを自分で持つ＝ここからバーを見張っているものは何も無い（#621）。
@@ -28,12 +28,12 @@ import { imageTabGroup, imageTabTitleOf } from './records.ts';
 import { isOpen as settingsIsOpen } from './settings.ts';
 import { registerShortcut, tryRun } from './shortcut-registry.ts';
 import { store } from './store.ts';
-import { hologramTabsSource } from './tabs.ts';
+import { dotTabsSource } from './tabs.ts';
 
 export interface TabsBuilderDeps {
   t: Translate;
-  tabTitleOf(state: HologramTabSnapshot | null | undefined, ctx: { allCount?: number | null } | null | undefined): { text: string; iconType: string };
-  postQB: { getTree(): HologramQueryGroup; setTree(t: HologramQueryGroup | null | undefined): void; shadow(): HologramQueryLeaf[] };
+  tabTitleOf(state: DotTabSnapshot | null | undefined, ctx: { allCount?: number | null } | null | undefined): { text: string; iconType: string };
+  postQB: { getTree(): DotQueryGroup; setTree(t: DotQueryGroup | null | undefined): void; shadow(): DotQueryLeaf[] };
   getActiveFolderId(): string | null;
   setActiveFolderId(id: string | null | undefined): void;
   getSortValue(): string;
@@ -52,8 +52,8 @@ export interface TabsBuilderDeps {
   scrollContentTo(y: number): void;
   // 'posters' のエントリ向けの、投稿者側のビューの状態（#144 保留の判断3＝モードは今や
   // タブごとなので、投稿者の絞り込みの木／並び順／実時間の検索が履歴のエントリに乗る）。
-  getPosterTree(): HologramQueryGroup;
-  setPosterTree(t: HologramQueryGroup | null | undefined): void;
+  getPosterTree(): DotQueryGroup;
+  setPosterTree(t: DotQueryGroup | null | undefined): void;
   getPosterSort(): string;
   setPosterSort(v: string): void;
   renderPosters(): void;
@@ -65,7 +65,7 @@ export interface TabsBuilderDeps {
   // #145: image のエントリの recs を、生きている投稿のレコードへ解決する。全体の履歴
   // ページのタイトル（imageTabTitleOf）のため＝image-tab-builder.ts 自身の
   // showImageView/openImageEntry が既に使っているのと同じ引き方。
-  getPostById(id: string): HologramPost | undefined;
+  getPostById(id: string): DotPost | undefined;
   // record() 向けの、まとめる時の手がかり。1回の編集のまとまりが進んでいる間（実時間の
   // 検索の打ち込み中や、ファセットエディタのセッションが開いている間）は null でない
   // 安定したキーを返し、後続の記録を push ではなく置き換えにする＝「1セッション、
@@ -76,10 +76,10 @@ export interface TabsBuilderDeps {
 const NAV_CAP = 60;
 
 export function makeTabsController(deps: TabsBuilderDeps) {
-  // --- hologramStore に載ったタブの一覧（tabs/activeTabId） ---
-  const getTabs = (): HologramTab[] => store.getState().tabs;
-  const setTabs = (arr: HologramTab[]) => store.setState({ tabs: arr });
-  function mutateTabs(fn: (arr: HologramTab[]) => HologramTab[] | undefined) {
+  // --- dotStore に載ったタブの一覧（tabs/activeTabId） ---
+  const getTabs = (): DotTab[] => store.getState().tabs;
+  const setTabs = (arr: DotTab[]) => store.setState({ tabs: arr });
+  function mutateTabs(fn: (arr: DotTab[]) => DotTab[] | undefined) {
     const copy = getTabs().slice();
     const result = fn(copy);
     setTabs(result || copy);
@@ -93,9 +93,9 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   }
   let _tabPersistTimer: any = null;
   let restoringState = false;
-  const closedTabs: { tab: HologramTab; index: number }[] = [];
+  const closedTabs: { tab: DotTab; index: number }[] = [];
 
-  function snapshotState(): HologramTabSnapshot {
+  function snapshotState(): DotTabSnapshot {
     return {
       // 正本は queryTree。f（影）はタブのタイトル（tabTitleOf が state.f を読む）と、
       // 古い形式で保存された状態を移行するために残してある。
@@ -119,11 +119,11 @@ export function makeTabsController(deps: TabsBuilderDeps) {
       inspectedPosterKey: selectedPosterKey,
     };
   }
-  const entryOf = (kind: HologramNavEntry['kind'], state: any): HologramNavEntry => ({ u: navEntryUrl(kind, state), kind, state });
+  const entryOf = (kind: DotNavEntry['kind'], state: any): DotNavEntry => ({ u: navEntryUrl(kind, state), kind, state });
   // 今のビューを履歴のエントリとして表したもの＝image がモードに勝つ（画像ビューは、
   // そのタブが見ていたどのグリッドの上にも重なるため）。引き取り時に新しい履歴へ種を
   // 入れるのに使う。
-  function snapshotEntry(): HologramNavEntry {
+  function snapshotEntry(): DotNavEntry {
     const iv = store.getState().activeImageTab;
     if (iv) return entryOf('image', { recs: iv.recs, idx: iv.idx });
     if (store.getState().browseMode === 'posters') return entryOf('posters', snapshotPosterState());
@@ -136,7 +136,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   function setNavReplaceNext() {
     _navReplaceNext = true;
   }
-  function recordEntry(e: HologramNavEntry) {
+  function recordEntry(e: DotNavEntry) {
     if (_navReplaceNext) {
       _navReplaceNext = false;
       nav.replace(e);
@@ -156,7 +156,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     if (restoringState) return;
     recordEntry(entryOf('posts', snap));
     clearAutoTitle();
-    document.title = deps.tabTitleOf(snap, { allCount: deps.getAllPostsCount() }).text + ' — Hologram';
+    document.title = deps.tabTitleOf(snap, { allCount: deps.getAllPostsCount() }).text + ' — dot';
     persistTabsDebounced();
   }
   // 投稿者グリッド側の鏡（poster-grid-builder の deps.onPosterRendered）。新しい
@@ -168,7 +168,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     if (restoringState) return;
     recordEntry(entryOf('posters', snapshotPosterState()));
     clearAutoTitle();
-    document.title = deps.t('browsePosters') + ' — Hologram';
+    document.title = deps.t('browsePosters') + ' — dot';
     persistTabsDebounced();
   }
   // 投稿者カードの選択は一覧の絞り込みを変えないが、画像ビューから戻ったときに
@@ -181,7 +181,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     nav.replace(entryOf('posters', snapshotPosterState()));
     persistTabsDebounced();
   }
-  function applyState(s: HologramTabSnapshot) {
+  function applyState(s: DotTabSnapshot) {
     restoringState = true;
     // 木（正本）を戻す。必要なら古い形式の状態（f と ops があって tree が無い）を移行する。
     deps.postQB.setTree(s.tree ? s.tree : facetTreeFrom(s.f || [], s.ops || {}));
@@ -193,12 +193,12 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     store.setState({ multiOnly: !!s.multi });
     deps.renderPosts();
     restoringState = false;
-    document.title = deps.tabTitleOf(s, { allCount: deps.getAllPostsCount() }).text + ' — Hologram';
+    document.title = deps.tabTitleOf(s, { allCount: deps.getAllPostsCount() }).text + ' — dot';
   }
   // 種別による振り分け（#144 の核）。エントリが記述しているビューを復元する。
   // posts/posters は、setBrowseMode の描画のデバウンスを通さずに閲覧モードを入れ替える
   // （下のエントリ自身の描画がその描画そのもの）。image はグリッドの上にそのまま重なる。
-  function applyEntry(e: HologramNavEntry) {
+  function applyEntry(e: DotNavEntry) {
     _navReplaceNext = false; // 復元は、保留中の置き換えの手がかりを消費しない
     if (e.kind === 'image') {
       const st = e.state as { recs: string[]; idx: number };
@@ -221,11 +221,11 @@ export function makeTabsController(deps: TabsBuilderDeps) {
         restoringState = false;
       }
       clearAutoTitle();
-      document.title = deps.t('browsePosters') + ' — Hologram';
+      document.title = deps.t('browsePosters') + ' — dot';
       return;
     }
     clearAutoTitle();
-    applyState(e.state as HologramTabSnapshot);
+    applyState(e.state as DotTabSnapshot);
   }
   // image のエントリは自分のタイトルをタブへ刻む（自動タイトル）。image のエントリを離れると、
   // それを消して、導出したグリッドのタイトルへ戻す。手での改名は撤去したので、タブが持てる
@@ -244,14 +244,14 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     });
   }
 
-  function entryTitleOf(e: HologramNavEntry): string {
+  function entryTitleOf(e: DotNavEntry): string {
     if (e.kind === 'image') {
       const st = e.state as { recs: string[]; idx: number };
       const g = imageTabGroup({ id: getActiveTabId() || '', recs: st.recs }, deps.getPostById);
       return g ? imageTabTitleOf(g, deps.t('imgTabFallback')) : deps.t('imgTabFallback');
     }
     if (e.kind === 'posters') return deps.t('browsePosters');
-    return deps.tabTitleOf(e.state as HologramTabSnapshot, { allCount: deps.getAllPostsCount() }).text;
+    return deps.tabTitleOf(e.state as DotTabSnapshot, { allCount: deps.getAllPostsCount() }).text;
   }
 
   // --- ビューの履歴（ブラウザ風の戻る／進む） ---
@@ -271,7 +271,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     onPush: (e) => recordPush(e, entryTitleOf(e)),
   });
   // nav の戻る／進むの無効状態は、以前は押し込み型の activebar のモデルの一部だった。今の
-  // activebar コンポーネントは、他のすべてを hologramStore から自分で導く。ただし nav の
+  // activebar コンポーネントは、他のすべてを dotStore から自分で導く。ただし nav の
   // canBack/canForward はストアではなく閉包（履歴のスタック）にある＝だからこれが、変化の
   // たびに写す処理として1つだけ残っている。
   function updateNavButtons() {
@@ -355,18 +355,18 @@ export function makeTabsController(deps: TabsBuilderDeps) {
       scrollRestoreFrame = requestAnimationFrame(() => deps.scrollContentTo(y));
     });
   }
-  function restoreTabView(t: HologramTab | null | undefined) {
+  function restoreTabView(t: DotTab | null | undefined) {
     if (!t) return;
     const y = typeof t._scrollTop === 'number' ? t._scrollTop : 0;
     restoreScrollTop(y);
   }
-  // モデルの導出（タイトルとアイコン）は services/tabs.ts の hologramTabsSource にある＝
-  // あちらは、下のどの書き換えも書き込むのと同じ hologramStore のキーから引く
+  // モデルの導出（タイトルとアイコン）は services/tabs.ts の dotTabsSource にある＝
+  // あちらは、下のどの書き換えも書き込むのと同じ dotStore のキーから引く
   // （tabs/activeTabId と、今のタブの導出タイトルのための
   // postQueryTree/searchQuery/sortPost/multiOnly/allPostsCount）。だからここでモデルを
   // 組むことも、押し込むこともない。あちらが必要とするピンのグリフと、閉じる／新規の
   // i18n の文字列は、下で一度だけ渡す。
-  hologramTabsSource.configure({
+  dotTabsSource.configure({
     tabTitleOf: deps.tabTitleOf,
     tabIcons: TAB_ICONS,
     closeTitle: deps.t('tabClose'),
@@ -380,7 +380,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   // 使えるスタックが無いタブ（新しいタブ、または永続化した nav の行がすべて不正として
   // 落とされた場合）は素朴な状態の経路を代わりに使い、その後、適用したビューから新しい
   // 履歴へ種を入れる。
-  function activateTab(t: HologramTab) {
+  function activateTab(t: DotTab) {
     if (Array.isArray(t._navHist) && t._navHist.length) {
       nav.adopt(t);
       nav.applyCurrent();
@@ -421,7 +421,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     deps.hideImageView();
     deps.setBrowseModeLite('posts');
     const id = genTabId();
-    const state: HologramTabSnapshot = { f: [{ type: 'text', value: query }], ops: {}, tree: null, folderId: null, search: query, sort: 'date-desc', multi: false };
+    const state: DotTabSnapshot = { f: [{ type: 'text', value: query }], ops: {}, tree: null, folderId: null, search: query, sort: 'date-desc', multi: false };
     mutateTabs((arr) => {
       arr.push({ id, pinned: false, title: null, state });
     });
@@ -437,7 +437,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   // 受け入れ条件は、復元それ自体が push だと言っている（「復元による遷移は当然 push＝
   // 履歴にも1行増える」）。だから restoringState が false に戻った直後に、recordEntry() を
   // 明示的に走らせる。
-  function openHistoryEntry(e: HologramNavEntry) {
+  function openHistoryEntry(e: DotNavEntry) {
     applyEntry(e);
     recordEntry(e);
     persistTabsDebounced();
@@ -449,14 +449,14 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   // 同じ形＝利用者が実際にそのタブへ切り替えた最初の時に、activateTab() が nav.adopt()
   // 経由で拾う。だからここは、生きている `nav` の閉包（今選択されているタブのもの）に
   // 一切触れない。
-  function openHistoryEntryInBackgroundTab(e: HologramNavEntry, title: string) {
+  function openHistoryEntryInBackgroundTab(e: DotNavEntry, title: string) {
     const isGrid = e.kind === 'posts';
-    const t: HologramTab = {
+    const t: DotTab = {
       id: genTabId(),
       pinned: false,
       title: e.kind === 'image' ? title : null,
       _autoTitle: e.kind === 'image',
-      state: isGrid ? (e.state as HologramTabSnapshot) : null,
+      state: isGrid ? (e.state as DotTabSnapshot) : null,
       _navHist: [JSON.stringify(e)],
       _navIdx: 0,
     };
@@ -506,7 +506,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     const src = getTabs().find((t) => t.id === id);
     if (!src) return;
     const idx = getTabs().indexOf(src);
-    const nt: HologramTab = {
+    const nt: DotTab = {
       id: genTabId(),
       pinned: false,
       title: src.title,
@@ -552,7 +552,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
       // posters なら投稿者の木とモードを戻す。image のエントリなら、その下にある投稿側の
       // 欄を戻し（image から戻るとそこに着く）、ライブラリが読み込まれた後で bootApp が
       // 画像ビューを開く。
-      const cur = at && Array.isArray(at._navHist) && at._navHist.length ? (JSON.parse(at._navHist[Math.max(0, Math.min(at._navIdx ?? at._navHist.length - 1, at._navHist.length - 1))]) as HologramNavEntry) : null;
+      const cur = at && Array.isArray(at._navHist) && at._navHist.length ? (JSON.parse(at._navHist[Math.max(0, Math.min(at._navIdx ?? at._navHist.length - 1, at._navHist.length - 1))]) as DotNavEntry) : null;
       if (cur && cur.kind === 'posters') {
         const st = cur.state as { tree?: any; sort?: string; search?: string };
         restoringState = true; // sortPoster へのストアの書き込みが、利用者による並び順の変更として読まれてはいけない

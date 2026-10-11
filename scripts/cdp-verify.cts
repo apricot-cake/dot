@@ -1,4 +1,4 @@
-// 稼働中のHologram Electronアプリインスタンス向けのCDP検証ハーネス。
+// 稼働中のdot Electronアプリインスタンス向けのCDP検証ハーネス。
 // アプリは既にCDPのデバッグポートを開いて動作していなければならない。「どの」
 // インスタンスをこれの対象にするか（実機／HMR開発サーバー／サンドボックス／
 // テストハーネス）と、それぞれのポートがどう決まるかはdocs/開発ガイド.md
@@ -7,7 +7,7 @@
 // ときにこのハーネスをどう操作するかだけ:
 //   node scripts/cdp-verify.cts eval "<js式。値かPromiseを返してよい>"
 //   node scripts/cdp-verify.cts shot [out.jpg] [quality]
-//   出力先を省略すると %LOCALAPPDATA%\\Hologram\\verification に保存する。
+//   出力先を省略すると %LOCALAPPDATA%\\dot\\verification に保存する。
 //   実ライブラリを表示した画像を誤って公開しないため、リポジトリ内は指定できない。
 //
 // shot は背面のまま撮影する。失敗時も表示状態やフォーカスを変えず、エラーを返す。

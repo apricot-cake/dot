@@ -65,7 +65,7 @@ export interface PostCellProps {
   overview?: boolean;
   /** このセルが描くグループ＝どの動作が起きても、そのままそれへ渡し返す。 */
   group: unknown;
-  actions?: HologramCardActions;
+  actions?: DotCardActions;
   cellRef?: Ref<HTMLDivElement>;
   /** 高さを確保しなかったセルのために、読み込んだ画像の本来の縦横比を知らせる。 */
   onAspect?: (captureId: string, aspectRatio: string) => void;
@@ -284,7 +284,7 @@ export function TextPlate({ m, overview, className, style: boxStyle }: { m: Post
 }
 
 /** グリッドのモデルが持つ動作の一式を、セルのルートが展開する props に変える。 */
-export function cellHandlers(actions: HologramCardActions | undefined, group: unknown) {
+export function cellHandlers(actions: DotCardActions | undefined, group: unknown) {
   if (!actions) return {};
   return {
     onClick: actions.onClick && ((e: ReactMouseEvent) => actions.onClick?.(group, e)),

@@ -29,7 +29,7 @@ test('すべての処理が終わるまで再起動を保留し、通知の重�
 });
 
 test('起動時の既存通知と壊れた通知は無視し、置き換えられた完了通知で一度だけ再起動する', async () => {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'hologram-deployment-'));
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'dot-deployment-'));
   const marker = path.join(dir, '.deployed-build.json');
   writeFileSync(marker, JSON.stringify({ build: 'old' }));
   const end = appActivity.begin();

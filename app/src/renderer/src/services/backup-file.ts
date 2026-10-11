@@ -4,7 +4,7 @@ import { notify } from './ui.ts';
 import { exportComplete, onExportProgress } from './posts.ts';
 
 export async function createBackupFile(includeTrash = false) {
-  const id = 'hologram-export';
+  const id = 'dot-export';
   toast.loading(t('exporting'), { id, description: '0%' });
   const off = onExportProgress((progress) => {
     if (!progress || progress.done) return;

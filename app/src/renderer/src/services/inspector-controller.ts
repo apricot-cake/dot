@@ -1,18 +1,18 @@
 import { store, subscribeKeys } from './store.ts';
 import { getSnapshot as trashSnapshot, subscribe as subscribeTrash } from './trash-view.ts';
-import { hologramImageTabSource } from './image-tab.ts';
+import { dotImageTabSource } from './image-tab.ts';
 import { subscribe as subscribePosts } from './posts-data.ts';
 import { isOpen, isVisible, subscribe as subscribePanel } from './inspector-panel.ts';
 import { close, refresh, open } from './inspector.ts';
 import { imageTabGroup, postIdKey, postKeyOf } from './records.ts';
 
 export type DetailOptions = { focusTags?: boolean; showReplies?: boolean };
-type Target = { key: string; group: HologramPostGroup } | { key: string; poster: HologramUserAgg };
+type Target = { key: string; group: DotPostGroup } | { key: string; poster: DotUserAgg };
 type Dependencies = {
-  getPostById(id: string): HologramPost | undefined;
-  buildUsers(): HologramUserAgg[];
-  postModel(group: HologramPostGroup, options: DetailOptions): Omit<HologramInspectorModel, 'openId'>;
-  posterModel(poster: HologramUserAgg, options: DetailOptions): Omit<HologramInspectorModel, 'openId'>;
+  getPostById(id: string): DotPost | undefined;
+  buildUsers(): DotUserAgg[];
+  postModel(group: DotPostGroup, options: DetailOptions): Omit<DotInspectorModel, 'openId'>;
+  posterModel(poster: DotUserAgg, options: DetailOptions): Omit<DotInspectorModel, 'openId'>;
   recordView(id: string): void;
 };
 
@@ -29,7 +29,7 @@ export function requestDetailOptions(next: DetailOptions = {}) {
   update();
 }
 
-export function singleSelectedGroup(groups: HologramPostGroup[], selected: ReadonlySet<string>): HologramPostGroup | null {
+export function singleSelectedGroup(groups: DotPostGroup[], selected: ReadonlySet<string>): DotPostGroup | null {
   const matches = groups.filter((group) => selected.has(postIdKey(group.rep)));
   return matches.length === 1 ? matches[0] : null;
 }
@@ -41,7 +41,7 @@ export function connectInspector(deps: Dependencies) {
   function target(): Target | null {
     const state = store.getState();
     if (state.activeImageTab) {
-      const model = hologramImageTabSource.get();
+      const model = dotImageTabSource.get();
       const id = model?.items[model.idx]?.postId;
       const post = id ? deps.getPostById(id) : undefined;
       if (!post) return null;
@@ -63,7 +63,7 @@ export function connectInspector(deps: Dependencies) {
     if (state.browseMode === 'trash') return { key: postIdKey(group.rep), group };
     const rep = deps.getPostById(group.rep.captureId);
     if (!rep) return null;
-    const records = group.records.map((record) => deps.getPostById(record.captureId)).filter((record): record is HologramPost => !!record);
+    const records = group.records.map((record) => deps.getPostById(record.captureId)).filter((record): record is DotPost => !!record);
     return { key: postIdKey(rep), group: { ...group, rep, records } };
   }
   function sync() {

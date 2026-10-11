@@ -2,7 +2,7 @@
 //
 // 保存の側は inspector-pref.test.ts の形をそのまま写している（docs/テスト.md:「新しい設定を
 // 足すときはこの形を写す」）＝`electron` を差し替えて本物の ipc-config.ts を登録し、その
-// `set-pref` / `get-prefs` をレンダラーの `window.hologram` スタブへつないで、レンダラーが
+// `set-pref` / `get-prefs` をレンダラーの `window.dot` スタブへつないで、レンダラーが
 // 送るキー名と main の許可リスト (PREF_KEYS) が1本の線でつながっていることを見る。片端だけ
 // を見ていても捕まらない。`set-pref` は許可リストに無いキーを黙って `{ok:false}` で捨て、
 // 呼び出し側はその返り値を読まない。だからキー名の取りこぼしは一切音を立てず、保存できた
@@ -55,7 +55,7 @@ registerConfigIpc(ctx);
 const setPref = (key: string, value: unknown) => stub.handlers.get('set-pref')?.(trustedIpcEvent(), key, value);
 const getPrefs = () => stub.handlers.get('get-prefs')?.(trustedIpcEvent());
 
-// --- localStorage / window.hologram の代役 --------------------------------------
+// --- localStorage / window.dot の代役 --------------------------------------
 const cache = new Map<string, string>();
 const localStorageStub = {
   getItem: (k: string) => (cache.has(k) ? (cache.get(k) as string) : null),
@@ -76,7 +76,7 @@ beforeEach(() => {
   configJson = '{}';
   cache.clear();
   (globalThis as any).localStorage = localStorageStub;
-  (globalThis as any).window = { hologram: bridge };
+  (globalThis as any).window = { dot: bridge };
   vi.resetModules();
 });
 
@@ -90,7 +90,7 @@ const freshPanels = (): Promise<PanelsModule> => import('../../app/src/renderer/
 type InspectorModule = typeof import('../../app/src/renderer/src/services/inspector-panel');
 const freshInspector = (): Promise<InspectorModule> => import('../../app/src/renderer/src/services/inspector-panel');
 
-const CACHE_KEY = 'hologram-panels-hidden';
+const CACHE_KEY = 'dot-panels-hidden';
 
 describe('main: 許可キーと get-prefs', () => {
   test('panelsHidden は受け付けられ config.json へ書かれる', () => {

@@ -23,8 +23,8 @@ const { evalSource } = require('../../../scripts/lib-wait.cts');
 
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-savedidx-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-savedidx-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -51,7 +51,7 @@ seedLibrary(configDir, [
   },
 ]);
 
-process.env.HOLOGRAM_CONFIG_DIR = configDir;
+process.env.DOT_CONFIG_DIR = configDir;
 const bridge = require(path.join(__dirname, '../../../native-host/bridge.mts'));
 
 const snapshotMissingBeforeLaunch = !fs.existsSync(SNAPSHOT_FILE);
@@ -62,7 +62,7 @@ async function main() {
   const answerBeforeLaunch = (await bridge.handleQuery({ type: 'query', urls: [POST_URL] })).results[POST_URL];
 
   const evalJs = evalSource(async ({ sleep }) => {
-    await (window as any).hologram.listPosts();
+    await (window as any).dot.listPosts();
     // デバウンスそのものが仕様: scheduleSavedIndexWriteは1500ms待ち、それが
     // 経過するまでレンダラーから観測できるものは何も無い。だからハーネスは
     // 終了する前にそれを過ぎるまで座っていなければならない。
@@ -73,9 +73,9 @@ async function main() {
 
   const env = Object.assign({}, process.env, {
     APPDATA: tmp,
-    HOLOGRAM_CONFIG_DIR: configDir,
-    HOLOGRAM_SMOKE: '1',
-    HOLOGRAM_SMOKE_EVAL: evalJs,
+    DOT_CONFIG_DIR: configDir,
+    DOT_SMOKE: '1',
+    DOT_SMOKE_EVAL: evalJs,
   });
 
   const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });

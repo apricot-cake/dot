@@ -25,21 +25,21 @@ export interface BulkTagBuilderDeps {
   markPostsMutated(): void;
   renderPosts(keepLimit?: boolean): void;
   keepCurrentVisible(): void;
-  getPostById(id: string): HologramPost | undefined;
-  selectedRecords(): HologramPost[];
+  getPostById(id: string): DotPost | undefined;
+  selectedRecords(): DotPost[];
 }
 
 export function makeBulkTag(deps: BulkTagBuilderDeps) {
   // 積んだタグを、選ばれたレコードすべてへ併合する。足すモードしか無い（「N 件の投稿の
   // タグを置き換える」UI は存在しない）ので、各レコードは自分のタグを保ったまま、これらを
   // 得る。
-  async function applyTagsToSelection(records: HologramPost[], applyTags: string[]) {
+  async function applyTagsToSelection(records: DotPost[], applyTags: string[]) {
     deps.keepCurrentVisible(); // タグの編集で、カードが今の絞り込みの外へ出ることがある
     // そのレコードがまだ持っていなかったタグだけが、そのレコードの分の編集（#235）。選択の
     // 一部が既にそのタグを持っていた場合、操作を取り消した時にそれを失ってはいけない＝
     // だから、元からあったものは記録しない。
     const changes: UndoChange[] = [];
-    const writes: Array<{ rec: HologramPost; next: string[]; image: string }> = [];
+    const writes: Array<{ rec: DotPost; next: string[]; image: string }> = [];
     for (const r of records) {
       const prev = r.tags || [];
       const added = [...new Set(applyTags)].filter((tag) => !prev.includes(tag));

@@ -13,7 +13,7 @@ let extensionContactPath: any;
 let touchExtensionContact: any;
 
 beforeAll(async () => {
-  configDir = process.env.HOLOGRAM_CONFIG_DIR as string;
+  configDir = process.env.DOT_CONFIG_DIR as string;
   fs.mkdirSync(configDir, { recursive: true });
   ({ extensionContactPath } = await import('../../native-host/paths.mts'));
   ({ touchExtensionContact } = await import('../../native-host/bridge.mts'));
@@ -39,12 +39,12 @@ describe('拡張コンタクトのマーカー（#71）', () => {
   test('configDir が無くても throw しない（mkdir から自前でやる）', () => {
     const nested = path.join(configDir, 'fresh-subdir-for-this-test');
     fs.rmSync(nested, { recursive: true, force: true });
-    const prevEnv = process.env.HOLOGRAM_CONFIG_DIR;
-    process.env.HOLOGRAM_CONFIG_DIR = nested;
+    const prevEnv = process.env.DOT_CONFIG_DIR;
+    process.env.DOT_CONFIG_DIR = nested;
     try {
       expect(() => touchExtensionContact()).not.toThrow();
     } finally {
-      process.env.HOLOGRAM_CONFIG_DIR = prevEnv;
+      process.env.DOT_CONFIG_DIR = prevEnv;
     }
   });
 });

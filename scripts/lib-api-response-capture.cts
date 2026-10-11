@@ -3,7 +3,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { z } = require('zod');
 
-const CAPTURE_MARKER = 'HOLOGRAM_DEV_API_RESPONSE_CAPTURE_V1';
+const CAPTURE_MARKER = 'DOT_DEV_API_RESPONSE_CAPTURE_V1';
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const MAX_SESSION_BYTES = 20 * 1024 * 1024;
 const MAX_RESPONSES = 200;
@@ -25,7 +25,7 @@ function endpointOf(input: string): string | null {
 
 function captureRoot(env = process.env): string {
   if (!env.LOCALAPPDATA || !path.isAbsolute(env.LOCALAPPDATA)) throw new Error('LOCALAPPDATA の絶対パスが必要です');
-  const root = path.join(env.LOCALAPPDATA, 'Hologram', 'verification', 'api-responses');
+  const root = path.join(env.LOCALAPPDATA, 'dot', 'verification', 'api-responses');
   const repo = path.resolve(__dirname, '..');
   if (!path.relative(repo, root).startsWith('..')) throw new Error('応答をリポジトリ内へ保存できません');
   return root;

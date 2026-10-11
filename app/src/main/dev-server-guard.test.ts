@@ -11,7 +11,7 @@ const dev = (raw: string | undefined | null) => resolveDevServerUrl(raw, false);
 const packaged = (raw: string | undefined | null) => resolveDevServerUrl(raw, true);
 
 describe('配布版（app.isPackaged === true）', () => {
-  // 受け入れ条件そのもの。配布版を HOLOGRAM_DEV_SERVER=1 相当の値や外部の URL で起動しても、
+  // 受け入れ条件そのもの。配布版を DOT_DEV_SERVER=1 相当の値や外部の URL で起動しても、
   // 同梱のレンダラーを読み込む
   test.each(['1', 'http://localhost:5173', 'http://evil.example/', ''])('値 %j にかかわらず読み込まない', (raw) => {
     expect(packaged(raw)).toEqual({ url: null, rejected: 'packaged' });
@@ -44,7 +44,7 @@ describe('開発時でも拒否するもの', () => {
     expect(dev('')).toEqual({ url: null, rejected: 'unset' });
   });
 
-  // URL ではない値。`HOLOGRAM_DEV_SERVER=1` のような真偽値めいた値もここに入る＝
+  // URL ではない値。`DOT_DEV_SERVER=1` のような真偽値めいた値もここに入る＝
   // 「値が入っている」を「dev サーバーがある」と読み替えることは一切しない
   test.each(['1', 'true', 'まだ URL ではない'])('URL として壊れている %j', (raw) => {
     expect(dev(raw)).toEqual({ url: null, rejected: 'malformed' });

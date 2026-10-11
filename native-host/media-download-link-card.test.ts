@@ -25,7 +25,7 @@ let tmp: string;
 let seenHeaders: (HeadersInit | undefined)[];
 
 beforeEach(() => {
-  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-linkcard-'));
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-linkcard-'));
   seenHeaders = [];
   vi.stubGlobal('fetch', async (url: unknown, init?: RequestInit) => {
     seenHeaders.push(init?.headers);

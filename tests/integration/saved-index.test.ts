@@ -53,7 +53,7 @@ test('一部保存は再起動後の索引でも投稿全体を保存済みに�
 });
 
 beforeAll(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-saved-index-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-saved-index-'));
   handle = openDatabase(path.join(dir, 'test.db'));
   const stmts = preparePostStmts(handle.sqlite);
   const resolveTagId = makeTagResolver(handle.sqlite);

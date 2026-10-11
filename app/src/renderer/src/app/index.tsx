@@ -7,7 +7,7 @@
 //
 // レンダラーの React ルートは1つ（最終形 B の DoD:「island のルート群を1つへ統合」＝
 // 完了。つまり、かつて独立していた island のルートが1つへ統合された）。root.tsx が
-// createRoot(#hologramAppRoot) を1つだけ作って app/App.tsx を描画し、その App.tsx が
+// createRoot(#dotAppRoot) を1つだけ作って app/App.tsx を描画し、その App.tsx が
 // コンポーネントの顔ぶれの正本になる＝どのコンポーネントもその1つのルートの下で描画
 // される（コンテナへ載せるものは orchestrator が持つ静的コンテナへ createPortal 経由、
 // body 直下のオーバーレイは fixed な子として）。各コンポーネントが持つのは今も描画だけ
@@ -26,7 +26,7 @@
 // ＝別のビルド段も書き換えも要らない。
 //
 // --- レンダラーのサービス層（かつては index.html の個別の <script> タグ、その後は
-//     ここに置いた `hologram-svc:NAME` というベア指定子のバレル＝旧 islands/build.mjs や
+//     ここに置いた `dot-svc:NAME` というベア指定子のバレル＝旧 islands/build.mjs や
 //     vite.config.mjs が renderer/NAME.ts へエイリアスしていた。その間に、window の IIFE
 //     によるグローバルのブリッジから本物の名前付きエクスポートへ、素の相対 import で読む
 //     形へと1波ずつ変換していった）。query/listing/format/geometry/posts-data/undo/users/
@@ -34,7 +34,7 @@
 //     filter-popover/qf-pop/facets/about-icon/searchbox/theme/records/tags/tab-state/
 //     trash/backup/posts/search/i18n/folders/selection/grid/query-chips/sidebar/tabs は
 //     いずれも今や本物の ES モジュールで、使う側が直接 import する＝バレルの項目は要らず、
-//     hologram-svc のエイリアス自体もとうに無い。
+//     dot-svc のエイリアス自体もとうに無い。
 //     shell.ts＝副作用だけの最後の項目（searchMode の選好の復元）は、検索モードのトグル
 //     そのものと一緒に削除した（P2④ 単一のスマート検索）。 ---
 // Tailwind v4 と shadcn/ui のテーマ（globals.css）＝いちばん最初に import する。生成される
@@ -44,6 +44,6 @@ import './root.tsx';
 // 起動のオーケストレータ（services/orchestrator.ts。2026-07-11 に viewer.ts から改名）は、
 // もうここで副作用だけの import を要さない＝App.tsx（上の root.tsx 経由で描画される）が
 // そのエクスポート（bootApp など）を相対パスで直に import しており、それだけで ES
-// モジュールの評価が走る。かつてのベア指定子 'hologram-viewer-bundle' のエイリアスと TS の
+// モジュールの評価が走る。かつてのベア指定子 'dot-viewer-bundle' のエイリアスと TS の
 // 無視ディレクティブは、このファイルが自前の import/export を持たない素の window IIFE
 // だった頃の名残（viewer.ts→orchestrator.ts の改名と一緒に撤去した）。

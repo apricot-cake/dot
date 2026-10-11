@@ -35,16 +35,16 @@ function saveFolderOf(configDir: string): string | null {
 // シードを続けられるように（フォルダ、タグ種別）。開いたままにするには
 // `close: false`を渡す。
 //
-// #176: hologram.dbは今は保存フォルダの「中」にあり、configDirにはない
+// #176: dot.dbは今は保存フォルダの「中」にあり、configDirにはない
 // ＝アプリ自身のdbFile()はconfig.saveFolderから解決するので、
-// ここでconfigDir/hologram.dbへ書くハーネスは、アプリが決して開かないファイルを
+// ここでconfigDir/dot.dbへ書くハーネスは、アプリが決して開かないファイルを
 // シードしてしまう。だから呼び出し側は、これを呼ぶ「前」に（明示的な
 // saveFolderを添えて）config.jsonを書かなければならない＝既存のハーネスは
 // メディアファイルのために既にそうしている。
 function seedLibrary(configDir: string, records: any[], opts: { close?: boolean } = {}) {
   const saveFolder = saveFolderOf(configDir);
-  if (!saveFolder) throw new Error('seedLibrary: config.jsonにまだsaveFolderがありません＝先に書いてください（ハーネスはhologram.dbを置くフォルダが必要です）');
-  const handle = openDatabase(path.join(saveFolder, 'hologram.db'));
+  if (!saveFolder) throw new Error('seedLibrary: config.jsonにまだsaveFolderがありません＝先に書いてください（ハーネスはdot.dbを置くフォルダが必要です）');
+  const handle = openDatabase(path.join(saveFolder, 'dot.db'));
   const stmts = preparePostStmts(handle.sqlite);
   const resolveTagId = makeTagResolver(handle.sqlite);
   for (const rec of records) writePost(stmts, resolveTagId, fillMediaDims(saveFolder, fillCardDims(saveFolder, rec)));

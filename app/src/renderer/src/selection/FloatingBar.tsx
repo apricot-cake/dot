@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { t } from '../_shared/i18n.ts';
-import { hologramImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
+import { dotImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
 import { postIdKey } from '../services/records.ts';
 import { isAllSelected } from '../services/selection.ts';
 import { store, subscribeKey } from '../services/store.ts';
@@ -14,7 +14,7 @@ import { selectionClear, selectionDelete, selectionFolder, selectionSelectAll, s
 // 下に浮かぶ選択バー（redesign §3-4 / P2⑥）＝カプセルを下中央に
 // 留め、投稿カードが2枚以上選ばれている間だけ出す。旧い上部の #selectionBar を置き換えた
 // もので、コンテナと data-act の委譲ディスパッチャは無くなり、各ボタンは orchestrator が
-// export した選択の操作を直に呼ぶ（onClick → 関数）。モデルは hologramStore から自分で導く
+// export した選択の操作を直に呼ぶ（onClick → 関数）。モデルは dotStore から自分で導く
 // ＝count/allSelected は 'selectedSet' と 'postGroups' からそのまま出す
 // （services/selection.ts の isAllSelected を再利用）。退役した SelectionBar
 // コンポーネントが使っていたのと同じ導出。
@@ -97,7 +97,7 @@ export function FloatingBar() {
   // 触らない）、戻ってくればバーもまた出る。AppToolbar が自分の内容と舞台の入れ替えに読む
   // のと同じ購読済みの述語（image-tab.ts の isActive()＝「画像ビューが出ているか」への
   // #619 の唯一の答え）。
-  const imageView = useSyncExternalStore(hologramImageTabSource.subscribe, imageViewIsActive);
+  const imageView = useSyncExternalStore(dotImageTabSource.subscribe, imageViewIsActive);
 
   const count = selectedSet ? selectedSet.size : 0;
   // ……そしてゴミ箱でも隠す（#268）。ゴミ箱は自前の選択と自前の2つの動詞を持つ。このバーの

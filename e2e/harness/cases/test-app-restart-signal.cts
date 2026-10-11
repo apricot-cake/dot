@@ -1,7 +1,7 @@
 'use strict';
 
 // `scripts/restart-app.ps1`が使う停止の取り決め（app/src/main/restart-signal.ts）を、
-// 実際のElectronに対してエンドツーエンドで検証する: --hologram-quitを持つ
+// 実際のElectronに対してエンドツーエンドで検証する: --dot-quitを持つ
 // 使い捨ての起動がシングルインスタンスロックを失い、そのargvが保持者へ届き、
 // 保持者が自ら終了する。
 //
@@ -14,9 +14,9 @@
 // （外部からプロセスを突き合わせる）は再起動が依存していたもの。
 //
 // 他の全てのハーネスと同じく隔離されている: 専用のconfigディレクトリなので、
-// ここで取るロックは実アプリのものではない。加えてHOLOGRAM_SANDBOX=1により
+// ここで取るロックは実アプリのものではない。加えてDOT_SANDBOX=1により
 // ホスト登録（実際のChromeをこの使い捨てconfigへ向け直してしまうHKCUへの
-// 書き込み）は一度も走らず、HOLOGRAM_START_MINIMIZED=1により検証実行が画面を
+// 書き込み）は一度も走らず、DOT_START_MINIMIZED=1により検証実行が画面を
 // 占有しない。
 //
 //   node e2e/harness/cases/test-app-restart-signal.cts
@@ -34,8 +34,8 @@ const { waitFor } = require('../../../scripts/lib-wait.cts');
 
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-restart-signal-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-restart-signal-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -43,15 +43,15 @@ fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolde
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SANDBOX: '1',
-  HOLOGRAM_START_MINIMIZED: '1',
+  DOT_CONFIG_DIR: configDir,
+  DOT_SANDBOX: '1',
+  DOT_START_MINIMIZED: '1',
 });
 // これを実行した誰からもSMOKEフラグを継承しない: SMOKEはロックをスキップして
 // しまい、それこそがこのファイルが試すために存在するものそのもの。継承すると
 // 間違った理由で通ってしまう。
-delete env.HOLOGRAM_SMOKE;
-delete env.HOLOGRAM_SMOKE_EVAL;
+delete env.DOT_SMOKE;
+delete env.DOT_SMOKE_EVAL;
 
 // app/src/main/restart-signal.tsが所有し、app/src/main/restart-signal.test.tsが固定
 // している。ここで繰り返すのは、このファイルがrestart-app.ps1とまさに同じやり方で
@@ -89,7 +89,7 @@ function cdpReady(port: number): Promise<boolean> {
 // どれも保持していなければEXIT_NO_INSTANCE。
 function sendQuitSignal(): Promise<number> {
   return new Promise((resolve) => {
-    const child = spawn(electronPath, ['.', '--hologram-quit'], { cwd: appDir, env, stdio: ['ignore', 'ignore', 'inherit'] });
+    const child = spawn(electronPath, ['.', '--dot-quit'], { cwd: appDir, env, stdio: ['ignore', 'ignore', 'inherit'] });
     child.on('close', (code: number | null) => resolve(code ?? -1));
   });
 }

@@ -1,11 +1,11 @@
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { resolveLanguageSetting } from './locale.ts';
 import { createTranslator } from './translation.ts';
 
-export const hologramI18n = (async () => {
+export const dotI18n = (async () => {
   let lang = 'auto';
   try {
-    lang = (await hologramIpc.getPrefs()).language || 'auto';
+    lang = (await dotIpc.getPrefs()).language || 'auto';
   } catch {
     /* 設定が読めない場合はOSの言語を使う。 */
   }
@@ -13,4 +13,4 @@ export const hologramI18n = (async () => {
   const getMessage = await createTranslator(resolved);
   return { lang, resolved, getMessage };
 })();
-export type HologramI18nApi = Awaited<typeof hologramI18n>;
+export type DotI18nApi = Awaited<typeof dotI18n>;

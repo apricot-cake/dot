@@ -8,7 +8,7 @@ import { DatabaseCorruptError, openDatabase } from '../../app/src/main/lib-db';
 
 const dirs: string[] = [];
 function mkdb(name = 'test.db') {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-db-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-db-'));
   dirs.push(dir);
   return path.join(dir, name);
 }

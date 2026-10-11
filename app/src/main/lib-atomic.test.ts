@@ -23,7 +23,7 @@ import { commitFileAtomic, commitFileAtomicSync, writeFileAtomicSync } from './l
 let dir: string;
 
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-atomic-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-atomic-'));
 });
 
 afterEach(() => {

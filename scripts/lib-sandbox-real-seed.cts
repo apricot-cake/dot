@@ -299,7 +299,7 @@ function verifyIsolation(input: IsolationInput): { ok: boolean; problems: string
   const cfg = JSON.parse(fs.readFileSync(input.configPath, 'utf8'));
   const norm = (p: string) => path.resolve(p).replace(/\\/g, '/').toLowerCase();
   if (!cfg.saveFolder || norm(cfg.saveFolder) !== norm(input.sandboxLibrary)) problems.push(`config の saveFolder がサンドボックスのライブラリになっていない: ${cfg.saveFolder}`);
-  // #176: hologram.db は今やライブラリフォルダの内側に置かれる。
+  // #176: dot.db は今やライブラリフォルダの内側に置かれる。
   // 意味のある検証は、サンドボックス自身の db が本物のライブラリのコピーその
   // ものになっていないこと（realSaveFolder に対して検証する）。realConfigDir
   // の検証も残す: configDir は依然としてマシンローカルな状態（ログ、サムネイル
@@ -429,7 +429,7 @@ function assertRealSeedPublishComplete(receiptPath: string) {
 
 function assertSandboxSeedProvenance(input: { receiptPath: string; markerPath: string; library: string }) {
   assertRealSeedPublishComplete(input.receiptPath);
-  let hasLibrary = fs.existsSync(path.join(input.library, 'hologram.db'));
+  let hasLibrary = fs.existsSync(path.join(input.library, 'dot.db'));
   if (!hasLibrary) {
     try {
       hasLibrary = fs.readdirSync(input.library).length > 0;
@@ -478,7 +478,7 @@ function readOwnedReceipt(receiptPath: string, expected: { library: string; conf
   };
   if (receipt.version !== 1 || !/^[a-f0-9]{32}$/.test(receipt.attemptId) || !samePath(receipt.library, canonicalExpected.library) || !samePath(receipt.config, canonicalExpected.config) || !samePath(receipt.marker, canonicalExpected.marker))
     throw new Error(`実データシード receipt が現在の sandbox 所有物と一致しません。自動削除しません: ${receiptPath}`);
-  const expectedLibrary = path.join(path.dirname(canonicalExpected.library), `.hologram-real-seed-${receipt.attemptId}`);
+  const expectedLibrary = path.join(path.dirname(canonicalExpected.library), `.dot-real-seed-${receipt.attemptId}`);
   const expectedConfig = path.join(path.dirname(canonicalExpected.config), `.config.real-seed-${receipt.attemptId}.json`);
   const expectedMarker = `${canonicalExpected.marker}.real-seed-${receipt.attemptId}`;
   if (!samePath(receipt.stagingLibrary, expectedLibrary) || !samePath(receipt.stagingConfig, expectedConfig) || !samePath(receipt.stagingMarker, expectedMarker)) throw new Error(`実データシード receipt の staging 所有記録が不正です。任意パスを削除しません: ${receiptPath}`);
@@ -541,7 +541,7 @@ function createRecoveryGuard(receiptPath: string, expected: { library: string; c
     state: 'preparing',
     attemptId,
     ...canonical,
-    stagingLibrary: path.join(path.dirname(canonical.library), `.hologram-real-seed-${attemptId}`),
+    stagingLibrary: path.join(path.dirname(canonical.library), `.dot-real-seed-${attemptId}`),
     stagingConfig: path.join(path.dirname(canonical.config), `.config.real-seed-${attemptId}.json`),
     stagingMarker: `${canonical.marker}.real-seed-${attemptId}`,
   });
@@ -634,11 +634,11 @@ async function seedRealSandbox(opts: SeedOptions) {
   const log = opts.log || (() => {});
   if (!opts.successMarkerPath || !opts.publishReceiptPath) throw new Error('successMarkerPath と publishReceiptPath は全シード試行で両方必須です');
   const destinations = validateSeedPaths(opts);
-  // #176: hologram.db は今やライブラリフォルダの「内側」に置かれる。
+  // #176: dot.db は今やライブラリフォルダの「内側」に置かれる。
   // ソース側（本物のライブラリ自身のデータベース）も宛先側（これは、下で
   // config.saveFolder = opts.sandboxLibrary に対して起動した時に、サンドボックス
   // 化されたアプリ自身の ensureDb()/dbFile() が探す場所）も両方とも。
-  const dbFile = path.join(destinations.sandboxLibrary, 'hologram.db');
+  const dbFile = path.join(destinations.sandboxLibrary, 'dot.db');
   const configPath = path.join(destinations.sandboxConfigDir, 'config.json');
   if (opts.successMarkerPath && !path.isAbsolute(opts.successMarkerPath)) throw new Error(`successMarkerPath は絶対パスで指定してください: ${opts.successMarkerPath}`);
   const successMarkerPath = opts.successMarkerPath ? futureRealPath(opts.successMarkerPath) : null;
@@ -665,7 +665,7 @@ async function seedRealSandbox(opts: SeedOptions) {
   // それまでは一意な staging だけを試行所有物とし、false/throw のどの経路でも
   // それだけを消す。既存 library や source を recursive delete することはない。
   const attemptId = crypto.randomBytes(16).toString('hex');
-  const stagingLibrary = path.join(path.dirname(destinations.sandboxLibrary), `.hologram-real-seed-${attemptId}`);
+  const stagingLibrary = path.join(path.dirname(destinations.sandboxLibrary), `.dot-real-seed-${attemptId}`);
   const stagingConfig = path.join(destinations.sandboxConfigDir, `.config.real-seed-${attemptId}.json`);
   const stagingMarker = successMarkerPath ? `${successMarkerPath}.real-seed-${attemptId}` : null;
   const createdParents = new Set<string>();
@@ -691,7 +691,7 @@ async function seedRealSandbox(opts: SeedOptions) {
     removeEmptyCreatedParents();
     throw error;
   }
-  const stagingDb = path.join(stagingLibrary, 'hologram.db');
+  const stagingDb = path.join(stagingLibrary, 'dot.db');
 
   let receiptWritten = false;
   if (publishReceiptPath && successMarkerPath) {
@@ -732,7 +732,7 @@ async function seedRealSandbox(opts: SeedOptions) {
   };
 
   try {
-    const snap = await snapshotDatabaseFile(path.join(opts.realSaveFolder, 'hologram.db'), stagingDb);
+    const snap = await snapshotDatabaseFile(path.join(opts.realSaveFolder, 'dot.db'), stagingDb);
     log(`スナップショット: ${(snap.bytes / 1048576).toFixed(1)} MB（SQLite backup API 経由）`);
 
     const handle = openDatabase(stagingDb, { readonly: true });

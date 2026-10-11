@@ -1,6 +1,6 @@
 # IPC のデータ契約
 
-保存済みバッジの投稿リンクは `app/src/shared/post-link.ts` のスキーマで検証する。`hologram://post` は保存済み投稿の表示だけを行い、保存や削除は行わない。個別保存は保存時のメディア URL も照合する。起動前に届いたリンクは、レンダラーの初回読み込み後に `take-post-link` で受け取る。
+保存済みバッジの投稿リンクは `app/src/shared/post-link.ts` のスキーマで検証する。`dot://post` は保存済み投稿の表示だけを行い、保存や削除は行わない。個別保存は保存時のメディア URL も照合する。起動前に届いたリンクは、レンダラーの初回読み込み後に `take-post-link` で受け取る。
 
 入力は `app/src/shared/ipc-inputs.ts`、保存データの構造と既定値は `data-schemas.ts` に定義する。型は Zod の `input` / `output` から導く。チャネルの戻り値は `ipc-results.ts` を main と preload の両端で使う。
 

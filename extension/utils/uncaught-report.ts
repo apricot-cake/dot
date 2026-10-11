@@ -33,7 +33,7 @@ export interface UncaughtReportOptions {
 
 // 拡張機能所有 realm ごとに listener の組はひとつ。dispose を値として保持し、
 // ページ再読み込みを伴わない再初期化でも旧世代を片付けられる。
-const UNCAUGHT_INSTALLED = Symbol.for('hologram.uncaught-reporting');
+const UNCAUGHT_INSTALLED = Symbol.for('dot.uncaught-reporting');
 interface InstalledReporting {
   dispose(): void;
 }

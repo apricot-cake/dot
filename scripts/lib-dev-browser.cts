@@ -6,17 +6,17 @@ const { fork } = require('node:child_process');
 const { runningChromePid } = require('./lib-chrome-command-line.cts');
 
 function developmentOptions(env = process.env): any {
-  const profile = path.join(homedir(), '.hologram-ext-profile');
-  if (env.HOLOGRAM_EXTENSION_DEV_PROFILE && path.resolve(env.HOLOGRAM_EXTENSION_DEV_PROFILE).toLowerCase() !== path.resolve(profile).toLowerCase()) throw new Error('開発用 Chrome は既存の専用プロファイルだけを使用します');
-  if (env.HOLOGRAM_EXTENSION_DEV_PROFILE_DIRECTORY && env.HOLOGRAM_EXTENSION_DEV_PROFILE_DIRECTORY !== 'Default') throw new Error('開発用 Chrome は既存の Default だけを使用します');
-  const candidates = [env.HOLOGRAM_CHROME, path.join(env.PROGRAMFILES || 'C:\\Program Files', 'Google/Chrome/Application/chrome.exe'), path.join(env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Google/Chrome/Application/chrome.exe'), path.join(env.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe')];
+  const profile = path.join(homedir(), '.dot-ext-profile');
+  if (env.DOT_EXTENSION_DEV_PROFILE && path.resolve(env.DOT_EXTENSION_DEV_PROFILE).toLowerCase() !== path.resolve(profile).toLowerCase()) throw new Error('開発用 Chrome は既存の専用プロファイルだけを使用します');
+  if (env.DOT_EXTENSION_DEV_PROFILE_DIRECTORY && env.DOT_EXTENSION_DEV_PROFILE_DIRECTORY !== 'Default') throw new Error('開発用 Chrome は既存の Default だけを使用します');
+  const candidates = [env.DOT_CHROME, path.join(env.PROGRAMFILES || 'C:\\Program Files', 'Google/Chrome/Application/chrome.exe'), path.join(env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Google/Chrome/Application/chrome.exe'), path.join(env.LOCALAPPDATA || '', 'Google/Chrome/Application/chrome.exe')];
   const executablePath = candidates.find((candidate) => candidate && fs.existsSync(candidate));
-  if (!executablePath) throw new Error('Chrome が見つかりません。HOLOGRAM_CHROME にフルパスを設定してください');
-  return { profile, executablePath, output: path.resolve(env.HOLOGRAM_EXTENSION_OUTPUT || path.join(__dirname, '../extension/.output/chrome-mv3')) };
+  if (!executablePath) throw new Error('Chrome が見つかりません。DOT_CHROME にフルパスを設定してください');
+  return { profile, executablePath, output: path.resolve(env.DOT_EXTENSION_OUTPUT || path.join(__dirname, '../extension/.output/chrome-mv3')) };
 }
 
 function assertDevelopmentProfile(profile: string, files = fs): void {
-  const dedicated = path.resolve(homedir(), '.hologram-ext-profile');
+  const dedicated = path.resolve(homedir(), '.dot-ext-profile');
   if (path.resolve(profile).toLowerCase() !== dedicated.toLowerCase()) throw new Error('専用プロファイル以外の Chrome は操作できません');
   for (const directory of [dedicated, path.join(dedicated, 'Default')]) {
     if (!files.existsSync(directory)) continue;

@@ -94,7 +94,7 @@ function run() {
       console.warn('スキップ ' + name + '（見つからない）');
       continue;
     }
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 317 96" role="img" aria-label="Hologram">\n  ${imageTag}\n</svg>\n`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 317 96" role="img" aria-label="dot">\n  ${imageTag}\n</svg>\n`;
     fs.writeFileSync(abs, svg);
     console.log('書き込み: assets/' + name);
   }

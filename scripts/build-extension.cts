@@ -27,7 +27,7 @@ const EXPECTED_ID = 'keggmjkemfcekcffohnpaojacdakpejh';
 // リリースに紛れ込んではいけない開発サーバー・開発専用収集ツールの目印。
 // 開発用 native host 名は同じリリースビルドに意図して含める。どちらを使うかは
 // Chrome プロファイル自身の storage.local で決まり、既定はリリース host である。
-const FORBIDDEN_TEXT = ['/@vite/client', 'sourceMappingURL=', 'HOLOGRAM_DEV_API_RESPONSE_CAPTURE_V1'];
+const FORBIDDEN_TEXT = ['/@vite/client', 'sourceMappingURL=', 'DOT_DEV_API_RESPONSE_CAPTURE_V1'];
 
 // manifestではなくコード内で「文字列」として名指しされるエントリポイント。
 // これらが消えても他の誰も気付かない: background.tsは有効化のたびに
@@ -105,11 +105,11 @@ function verifyOutput(browser: string, buildId?: string, output = releaseDir(bro
   }
 
   const worker = fs.readFileSync(path.join(out, CARRIES_TOKEN), 'utf8');
-  if (!/com\.hologram\.host(?!\.dev)/.test(worker) || !worker.includes('com.hologram.host.dev') || !worker.includes('nativeHost.profile.v1')) {
+  if (!/com\.dot\.host(?!\.dev)/.test(worker) || !worker.includes('com.dot.host.dev') || !worker.includes('nativeHost.profile.v1')) {
     throw new Error(`${browser}: ${CARRIES_TOKEN} が両方の Native Host とプロファイル設定を運んでいません`);
   }
 
-  console.log(`[hologram] ${browser} リリースを検証しました: ${out}`);
+  console.log(`[dot] ${browser} リリースを検証しました: ${out}`);
   return out;
 }
 
@@ -120,8 +120,8 @@ function run(script: string, buildId: string, output: string) {
     shell: true,
     stdio: 'inherit',
     env: Object.assign({}, process.env, {
-      HOLOGRAM_EXT_BUILD_ID: buildId,
-      HOLOGRAM_EXTENSION_OUTPUT: path.resolve(output),
+      DOT_EXT_BUILD_ID: buildId,
+      DOT_EXTENSION_OUTPUT: path.resolve(output),
     }),
   });
 }

@@ -29,7 +29,7 @@ export function libraryEmptyVariant(input: {
   // get-extension-contact）。下の「そうでなければ firstRun になる」分岐でしか読まない＝
   // 中身のあるライブラリや絞り込み中のライブラリが、これを見ることはない。
   extensionContacted: boolean;
-}): HologramEmptyVariant | null {
+}): DotEmptyVariant | null {
   // 最初の読み込みが実際に着く前に「空だ」と言ってはいけない＝読み込み中のグリッドと、
   // 読み込みを終えて空だったグリッドは別の状態だ。今はどちらも postGroups/posterGroups が
   // 「空」に見えるとしても。

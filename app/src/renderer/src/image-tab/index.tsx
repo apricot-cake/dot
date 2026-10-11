@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { hologramImageTabSource } from '../services/image-tab.ts';
+import { dotImageTabSource } from '../services/image-tab.ts';
 import { get as confirmGet } from '../services/confirm.ts';
 import { isOpen as settingsIsOpen } from '../services/settings.ts';
 import { ImageTab } from './ImageTab.tsx';
@@ -17,10 +17,10 @@ import { isEditing } from '../services/image-edit-controls.ts';
 // 引っかかる＝素の subscribe → setState の effect（GridMount の sync() と同じ形）なら
 // それを避けられる。
 export function ImageTabHost() {
-  const [model, setModel] = useState(() => hologramImageTabSource.get());
+  const [model, setModel] = useState(() => dotImageTabSource.get());
   useEffect(() => {
-    const sync = () => setModel(hologramImageTabSource.get());
-    const unsub = hologramImageTabSource.subscribe(sync);
+    const sync = () => setModel(dotImageTabSource.get());
+    const unsub = dotImageTabSource.subscribe(sync);
     sync(); // この effect が走る前に変わったものを拾う
     return unsub;
   }, []);
@@ -46,7 +46,7 @@ export function ImageTabHost() {
 document.addEventListener('keydown', (e) => {
   if (isEditing()) return;
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-  const model = hologramImageTabSource.get();
+  const model = dotImageTabSource.get();
   if (!model || !model.onIndexChange || model.items.length < 2) return;
   const t = e.target as HTMLElement | null;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;

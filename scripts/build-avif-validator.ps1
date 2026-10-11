@@ -41,8 +41,8 @@ if ($developerCommand) {
     & $ctestPath --test-dir $taskBuildPath -C Release --output-on-failure
 }
 if ($LASTEXITCODE -ne 0) { throw 'AVIF 検査器のビルドに失敗しました。' }
-$executable = Join-Path $taskBuildPath 'hologram-avif-validator.exe'
-if (!(Test-Path -LiteralPath $executable)) { $executable = Join-Path $taskBuildPath 'Release/hologram-avif-validator.exe' }
+$executable = Join-Path $taskBuildPath 'dot-avif-validator.exe'
+if (!(Test-Path -LiteralPath $executable)) { $executable = Join-Path $taskBuildPath 'Release/dot-avif-validator.exe' }
 if (!(Test-Path -LiteralPath $executable)) { throw '検査器の実行ファイルがありません。' }
 $libavifSource = Join-Path $taskBuildPath '_deps/libavif-src'
 $dav1dSource = Join-Path $taskBuildPath '_deps/dav1d-src'

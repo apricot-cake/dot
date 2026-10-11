@@ -14,7 +14,7 @@ test('module 読込だけでは対応を宣言せず登録完了後に Worker �
 });
 
 test('Worker の新しい global context でも永続化済みのタブ経路を読み戻す', async () => {
-  const host = 'com.hologram.host.verify.0123456789ab';
+  const host = 'com.dot.host.verify.0123456789ab';
   const get = vi.fn(async () => ({ [verificationKey(10)]: host }));
   const chrome = { storage: { local: { get } } };
   vi.stubGlobal('chrome', chrome);
@@ -25,7 +25,7 @@ test('Worker の新しい global context でも永続化済みのタブ経路を
   expect(get).toHaveBeenCalledTimes(3);
 });
 test('検証タブだけ接続先を持ち、同じURLの通常タブには影響しない', async () => {
-  const host = 'com.hologram.host.verify.0123456789ab';
+  const host = 'com.dot.host.verify.0123456789ab';
   vi.stubGlobal('chrome', { storage: { local: { get: async () => ({ [verificationKey(10)]: host }) } } });
   expect(await verificationHost(10)).toBe(host);
   expect(await verificationHost(11)).toBeUndefined();

@@ -31,7 +31,7 @@ export async function prepareArchiveImport(zipPath: string, stage: string) {
 // NativeHost が直前に公開した既存名も保持する。
 export async function publishArchiveFile(source: string, destination: string, publish: (source: string, target: string) => Promise<boolean>, recordTmp: (tmp: string) => void = () => {}): Promise<boolean> {
   await fs.promises.mkdir(path.dirname(destination), { recursive: true });
-  const tmp = path.join(path.dirname(destination), `.hologram-import-${randomUUID()}.tmp`);
+  const tmp = path.join(path.dirname(destination), `.dot-import-${randomUUID()}.tmp`);
   recordTmp(tmp);
   try {
     await fs.promises.copyFile(source, tmp, fs.constants.COPYFILE_EXCL);
@@ -41,7 +41,7 @@ export async function publishArchiveFile(source: string, destination: string, pu
   }
 }
 
-export async function applyArchiveImport(sqlite: Database.Database, stage: string, destination: string, progress: () => void = () => {}, executable = process.env.HOLOGRAM_ARCHIVE_PUBLISHER ?? path.resolve('app/vendor/avif/avif-validator.exe')) {
+export async function applyArchiveImport(sqlite: Database.Database, stage: string, destination: string, progress: () => void = () => {}, executable = process.env.DOT_ARCHIVE_PUBLISHER ?? path.resolve('app/vendor/avif/avif-validator.exe')) {
   const prepared = openDatabase(path.join(stage, 'prepared.sqlite')).sqlite;
   const publisher = createArchiveFilePublisher(executable);
   try {
@@ -152,7 +152,7 @@ export async function cleanupArchiveImport(stage: string, destination: string) {
   if (/^[0-9a-f-]{36}$/.test(path.basename(stage))) {
     const owner = await readArchiveStageManifest(stage);
     if (canonicalPath(owner.destination) !== canonicalPath(realRoot)) throw new Error('invalid-import-cleanup-owner');
-    const library = path.join(root, 'hologram.db');
+    const library = path.join(root, 'dot.db');
     const stat = await fs.promises.lstat(library);
     if (stat.isSymbolicLink() || !stat.isFile()) throw new Error('invalid-import-cleanup-owner');
     const current = openDatabase(library, { readonly: true }).sqlite;
@@ -170,7 +170,7 @@ export async function cleanupArchiveImport(stage: string, destination: string) {
     if (!db.prepare("SELECT 1 FROM sqlite_master WHERE name='media_publications'").get()) return;
     for (const row of db.prepare('SELECT tmp FROM media_publications').iterate() as Iterable<{ tmp: string }>) {
       const file = path.resolve(row.tmp);
-      if (!canonicalPath(file).startsWith(canonicalPath(root) + path.sep) || !/^\.hologram-import-[0-9a-f-]{36}\.tmp$/.test(path.basename(file))) throw new Error('invalid-import-cleanup-owner');
+      if (!canonicalPath(file).startsWith(canonicalPath(root) + path.sep) || !/^\.dot-import-[0-9a-f-]{36}\.tmp$/.test(path.basename(file))) throw new Error('invalid-import-cleanup-owner');
       try {
         await assertCleanupDirectories(root, path.dirname(file));
         const stat = await fs.promises.lstat(file);
@@ -306,7 +306,7 @@ async function assertNoLinksInStage(directory: string) {
 
 // Electron 非依存テストも実製品と同じ prepare / apply を通す。
 export async function importCompleteZipToDb(sqlite: Database.Database, zipPath: string, destination: string) {
-  const stage = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'hologram-archive-import-'));
+  const stage = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'dot-archive-import-'));
   try {
     const result = await prepareArchiveImport(zipPath, stage);
     return result.ok ? await applyArchiveImport(sqlite, stage, destination) : result;

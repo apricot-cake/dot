@@ -17,7 +17,7 @@
 declare const module: any;
 
 // ---- 投稿の表示データ ----
-type HologramPost = import('../../../shared/post-view-schemas.ts').PostDisplay & {
+type DotPost = import('../../../shared/post-view-schemas.ts').PostDisplay & {
   _dateMs?: number;
   _capturedMs?: number;
   _postKey?: string | null;
@@ -27,35 +27,35 @@ type HologramPost = import('../../../shared/post-view-schemas.ts').PostDisplay &
 // ---- renderer/query.js＝条件木の仕組みと、投稿側の述語 ----
 // 木は常に根がグループ（op は既定で 'and'）。葉は {kind:'cond', type, value, …}。
 // グループは子と、任意の neg を持つ。
-interface HologramQueryLeaf {
+interface DotQueryLeaf {
   kind: 'cond';
   type: string;
   [k: string]: any;
 }
-interface HologramQueryGroup {
+interface DotQueryGroup {
   kind: 'group';
   op: 'and' | 'or';
   neg: boolean;
-  children: HologramQueryNode[];
+  children: DotQueryNode[];
 }
-type HologramQueryNode = HologramQueryLeaf | HologramQueryGroup;
+type DotQueryNode = DotQueryLeaf | DotQueryGroup;
 
 // ファセットのドメイン（改訂④・ファセットのチップ）: UI が組み立てるのはファセットの
 // CNF の木だけ。opts はビューが持つ型のスキーマ（多値の型か、単独の型か）。
-interface HologramFacetOpts {
+interface DotFacetOpts {
   multiValueTypes?: string[];
   standaloneTypes?: string[];
 }
-interface HologramFacetCluster {
+interface DotFacetCluster {
   type: string;
   op: 'and' | 'or';
-  leaves: HologramQueryLeaf[];
+  leaves: DotQueryLeaf[];
   grouped: boolean;
 }
-interface HologramFacetView {
-  clusters: HologramFacetCluster[];
-  singles: HologramQueryLeaf[];
-  excl: HologramQueryLeaf[];
+interface DotFacetView {
+  clusters: DotFacetCluster[];
+  singles: DotQueryLeaf[];
+  excl: DotQueryLeaf[];
 }
 
 // query.ts 自身の API の面（emptyTree/evalNode/makePostPredOf など）は今や本物の ES
@@ -63,25 +63,25 @@ interface HologramFacetView {
 // インターフェースはここにもう宣言していない。
 
 // ---- services/records.ts＝レコードの形を扱う補助とグループ化。今は本物の ES
-// モジュール（名前付き export）で、ここに残るのは HologramPostGroup のデータ形だけ
+// モジュール（名前付き export）で、ここに残るのは DotPostGroup のデータ形だけ
 // （viewer.ts / selection.ts / image-tab.ts と共有する）。 ----
-interface HologramPostGroup {
+interface DotPostGroup {
   key: string;
-  records: HologramPost[];
-  rep: HologramPost;
+  records: DotPost[];
+  rep: DotPost;
   files: string[];
   [k: string]: any;
 }
 
 // ---- services/selection.ts＝post グリッドの複数選択の Set と、Shift の範囲選択の
-// 起点。hologramStore の 'selectedSet' キーがそのまま状態になる（クロージャに写しを
+// 起点。dotStore の 'selectedSet' キーがそのまま状態になる（クロージャに写しを
 // 持たない）。起点はモジュールの私有変数（購読者がいない）。今は本物の ES モジュール
 // （名前付き export）で、Window の形をしたアンビエントのインターフェースは要らない。 ----
 
 // ---- services/facets.ts＝ファセットの件数と、値のフライアウトの行のモデル。makeFacets
 // （facets.ts）は今や本物の ES モジュール（名前付き export）で、
-// ここに残るのはモジュールをまたぐフライアウトの行の形として HologramQfRow だけ。 ----
-interface HologramQfRow {
+// ここに残るのはモジュールをまたぐフライアウトの行の形として DotQfRow だけ。 ----
+interface DotQfRow {
   v?: string;
   l?: string;
   on?: boolean;
@@ -93,14 +93,14 @@ interface HologramQfRow {
 // （名前付き export）で、読み取り側の導出とディスクとの往復は自分で型を持つので、
 // Window の形をしたアンビエントのインターフェースはここにもう宣言していない。
 //
-// 例外は HologramTagEntry で、読み取り側が持ち回る形のタグの実体1件（#810/#774）＝
+// 例外は DotTagEntry で、読み取り側が持ち回る形のタグの実体1件（#810/#774）＝
 // `name` は選択時にクエリの葉へ書き込む値、`label` は行が見せる値（同じ名前の実体2つ
 // は、表示上の親でしか区別が付かない。「alice(東方)」）、`id` は一致判定のキー。
 // これがアンビエントなのは、facets.ts と query.ts の両方がこれを話すのに、どちらも
 // tags.ts をインポートしないから（query.ts は結合を一切持たない＝すべては注入された
 // 依存を通してそこへ届く）。`id` が null になるのは、レコードの id が手に入らず、
 // 読み取り側が名前での一致に退避する劣化した経路だけ。 ----
-interface HologramTagEntry {
+interface DotTagEntry {
   id: number | null;
   name: string;
   label: string;
@@ -108,8 +108,8 @@ interface HologramTagEntry {
 
 // ---- services/users.ts＝投稿者の集約と、検索ボックスの候補。今は本物の ES モジュール
 // （名前付き export）で、Window の形をしたアンビエントのインターフェースは要らない。
-// ただし HologramUserAgg は残る（listing.ts / sidebar.ts と共有するデータ形）。 ----
-interface HologramUserAgg {
+// ただし DotUserAgg は残る（listing.ts / sidebar.ts と共有するデータ形）。 ----
+interface DotUserAgg {
   localViewCount?: number;
   lastViewedAt?: string;
   names?: import('../../../shared/data-schemas.ts').PosterName[];
@@ -131,22 +131,22 @@ interface HologramUserAgg {
   count: number;
 }
 // ---- services/tab-state.ts＝タブの題名と、移動の履歴と、tabs.json の形。今は本物の
-// ES モジュール（名前付き export）で、ここに残るのは HologramTabSnapshot /
-// HologramTab のデータ形だけ（viewer.ts / tabs.ts / image-tab.ts と共有する）。 ----
-type HologramTabSnapshot = import('../../../shared/data-schemas.ts').TabView;
+// ES モジュール（名前付き export）で、ここに残るのは DotTabSnapshot /
+// DotTab のデータ形だけ（viewer.ts / tabs.ts / image-tab.ts と共有する）。 ----
+type DotTabSnapshot = import('../../../shared/data-schemas.ts').TabView;
 // タブごとの履歴のエントリ1件（#144）: 3つのビューの種類にまたがるタグ付き合併型。
 // `u` は擬似 URL＝表示用のラベルと同定のキー（全体の履歴のページはここから行を導く）。
 // 復元の契約では決してない（正本は state で、u はそこから導かれる）。
-type HologramNavEntry = import('../../../shared/data-schemas.ts').NavEntry;
-interface HologramTab {
+type DotNavEntry = import('../../../shared/data-schemas.ts').NavEntry;
+interface DotTab {
   id: string;
   pinned: boolean;
   title: string | null;
-  state: HologramTabSnapshot | null;
+  state: DotTabSnapshot | null;
   _scrollTop?: number;
   // この版がまだ知らない永続化 wrapper の欄。復元→保存で消さず、そのまま運ぶ。
   _persistExtra?: Record<string, unknown>;
-  // タブごとの戻る／進むのスタック（要素はそれぞれ HologramNavEntry を JSON 化した
+  // タブごとの戻る／進むのスタック（要素はそれぞれ DotNavEntry を JSON 化した
   // もの）＝切り替えをまたいでタブのオブジェクトに載って回り、tabs.json にも永続化
   // される（#144 の未決点5）。
   _navHist?: string[];
@@ -156,10 +156,10 @@ interface HologramTab {
 
 // ---- services/geometry.ts＝列とスライダーの軌道とサムネイルの、純粋な計算。今は
 // 本物の ES モジュール（名前付き export）で、Window の形をしたアンビエントの
-// インターフェースは要らない。ただし HologramGridMetrics は残る（viewer.ts と共有
+// インターフェースは要らない。ただし DotGridMetrics は残る（viewer.ts と共有
 // するデータ形）。 ----
 // 計測値: W は小数のまま切り下げた容器の幅、g は溝の px。
-interface HologramGridMetrics {
+interface DotGridMetrics {
   W: number;
   g: number;
 }
@@ -176,7 +176,7 @@ interface HologramGridMetrics {
 // SearchEditingDeps は search-editing.ts から直接 export されるため、Window の形をした
 // アンビエントのインターフェースは要らない。
 
-interface HologramFolder {
+interface DotFolder {
   id: string;
   name: string;
   items: string[];
@@ -185,22 +185,22 @@ interface HologramFolder {
   /** 静的フォルダのみ: 親フォルダの id（#41）。無いか null なら根のフォルダ。 */
   parentId?: string | null;
   /** 動的フォルダのみ: 保存した検索。自由記述の語はその中の 'text' の葉になる。 */
-  tree?: HologramQueryGroup | null;
+  tree?: DotQueryGroup | null;
   [k: string]: any;
 }
-interface HologramFolderStore {
-  all(): HologramFolder[];
-  allRaw(): HologramFolder[];
+interface DotFolderStore {
+  all(): DotFolder[];
+  allRaw(): DotFolder[];
   setAll(list: unknown): void;
-  byId(id: string | null | undefined): HologramFolder | null;
+  byId(id: string | null | undefined): DotFolder | null;
   has(id: string | null | undefined, key: string): boolean;
-  create(name: string | null | undefined, opts?: { kind?: string; tree?: unknown; parentId?: string | null } | null): HologramFolder | null;
+  create(name: string | null | undefined, opts?: { kind?: string; tree?: unknown; parentId?: string | null } | null): DotFolder | null;
   /** フォルダと、（ライブラリのストアなら）その部分木ごと削除する。取り除いた id をすべて返す。 */
   remove(id: string | null | undefined): Set<string>;
   /** 子孫も含めた所属。`only` を渡すとそのフォルダ自身の items だけに絞る（#41）。 */
   hasDeep(id: string | null | undefined, key: string, only?: boolean): boolean;
   /** 直接の子を、兄弟の順（＝配列の順）で返す。 */
-  childrenOf(id: string | null): HologramFolder[];
+  childrenOf(id: string | null): DotFolder[];
   /** 「親 / 子 / 孫」＝木の外でフォルダを見せる画面のため。そこでは名前だけではフォルダを同定できない。 */
   pathOf(id: string | null | undefined): string;
   /** そのフォルダと、その下にあるものすべて（id が無ければ空）。 */
@@ -227,9 +227,9 @@ interface HologramFolderStore {
 
 // services/store.ts は zustand の vanilla のストア（#1054）で、使う側がすべて直接
 // インポートする。その状態の型はここではなくあのファイルにあるので、アンビエントな
-// HologramStore や Window へのマージはもうどこにも無い。（そのストアが持つ形のうち
-// いくつかは上で宣言している＝HologramTab / HologramQueryGroup / HologramPostGroup /
-// HologramUserAgg。e2e/tsconfig.json が globals.d.ts と並べて
+// DotStore や Window へのマージはもうどこにも無い。（そのストアが持つ形のうち
+// いくつかは上で宣言している＝DotTab / DotQueryGroup / DotPostGroup /
+// DotUserAgg。e2e/tsconfig.json が globals.d.ts と並べて
 // このファイルも取り込んでいるのはそのため。）重複していた昔の
-// `interface Window { hologramSelection }`（かつてはこのファイルで唯一の Window への
+// `interface Window { dotSelection }`（かつてはこのファイルで唯一の Window への
 // マージだった）も無くなった＝selection.ts は今や本物の ES モジュール。

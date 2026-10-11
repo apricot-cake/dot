@@ -7,12 +7,12 @@
 // フローだけを書けばよい。
 //
 // なぜ見えるウィンドウが要るのか。e2e/harness/cases/test-app-*.cts層はアプリを非表示で起動し
-// （HOLOGRAM_SMOKE）、合成したDOMイベントを送る。それで状態とIPCには届くが、実際のクリック経路
+// （DOT_SMOKE）、合成したDOMイベントを送る。それで状態とIPCには届くが、実際のクリック経路
 // ――pointer-events、z-index、重なり、レイアウト――には決して届かないし、ピクセルにも届かない。
 // このテスト一式はまさにその隙間のために存在するので、ウィンドウは画面上にあり、実際に
 // コンポジットされていなければならない。
 //
-// それでもなぜ画面を奪わないのか。HOLOGRAM_START_INACTIVEはmainに、ウィンドウをアクティブ化
+// それでもなぜ画面を奪わないのか。DOT_START_INACTIVEはmainに、ウィンドウをアクティブ化
 // せずに表示させ、z-orderの最下部に押しやらせる（index.tsのsendWindowToBack）。
 // scripts/sandbox-app.ctsが受けているのと同じ扱いだ。Playwrightの入力はCDP経由で行くので
 // ウィンドウにフォーカスは要らず、実行がキーボードの前にいる人からフォアグラウンドを
@@ -50,7 +50,7 @@ export interface LaunchOptions {
   theme?: 'light' | 'dark';
   /**
    * 表示言語の設定値。設定パネルが書き込むのと同じ形（#1057）。省略すると設定値は無い
-   * ままになり、レンダラーは以下のHOLOGRAM_LANGに対して'auto'を解決する――他のどの
+   * ままになり、レンダラーは以下のDOT_LANGに対して'auto'を解決する――他のどの
    * ケースもそれを求めている。ランナー自身の言語に依存せずもう一方の言語を得たいときは
    * 'en'を渡す。
    */
@@ -60,7 +60,7 @@ export interface LaunchOptions {
   seed?: (ctx: { configDir: string; saveFolder: string }) => void;
 }
 
-export interface Hologram {
+export interface dot {
   app: ElectronApplication;
   page: Page;
   configDir: string;
@@ -74,14 +74,14 @@ export interface Hologram {
   tagsOf(captureId: string): string[];
 }
 
-async function launch(options: LaunchOptions): Promise<{ hologram: Hologram; close: () => Promise<void> }> {
+async function launch(options: LaunchOptions): Promise<{ dot: dot; close: () => Promise<void> }> {
   // #463のガードを、ケースごとのOSエラーダイアログではなくテスト失敗として表面化させる
   // （electronPath()自体はワーカー全体を終了させてしまう）。
   const notBuilt = buildArtifactError();
   if (notBuilt) throw new Error(notBuilt);
 
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-e2e-'));
-  const configDir = path.join(tmp, 'Hologram');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-e2e-'));
+  const configDir = path.join(tmp, 'dot');
   const saveFolder = path.join(tmp, 'library');
   fs.mkdirSync(configDir, { recursive: true });
   fs.mkdirSync(saveFolder, { recursive: true });
@@ -101,19 +101,19 @@ async function launch(options: LaunchOptions): Promise<{ hologram: Hologram; clo
       ...process.env,
       // %APPDATA%も同様に、フォールバックの読み書きがすべてサンドボックス内に留まるように。
       APPDATA: tmp,
-      HOLOGRAM_CONFIG_DIR: configDir,
+      DOT_CONFIG_DIR: configDir,
       // ネイティブホストの登録をスキップする＝HKCUへの書き込みも、共有設定ディレクトリへの
       // コピーも起きない。実行は実際のライブラリにも、実際のChromeから見えるその姿にも
       // 触れない。
-      HOLOGRAM_SANDBOX: '1',
-      HOLOGRAM_E2E: '1',
+      DOT_SANDBOX: '1',
+      DOT_E2E: '1',
       // 実入力をCDPから送るフローも、利用者の画面へウィンドウを出さない。
-      HOLOGRAM_E2E_HIDDEN: '1',
-      HOLOGRAM_START_INACTIVE: '1',
+      DOT_E2E_HIDDEN: '1',
+      DOT_START_INACTIVE: '1',
       // スペックは日本語のラベルでコントロールを探す。これが無いと言語はマシンのものになり、
       // en-USのCIランナーでは「言語が違う」ではなく「コントロールが見つからない」と
       // 読めてしまう（docs/テスト.md）。
-      HOLOGRAM_LANG: 'ja',
+      DOT_LANG: 'ja',
       // 日付はUTCの瞬間として保存され、ローカル時刻で描画されるので、インスペクタが
       // 「この投稿はいつ投稿されたか」と表示する内容はマシンのタイムゾーンが決める。
       // 言語を固定するのと同じ理由でここも固定する＝別タイムゾーンのランナーは
@@ -141,15 +141,15 @@ async function launch(options: LaunchOptions): Promise<{ hologram: Hologram; clo
   const side = await page.evaluate((bp) => ({ width: window.innerWidth, wide: matchMedia(`(min-width: ${bp}px)`).matches }), WIDE_MIN_PX);
   if (!side.wide) throw new Error(`E2E ウィンドウが narrow 側で起動しました（実測 ${side.width}px ／ wide の下限 ${WIDE_MIN_PX}px）。要求した ${CONTENT_SIZE.width}px が画面の作業領域に収まらなかったか、幅の算出がブレークポイントから外れています。`);
 
-  const hologram: Hologram = {
+  const dot: dot = {
     app,
     page,
     configDir,
     saveFolder,
     readDb(fn) {
       const { openDatabase } = require(path.join(appDir, 'src', 'main', 'lib-db.ts'));
-      // #176: hologram.dbは今、configDirではなく保存フォルダの中にある。
-      const handle = openDatabase(path.join(saveFolder, 'hologram.db'));
+      // #176: dot.dbは今、configDirではなく保存フォルダの中にある。
+      const handle = openDatabase(path.join(saveFolder, 'dot.db'));
       try {
         return fn(handle.sqlite);
       } finally {
@@ -157,7 +157,7 @@ async function launch(options: LaunchOptions): Promise<{ hologram: Hologram; clo
       }
     },
     tagsOf(captureId) {
-      return hologram.readDb((sqlite) =>
+      return dot.readDb((sqlite) =>
         sqlite
           .prepare('SELECT t.name FROM post_tags pt JOIN tags t ON t.id = pt.tagId WHERE pt.postId = ? ORDER BY t.name')
           .all(captureId)
@@ -167,7 +167,7 @@ async function launch(options: LaunchOptions): Promise<{ hologram: Hologram; clo
   };
 
   return {
-    hologram,
+    dot,
     close: async () => {
       await app.close();
       fs.rmSync(tmp, { recursive: true, force: true });
@@ -176,19 +176,19 @@ async function launch(options: LaunchOptions): Promise<{ hologram: Hologram; clo
 }
 
 /**
- * `launchHologram(opts)`は呼び出しごとにサンドボックス化したアプリを1つ起動し、ケースが
+ * `launchDot(opts)`は呼び出しごとにサンドボックス化したアプリを1つ起動し、ケースが
  * 終わるとそれを片付ける。フィクスチャの値ではなく関数になっているのは、ケースによって
  * シードしたいものが違うからだ――中にはアプリを2回起動して、何かが再起動を生き延びたことを
  * 確かめるケースもある。
  */
-export const test = base.extend<{ launchHologram: (options?: LaunchOptions) => Promise<Hologram> }>({
+export const test = base.extend<{ launchDot: (options?: LaunchOptions) => Promise<dot> }>({
   // biome-ignore lint/correctness/noEmptyPattern: Playwright はこの分割代入の形からフィクスチャの依存を読む。空は「何にも依存しない」を意味し、フレームワーク自身が文書にしている書き方
-  launchHologram: async ({}, use) => {
+  launchDot: async ({}, use) => {
     const running: Array<() => Promise<void>> = [];
     await use(async (options = {}) => {
-      const { hologram, close } = await launch(options);
+      const { dot, close } = await launch(options);
       running.push(close);
-      return hologram;
+      return dot;
     });
     for (const close of running) await close();
   },

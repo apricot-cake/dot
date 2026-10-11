@@ -287,7 +287,7 @@ export async function restoreTrashCapture(opts: { folder: string; trashDir: stri
   let createdItemsParent = false;
   const trashItem = path.join(trashDir, itemKey);
   let committed = false;
-  const publisher = createArchiveFilePublisher(opts.publisherExecutable ?? process.env.HOLOGRAM_ARCHIVE_PUBLISHER ?? path.resolve('app/vendor/avif/avif-validator.exe'));
+  const publisher = createArchiveFilePublisher(opts.publisherExecutable ?? process.env.DOT_ARCHIVE_PUBLISHER ?? path.resolve('app/vendor/avif/avif-validator.exe'));
   const move = async (source: string, destination: string) => {
     if (!(await publisher.publish(source, destination))) throw new Error('Restore media target already exists');
     // Windows は標準 MoveFileW、他 OS は既存 hardlink publisher。

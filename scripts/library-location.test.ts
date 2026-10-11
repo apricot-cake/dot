@@ -6,17 +6,17 @@ import { defaultLibraryDir, libraryDestinationDir } from '../native-host/paths.m
 describe('ライブラリの保存先', () => {
   const parent = path.resolve('selected-folder');
 
-  test('初回と親フォルダ選択時は Hologram/Library を使う', () => {
-    expect(defaultLibraryDir()).toBe(path.join(os.homedir(), 'Hologram', 'Library'));
-    expect(libraryDestinationDir(parent)).toBe(path.join(parent, 'Hologram', 'Library'));
+  test('初回と親フォルダ選択時は dot/Library を使う', () => {
+    expect(defaultLibraryDir()).toBe(path.join(os.homedir(), 'dot', 'Library'));
+    expect(libraryDestinationDir(parent)).toBe(path.join(parent, 'dot', 'Library'));
   });
 
-  test.each(['Hologram', 'hologram'])('製品フォルダ %s を重複させない', (name) => {
+  test.each(['dot', 'dot'])('製品フォルダ %s を重複させない', (name) => {
     expect(libraryDestinationDir(path.join(parent, name))).toBe(path.join(parent, name, 'Library'));
   });
 
   test.each(['Library', 'library'])('ライブラリフォルダ %s 自体を使う', (name) => {
-    const chosen = path.join(parent, 'Hologram', name);
+    const chosen = path.join(parent, 'dot', name);
     expect(libraryDestinationDir(chosen)).toBe(chosen);
   });
 });

@@ -27,8 +27,8 @@ const electronPath = resolveElectron();
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-rb-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-rb-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 for (const dir of [configDir, saveFolder]) fs.mkdirSync(dir, { recursive: true });
 fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder, extensionId: 'x' }));
@@ -57,15 +57,15 @@ seedLibrary(configDir, seeded);
 
 // この E2E の主題は稼働中 DB の置き換えである。
 // 起動前の閉じた DB から、巻き戻し先になるローカル復元ポイントを作る。
-const generation = 'hologram-20260823-120000.db';
+const generation = 'dot-20260823-120000.db';
 const generationsDir = path.join(saveFolder, '.db-generations');
 fs.mkdirSync(generationsDir, { recursive: true });
-fs.copyFileSync(path.join(saveFolder, 'hologram.db'), path.join(generationsDir, generation));
+fs.copyFileSync(path.join(saveFolder, 'dot.db'), path.join(generationsDir, generation));
 
 const TAG_AFTER = 'この世代より後に付けたタグ';
 const generationsOf = (root: string): string[] => {
   try {
-    return fs.readdirSync(path.join(root, '.db-generations')).filter((n) => /^hologram-\d{8}-\d{6}\.db$/.test(n));
+    return fs.readdirSync(path.join(root, '.db-generations')).filter((n) => /^dot-\d{8}-\d{6}\.db$/.test(n));
   } catch {
     return [];
   }
@@ -73,7 +73,7 @@ const generationsOf = (root: string): string[] => {
 
 function launch(evalJs): Promise<Record<string, any>> {
   return new Promise((resolve) => {
-    const env = Object.assign({}, process.env, { APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir, HOLOGRAM_SMOKE: '1', HOLOGRAM_SMOKE_EVAL: evalJs });
+    const env = Object.assign({}, process.env, { APPDATA: tmp, DOT_CONFIG_DIR: configDir, DOT_SMOKE: '1', DOT_SMOKE_EVAL: evalJs });
     const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
     let out = '';
     child.stdout.on('data', (d) => {
@@ -100,7 +100,7 @@ function launch(evalJs): Promise<Record<string, any>> {
   // はずのタグを得る。
   const evalA = evalSource(
     async ({ sleep }, args) => {
-      const hologram = (window as any).hologram;
+      const dot = (window as any).dot;
       // 意図的に遅延として保持している。これはこのリポジトリの中で、それが
       // 匂いにならない唯一の場所（#989）: 破壊的なデータベース置き換えの前に
       // 真でなければならないのは、起動処理自身のデータベース作業が終わって
@@ -113,8 +113,8 @@ function launch(evalJs): Promise<Record<string, any>> {
       // テストになる。
       // biome-ignore lint/plugin: no observable post-condition exists for "startup's database work has settled" — see #989
       await sleep(400);
-      await hologram.updateTags(args.firstImage, [args.tagAfter]);
-      const posts = await hologram.listPosts();
+      await dot.updateTags(args.firstImage, [args.tagAfter]);
+      const posts = await dot.listPosts();
       const tagged = (posts.posts.find((p) => p.captureId === args.firstCaptureId) || {}).tags || [];
       return { taggedBefore: tagged.includes(args.tagAfter) };
     },
@@ -132,18 +132,18 @@ function launch(evalJs): Promise<Record<string, any>> {
   // 起動B: 一覧を取り、巻き戻し、その後ライブラリを再び読み出す。
   const evalB = evalSource(
     async ({ sleep }, args) => {
-      const hologram = (window as any).hologram;
+      const dot = (window as any).dot;
       // 起動Aと同じ理由で、ここではもっと重要になる: 巻き戻しは次の行にある。
       // #989参照。
       // biome-ignore lint/plugin: no observable post-condition exists for "startup's database work has settled" — see #989
       await sleep(400);
-      const list = await hologram.listDbGenerations();
+      const list = await dot.listDbGenerations();
       const listed = !!(list && list.length === 1 && list[0].name === args.generation && list[0].size > 0);
 
-      const res = await hologram.rollbackDbGeneration(args.generation);
+      const res = await dot.rollbackDbGeneration(args.generation);
       const rolledBack = !!(res && res.ok && res.reregistered === 1);
 
-      const posts = await hologram.listPosts();
+      const posts = await dot.listPosts();
       const ids = posts.posts.map((p) => p.captureId).sort();
       const tagged = (posts.posts.find((p) => p.captureId === args.firstCaptureId) || {}).tags || [];
       return { listed, rolledBack, ids, tagGone: !tagged.includes(args.tagAfter) };

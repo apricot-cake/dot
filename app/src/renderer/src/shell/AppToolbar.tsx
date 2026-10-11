@@ -10,12 +10,12 @@ import { ViewerToolbar, ViewerEditActions } from '../image-tab/ViewerToolbar.tsx
 import * as editControls from '../services/image-edit-controls.ts';
 import { TrashToolbar } from '../trash/TrashView.tsx';
 import { t } from '../_shared/i18n.ts';
-import { hologramImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
+import { dotImageTabSource, isActive as imageViewIsActive } from '../services/image-tab.ts';
 import { store, subscribeKey } from '../services/store.ts';
-import type { HologramStoreState } from '../services/store.ts';
+import type { DotStoreState } from '../services/store.ts';
 import { navBack, navForward } from '../services/orchestrator.ts';
 
-const subKey = (key: keyof HologramStoreState) => (cb: () => void) => subscribeKey(key, cb);
+const subKey = (key: keyof DotStoreState) => (cb: () => void) => subscribeKey(key, cb);
 const subBack = subKey('navCanBack');
 const getBack = (): boolean => store.getState().navCanBack;
 const subForward = subKey('navCanForward');
@@ -37,7 +37,7 @@ export function TabNavigation() {
 
 export function AppToolbar() {
   const editing = useSyncExternalStore(editControls.subscribe, editControls.isEditing);
-  const imageView = useSyncExternalStore(hologramImageTabSource.subscribe, imageViewIsActive);
+  const imageView = useSyncExternalStore(dotImageTabSource.subscribe, imageViewIsActive);
   const mode = useSyncExternalStore(subKey('browseMode'), () => store.getState().browseMode);
   const isTrash = mode === 'trash';
   return (

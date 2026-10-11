@@ -5,7 +5,7 @@ const signals = vi.hoisted(() => ({
   panel: new Set<() => void>(),
   posts: new Set<() => void>(),
   trash: new Set<() => void>(),
-  trashState: { groups: [] as HologramPostGroup[], selected: new Set<string>() },
+  trashState: { groups: [] as DotPostGroup[], selected: new Set<string>() },
   image: null as { items: { postId: string }[]; idx: number } | null,
 }));
 vi.mock('./inspector-panel.ts', () => ({
@@ -29,16 +29,16 @@ vi.mock('./trash-view.ts', () => ({
     return () => signals.trash.delete(fn);
   },
 }));
-vi.mock('./image-tab.ts', () => ({ hologramImageTabSource: { get: () => signals.image } }));
+vi.mock('./image-tab.ts', () => ({ dotImageTabSource: { get: () => signals.image } }));
 
 import { connectInspector, requestDetailOptions } from './inspector-controller.ts';
 import { get, close } from './inspector.ts';
 import { store } from './store.ts';
 
-const p1 = { captureId: 'a', image: 'a.png' } as HologramPost;
-const p2 = { captureId: 'b', image: 'b.png' } as HologramPost;
-const group = (post: HologramPost) => ({ key: post.captureId, rep: post, records: [post], files: [post.image] }) as HologramPostGroup;
-let posts: HologramPost[];
+const p1 = { captureId: 'a', image: 'a.png' } as DotPost;
+const p2 = { captureId: 'b', image: 'b.png' } as DotPost;
+const group = (post: DotPost) => ({ key: post.captureId, rep: post, records: [post], files: [post.image] }) as DotPostGroup;
+let posts: DotPost[];
 let dispose: () => void;
 const flush = async () => {
   await Promise.resolve();
@@ -54,7 +54,7 @@ beforeEach(async () => {
   store.setState({ browseMode: 'posts', activeImageTab: null, selectedSet: new Set(), selectedPosterKey: null, inspectedKey: null, postGroups: posts.map(group) });
   dispose = connectInspector({
     getPostById: (id) => posts.find((post) => post.captureId === id),
-    buildUsers: () => [{ key: 'author' } as HologramUserAgg],
+    buildUsers: () => [{ key: 'author' } as DotUserAgg],
     postModel: (g, options) => ({ kind: 'post', bodyText: g.rep.captureId, ...options }),
     posterModel: (u, options) => ({ kind: 'poster', name: u.key, ...options }),
     recordView: vi.fn(),

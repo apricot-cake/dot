@@ -15,9 +15,9 @@ describe('bench-baseline のデータベーススナップショット', () => {
   });
 
   it('書き換えを一時DBに隔離し、後から作られたソースの WAL/SHM を削除しない', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-bench-test-'));
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-bench-test-'));
     roots.push(root);
-    const sourceFile = path.join(root, 'library', 'hologram.db');
+    const sourceFile = path.join(root, 'library', 'dot.db');
     fs.mkdirSync(path.dirname(sourceFile), { recursive: true });
 
     const initialized = openDatabase(sourceFile);

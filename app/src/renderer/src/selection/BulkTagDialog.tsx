@@ -20,7 +20,7 @@ import { TagField } from '../inspector/TagField.tsx';
 
 const getSnapshot = () => get();
 
-function BulkTagBody({ model }: { model: HologramBulkTagModel }) {
+function BulkTagBody({ model }: { model: DotBulkTagModel }) {
   const [tags, setTags] = useState<string[]>([]);
   // 種別の変更（右クリック → 種別）は、組み立て中の一覧に触れないまま語彙の区分けを
   // 変える。だから描き直しを頼むための独自の手段が要る。
@@ -61,7 +61,7 @@ export function BulkTagDialogHost() {
   const m = useSyncExternalStore(subscribe, getSnapshot);
   // 閉じるアニメーションの間、最後のモデルを保持して、本体が途中で真っ白にならないように
   // する（PromptHost・ConfirmHost と同じ）。
-  const lastRef = useRef<HologramBulkTagModel | null>(null);
+  const lastRef = useRef<DotBulkTagModel | null>(null);
   if (m) lastRef.current = m;
   const model = m ?? lastRef.current;
   return (

@@ -39,16 +39,16 @@ describe('backfill --avatars（実スクリプトを spawn）', () => {
   let dbFile: string;
 
   beforeAll(() => {
-    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-avfill-'));
-    const configDir = path.join(tmp, 'Hologram');
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-avfill-'));
+    const configDir = path.join(tmp, 'dot');
     saveFolder = path.join(tmp, 'saves');
     fs.mkdirSync(configDir, { recursive: true });
     fs.mkdirSync(saveFolder, { recursive: true });
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder }));
 
     // レコードはライブラリの DB にある（#302 以降、保存フォルダにサイドカーは無い）。
-    // #176: hologram.db は configDir ではなく保存フォルダの中に置く。
-    dbFile = path.join(saveFolder, 'hologram.db');
+    // #176: dot.db は configDir ではなく保存フォルダの中に置く。
+    dbFile = path.join(saveFolder, 'dot.db');
     const seed = openDatabase(dbFile);
     const stmts = preparePostStmts(seed.sqlite);
     const resolveTagId = makeTagResolver(seed.sqlite);
@@ -72,7 +72,7 @@ describe('backfill --avatars（実スクリプトを spawn）', () => {
     );
 
     res = spawnSync(process.execPath, ['-r', stub, path.join(import.meta.dirname, '../../scripts/backfill-metadata.cts'), '--avatars'], {
-      env: { ...process.env, APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir },
+      env: { ...process.env, APPDATA: tmp, DOT_CONFIG_DIR: configDir },
       encoding: 'utf8',
     });
   });

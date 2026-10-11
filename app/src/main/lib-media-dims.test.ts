@@ -61,7 +61,7 @@ function makePng(w: number, h: number): Buffer {
 
 const dirs: string[] = [];
 function mkFolder(): string {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-media-dims-'));
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-media-dims-'));
   dirs.push(d);
   return d;
 }

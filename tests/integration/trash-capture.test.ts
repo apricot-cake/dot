@@ -7,7 +7,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 import { listTrashRecords, trashCapture } from '../../app/src/main/lib-trash-capture';
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-trash-capture-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-trash-capture-'));
 const folder = path.join(dir, 'library');
 const trashDir = path.join(folder, '.trash');
 fs.mkdirSync(folder, { recursive: true });

@@ -1,6 +1,6 @@
 // レンダラーの React コンポーネントが使う Window グローバルの契約。ここに置く宣言は
 // 2種類ある。(1) 本当に境界をまたぐアンビエント宣言＝preload の contextBridge の面
-// （window.hologram）と CSS の副作用インポートで、どちらも `import` 文では表せない。
+// （window.dot）と CSS の副作用インポートで、どちらも `import` 文では表せない。
 // (2) 生産側の service モジュールと消費側のコンポーネントの間で共有するデータ形の
 // インターフェースで、呼び出し箇所ごとに export して import するのではなく、アンビ
 // エントのまま（import 不要）にしてある。生産側のモジュールはかつてほとんどが素の
@@ -9,7 +9,7 @@
 // 本物の ES モジュールになった。移行が残したモジュールごとの「変換済み・アンビエント
 // はもう不要」という墓標コメントは、それらが導入していたインターフェースもろとも
 // 2026-07-30 に削除した（#231）。下に残っているのは今も読まれている契約だけ。
-// `HologramI18nApi`（純粋なデータ形）は同じ回で、持ち主のモジュール services/i18n.ts
+// `DotI18nApi`（純粋なデータ形）は同じ回で、持ち主のモジュール services/i18n.ts
 // の隣へ移した＝そのファイルを参照。
 
 export {};
@@ -19,25 +19,25 @@ export {};
 declare module '*.css' {}
 
 declare global {
-  type HologramUnsubscribe = () => void;
+  type DotUnsubscribe = () => void;
 
-  // ---- app/src/preload/index.ts＝contextBridge の IPC の面すべて（window.hologram）。
+  // ---- app/src/preload/index.ts＝contextBridge の IPC の面すべて（window.dot）。
   // 型は実装側が自分で export している（公開する api オブジェクトの typeof・Issue
   // #17）ので、このエイリアスがブリッジの実際の公開内容からずれることはない＝手で
   // 保守していた昔のインターフェースの写しは無くなった。このプログラムでは
   // 'electron' が types/electron-shim.d.ts に解決される（tsconfig の paths。シムの
   // コメントを参照）。tsconfig.node.json は同じファイルを本物の electron の型に対して
   // 検査する。 ----
-  type HologramPreload = import('../../../preload/index').HologramPreload;
+  type DotPreload = import('../../../preload/index').DotPreload;
 
   // ---- services/grid.ts＝仮想化グリッドごとの、引く側のモデルの供給元（post と
   // poster はどちらも昔の push ブリッジから変換済み。push ブリッジを作るコードはもう
   // 無い）。viewer.js は今も items やレイアウトの入力を組み立てるが、render()/patch()
-  // を呼ぶのではなく hologramStore へ書く＝モデルは供給元が自分で導く。`paint` は
+  // を呼ぶのではなく dotStore へ書く＝モデルは供給元が自分で導く。`paint` は
   // 内部用（get() のたびに増やす。欄の値が同じでも新しいオブジェクト参照が React に
   // 届くように）。選択と詳細表示中はこのモデルに入っていない＝Cell がどちらも
-  // hologramStore の購読から直に導く（Grid.tsx / PosterGrid.tsx を参照）。
-  interface HologramGridModel {
+  // dotStore の購読から直に導く（Grid.tsx / PosterGrid.tsx を参照）。
+  interface DotGridModel {
     items: any[];
     itemsKey: string | number;
     modelOf(item: any, i: number, columnWidth?: number): any;
@@ -48,7 +48,7 @@ declare global {
     itemHeightEstimate?: number;
     square?: boolean;
     // #282: Ctrl+ホイールのズームが動かさずに留めたい項目と、画面上のどこで留めるか。
-    // hologramStore ではなくモデルに乗せているのは、実時間の列幅と同じ理由＝1つの
+    // dotStore ではなくモデルに乗せているのは、実時間の列幅と同じ理由＝1つの
     // ジェスチャーと1つのグリッドの間の脇道であり、それをスクロール位置に戻すのは
     // （ズームではなく）グリッドの島の側だから。
     zoomAnchor?: import('../services/zoom-anchor').ZoomAnchor | null;
@@ -64,7 +64,7 @@ declare global {
     revealSeq?: number;
     /** 一覧の行: サムネイルの列の幅（px。一覧自身の大きさの軸）。 */
     /** セルの上でのジェスチャーが何をするか。グリッドごとに自前のものを渡す（ライブラリ／ゴミ箱）。 */
-    cardActions?: HologramCardActions;
+    cardActions?: DotCardActions;
     onAspect?(cap: string, aspectRatio: string): void;
     paint: number;
     [extra: string]: any;
@@ -74,7 +74,7 @@ declare global {
   // セルは自分が描いているグループをそのまま渡すので、添字を引き直す必要がどこにも
   // 無い。どのメンバーも省略可能: ゴミ箱のグリッドはクリックとダブルクリックにだけ
   // 答え、残りは意図して受け付けない。
-  interface HologramCardActions {
+  interface DotCardActions {
     onClick?(group: any, e: import('react').MouseEvent): void;
     onDoubleClick?(group: any, e: import('react').MouseEvent): void;
     onAuxClick?(group: any, e: import('react').MouseEvent): void;
@@ -82,19 +82,19 @@ declare global {
     onMouseDown?(group: any, e: import('react').MouseEvent): void;
   }
   // GridMount（_shared/VirtualGrid.tsx）が実際に使う形＝呼ぶのは get()/subscribe() だけ
-  // なので、これが両方の供給元（services/grid.ts の hologramPostGridSource /
-  // hologramPosterGridSource。今はどちらも本物の ES モジュールの export）が満たす最小の
+  // なので、これが両方の供給元（services/grid.ts の dotPostGridSource /
+  // dotPosterGridSource。今はどちらも本物の ES モジュールの export）が満たす最小の
   // 契約になる。供給元はこれに加えて自前の configure() などを持つが、GridMount はそこに
   // 一切触れない。
-  interface HologramGridSource {
-    get(): HologramGridModel | null;
-    subscribe(cb: () => void): HologramUnsubscribe;
+  interface DotGridSource {
+    get(): DotGridModel | null;
+    subscribe(cb: () => void): DotUnsubscribe;
   }
 
   // ---- services/image-tab.ts＝画像タブの詳細ビューを、昔の push（viewer.js が完全な
   // モデルを組み立て、約8か所から render(model) を呼んでいた）から、2つのグリッドの
   // 供給元と同じ形の、引く側の供給元へ変換する。viewer.js が書くのはタブの同定情報だけ
-  // （hologramStore の 'activeImageTab'＝id/recs/idx。タブの状態のうち、tabs→ストアの
+  // （dotStore の 'activeImageTab'＝id/recs/idx。タブの状態のうち、tabs→ストアの
   // 全面移行に先んじて移した唯一の部分）で、'inspectedKey' は今も viewer.js が持つ
   // （状態→ストアの段階）。get() はその両方を posts-data.ts と突き合わせる（ライブラリ
   // の変化＝削除された投稿は、viewer からの push 無しに実時間で欠落状態へ落ちる。
@@ -102,10 +102,10 @@ declare global {
   // パネルの切り替え／タブを閉じる）は configure() のコールバック経由で viewer.ts へ
   // 戻す（image-tab-builder.ts を切り出した時に、昔の共有ブリッジから DI に変えた）＝
   // このファイルは計算するだけで、タブの状態を書き換えることはない。今は本物の ES
-  // モジュール（名前付き export `hologramImageTabSource`）で、Window の形をした
-  // アンビエントのインターフェースは要らない（HologramImageTabModel は残す＝
+  // モジュール（名前付き export `dotImageTabSource`）で、Window の形をした
+  // アンビエントのインターフェースは要らない（DotImageTabModel は残す＝
   // image-tab.ts とこのコンポーネントの間で共有するデータ形）。
-  interface HologramImageTabModel {
+  interface DotImageTabModel {
     positionLabel?: string;
     // 今アクティブなタブ自身の id（#80）＝image-tab/index.tsx が ImageTab コンポーネント
     // の key にこれを使う。おかげで、ある画像タブから別の画像タブへ直接切り替えたとき
@@ -125,12 +125,12 @@ declare global {
   // ---- services/tabs.ts＝タブの帯を、昔の push（viewer.js が renderTabs() で TabsModel
   // を組み立て、約15か所から共有の描画ブリッジへ押し込んでいた）から、グリッドや
   // image-tab の供給元と同じ形の、引く側の供給元へ変換する。viewer.js は tabs と
-  // activeTabId をクロージャの状態として持たなくなった＝同じ名前の hologramStore の
+  // activeTabId をクロージャの状態として持たなくなった＝同じ名前の dotStore の
   // キーがそのまま状態になる。viewer.js に残るのは書き換えの関数（switchTab/addTab/…）
   // だけで、帯は自分のハンドラからそれを直接呼ぶ（#621）。tabTitleOf/tabIcons は
   // viewer が組み立てた不変の値で、一度だけ渡す（configure）＝グリッドの供給元と同じ
   // 「一度だけ configure する」形。
-  interface HologramTabModel {
+  interface DotTabModel {
     id: string;
     title: string;
     icon: string;
@@ -138,14 +138,14 @@ declare global {
     pinned?: boolean;
     showClose?: boolean;
   }
-  interface HologramTabsModel {
-    tabs: HologramTabModel[];
+  interface DotTabsModel {
+    tabs: DotTabModel[];
     closeTitle?: string;
     newTitle?: string;
   }
 
   // ---- viewer に位置を合わせるポップアップのモデルは、この anchor の形を共有する（DOMRect でも通る） ----
-  interface HologramAnchorRect {
+  interface DotAnchorRect {
     left: number;
     top: number;
     right: number;
@@ -153,12 +153,12 @@ declare global {
   }
 
   // ---- services/qf-pop-builder.ts（描画を持たない pickValue の振り分け） ----
-  interface HologramQfPopItem {
+  interface DotQfPopItem {
     [key: string]: any;
   }
 
   // ---- renderer/menu.js＝共有の右クリックのコンテキストメニュー ----
-  interface HologramMenuItem {
+  interface DotMenuItem {
     label?: string;
     act?: string;
     danger?: boolean;
@@ -172,52 +172,52 @@ declare global {
   // ボタンから開くメニューは代わりにそのボタンを指す（{ anchorEl }）ので、ui kit が
   // それを測り、くっつけたままにし、ぶつかれば反転させる＝呼ぶ側が矩形を手でずらす
   // ことは一切ない（#62）。side/align は望ましい配置であって、最終的な配置ではない。
-  type HologramMenuSide = 'top' | 'bottom' | 'left' | 'right';
-  type HologramMenuAlign = 'start' | 'center' | 'end';
-  interface HologramMenuAnchor {
+  type DotMenuSide = 'top' | 'bottom' | 'left' | 'right';
+  type DotMenuAlign = 'start' | 'center' | 'end';
+  interface DotMenuAnchor {
     x?: number;
     y?: number;
     anchorEl?: HTMLElement | null;
-    side?: HologramMenuSide;
-    align?: HologramMenuAlign;
+    side?: DotMenuSide;
+    align?: DotMenuAlign;
   }
-  interface HologramContextMenuModel {
-    items: HologramMenuItem[];
+  interface DotContextMenuModel {
+    items: DotMenuItem[];
     x: number;
     y: number;
     anchorEl: HTMLElement | null;
-    side?: HologramMenuSide;
-    align?: HologramMenuAlign;
+    side?: DotMenuSide;
+    align?: DotMenuAlign;
     // 新しい items の配列を返すとメニューは開いたまま（切り替えの行）。何も返さなければ
     // 閉じる。`| void` の腕がその「閉じる」の合図＝void を返す pick ハンドラ（こちらが
     // 普通）をそのまま代入できるようにもなっている。
     // biome-ignore lint/suspicious/noConfusingVoidType: void は「メニューを閉じる」を意味する意図した戻り値
-    onPick: ((item: HologramMenuItem) => HologramMenuItem[] | void) | null;
+    onPick: ((item: DotMenuItem) => DotMenuItem[] | void) | null;
   }
 
   // ---- renderer/tag-group-menu.js＝タグの種別（作品／キャラクター／…）のメニュー ----
-  interface HologramTagGroupMenuRow {
+  interface DotTagGroupMenuRow {
     kind?: string;
     label?: string;
     dot?: boolean;
     checked?: boolean;
     sep?: boolean;
   }
-  interface HologramTagGroupMenuModel {
+  interface DotTagGroupMenuModel {
     x: number;
     y: number;
     header?: string;
     createLabel?: string;
-    rows: HologramTagGroupMenuRow[];
+    rows: DotTagGroupMenuRow[];
     onPick(kind: string): void;
     onCreate(): void;
   }
 
   // ---- renderer/filter-popover.js＝日付／エンゲージメント／投稿者の日付のフォーム ----
-  interface HologramFilterPopoverModel {
+  interface DotFilterPopoverModel {
     kind: 'date' | 'eng' | 'posterDate';
     openId: number;
-    anchorRect: HologramAnchorRect;
+    anchorRect: DotAnchorRect;
     editing?: boolean;
     fields: any;
     labels: any;
@@ -238,7 +238,7 @@ declare global {
   // 組み立て側にある。 ----
   // インスペクタのタグ欄はその場で編集する（P2⑦）ので、タグの書き換えそのものをモデルが
   // 持つ。onTagContextMenu は種別メニュー（読み取り）。
-  interface HologramInspectorModel {
+  interface DotInspectorModel {
     previousNames?: import('../../../shared/data-schemas.ts').PosterName[];
     showReplies?: boolean;
     replyThread?: { key: string; current: boolean; text: string; author: string; date: string; thumbSrc: string | null; onClick(): void }[];
@@ -262,13 +262,13 @@ declare global {
     // ネットワーク取得は一切しない（v1 はメタデータのみ、メディアは URL のみで、リモート
     // の画像 src は持たない）。extractor が組み立てられるものを投稿が引用も返信もして
     // いなければ、空か不在。
-    quotedCards?: HologramQuotedCardModel[];
+    quotedCards?: DotQuotedCardModel[];
     // #179: 投稿のアンケート。保存済みの `poll` の部分構造から描画する（PollCard.tsx）。
     // 投稿がアンケートを持っていなければ不在。
-    pollCard?: HologramPollCardModel;
+    pollCard?: DotPollCardModel;
     // #181: 投稿の OGP のプレビューカード。保存済みの `linkCard` の部分構造から描画する
     // （LinkCard.tsx）。投稿がリンクを共有していなければ不在。
-    linkCard?: HologramLinkCardModel;
+    linkCard?: DotLinkCardModel;
     [extra: string]: any;
   }
   // #180: 埋め込む引用／返信先のカード1枚。inspector-builder.ts の showDetail() が、
@@ -279,10 +279,10 @@ declare global {
   // （まれな）url が無い場合だけ不在。
   // #179: インスペクタが見せる形の、投稿のアンケート。inspector-builder.ts の
   // showDetail() が組み立てる。数値はここで全部整形済み（コンポーネントは文字列を
-  // 描画するだけ。下の HologramQuotedCardModel と同じ分担）。例外は `percent` で、
+  // 描画するだけ。下の DotQuotedCardModel と同じ分担）。例外は `percent` で、
   // これはバーの幅なので数値のまま残すしかない＝プラットフォームが集計を伏せている
   // ときは null で、その場合は空のバーではなくバーそのものを描かない。
-  interface HologramPollCardModel {
+  interface DotPollCardModel {
     label: string;
     choices: Array<{ text: string; votesLabel: string; percentLabel: string; percent: number | null }>;
     // 「複数選択可 ・ 1,234票 ・ 締切 …」＝アンケートに付く条件を1行につないだもの。
@@ -297,9 +297,9 @@ declare global {
   // （投稿の他の外向きリンクがすべて使うのと同じ、https だけを外部で開く経路）＝
   // url が無いカードはそもそもレンダラーまで届かない（native-host/post-record.mts の
   // normLinkCard が落とす）。
-  interface HologramLinkCardModel {
+  interface DotLinkCardModel {
     // カードの上に出すセクションの見出しで、ここで既に翻訳済み（コンポーネントは
-    // 文字列を描画するだけ）＝HologramPollCardModel.label と同じ分担。
+    // 文字列を描画するだけ）＝DotPollCardModel.label と同じ分担。
     label: string;
     title: string;
     description: string;
@@ -307,7 +307,7 @@ declare global {
     thumbSrc: string | null;
     onOpen(): void;
   }
-  interface HologramQuotedCardModel {
+  interface DotQuotedCardModel {
     kind: 'quote' | 'reply';
     label: string;
     displayName: string;
@@ -322,16 +322,16 @@ declare global {
     media?: Array<{ src: string; alt: string; video: boolean; onOpen(): void }>;
     onOpen?(): void;
   }
-  // ---- 空状態の種別＝EmptyState.tsx が、push されるブリッジではなく hologramStore から
+  // ---- 空状態の種別＝EmptyState.tsx が、push されるブリッジではなく dotStore から
   // 自分で導く（昔の renderer/empty.js のブリッジは削除済み＝呼ぶ側がもう残っていない）。
   // 容器と表示・非表示も自分で持つ（2本の描画経路が `hidden` を書き込んでいた静的な
   // #emptyState の div も一緒に無くなった）。 ----
-  type HologramEmptyVariant = 'firstRun' | 'filtered' | 'posterFirstRun' | 'extensionGuide';
+  type DotEmptyVariant = 'firstRun' | 'filtered' | 'posterFirstRun' | 'extensionGuide';
 
   // ---- services/confirm.ts＝共有の確認モーダル（shadcn の AlertDialog）。呼ぶ側は
   // メッセージと、任意の「今後表示しない」／キーワードのゲートと、コールバックを渡して
   // 開く。描画はコンポーネントがする。 ----
-  interface HologramConfirmConfig {
+  interface DotConfirmConfig {
     message: string;
     description?: string; // あれば → 題名の下に出る副次の行（AlertDialogDescription）
     okLabel: string;
@@ -358,12 +358,12 @@ declare global {
     onOk(result: { skip: boolean; option?: boolean }): void;
     onCancel?(): void;
   }
-  interface HologramConfirmModel extends HologramConfirmConfig {
+  interface DotConfirmModel extends DotConfirmConfig {
     openId: number;
   }
   // 名前を尋ねる入力（prompt.ts と PromptHost）＝window.prompt の代わり。Electron の
   // レンダラーは window.prompt を拒む（「prompt() is not supported.」）。
-  interface HologramPromptConfig {
+  interface DotPromptConfig {
     title: string;
     value?: string; // 入力欄の初期値（改名は今の名前を渡す）
     placeholder?: string;
@@ -373,7 +373,7 @@ declare global {
     onOk(value: string): void;
     onCancel?(): void;
   }
-  interface HologramPromptModel extends HologramPromptConfig {
+  interface DotPromptModel extends DotPromptConfig {
     openId: number;
   }
   // 一括タグ付けのダイアログ（bulk-tag.ts と BulkTagDialog）＝選択バーの「タグを追加」
@@ -381,7 +381,7 @@ declare global {
   // React の状態なので、ここでは何も持たない: レンダラーは自分だけが知っているもの
   // （語彙・種別メニュー・書き込み）だけを渡し、出来上がった一覧を適用時に一度だけ
   // 受け取る。
-  interface HologramBulkTagConfig {
+  interface DotBulkTagConfig {
     count: number; // 選択中の投稿＝適用のボタンとトーストがこれを数える
     tagLabels: Record<string, string>; // TagField の labels の束
     labels: { title: string; additiveHint: string; apply: string; cancel: string };
@@ -392,7 +392,7 @@ declare global {
     /** 積んだタグを選択に対して書き込む。ホストが先にダイアログを閉じる。 */
     onApply(tags: string[]): void;
   }
-  interface HologramBulkTagModel extends HologramBulkTagConfig {
+  interface DotBulkTagModel extends DotBulkTagConfig {
     openId: number;
   }
 
@@ -404,7 +404,7 @@ declare global {
   // （services/search-suggestions.ts）から来るようになり、コンポーネントがそれを直接
   // インポートする。ブリッジに残るのは、選択・確定が何をするかの側＝登録簿の移動の
   // エントリも onPick を呼ぶので、両方の面で「選ばれた」が同じ意味になる。
-  interface HologramSearchBoxHandlers {
+  interface DotSearchBoxHandlers {
     onPick(item: any): void;
   }
 
@@ -422,7 +422,7 @@ declare global {
     readonly style: string;
   }
   interface Window {
-    hologram: HologramPreload;
+    dot: DotPreload;
     queryLocalFonts?(options?: { postscriptNames?: string[] }): Promise<FontData[]>;
   }
 }

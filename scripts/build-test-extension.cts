@@ -14,7 +14,7 @@ execFileSync('npm --prefix extension run build:chrome', {
   cwd: ROOT,
   shell: true,
   stdio: 'inherit',
-  env: Object.assign({}, process.env, { HOLOGRAM_EXTENSION_TEST_OUTPUT: OUTPUT }),
+  env: Object.assign({}, process.env, { DOT_EXTENSION_TEST_OUTPUT: OUTPUT }),
 });
 
 const missing = REQUIRED.filter((name) => {
@@ -23,4 +23,4 @@ const missing = REQUIRED.filter((name) => {
 });
 if (missing.length) throw new Error(`Chrome テスト用出力が揃っていません: ${missing.join(', ')}`);
 
-console.log(`[hologram] Chrome テスト用拡張機能を作成しました: ${OUTPUT}`);
+console.log(`[dot] Chrome テスト用拡張機能を作成しました: ${OUTPUT}`);

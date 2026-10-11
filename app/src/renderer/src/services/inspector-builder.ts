@@ -17,7 +17,7 @@ import { isOpen as settingsIsOpen } from './settings.ts';
 import { store } from './store.ts';
 import { sameTags } from './tags.ts';
 import { applyTagWrite, updateTags as postsUpdateTags } from './posts.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import type { UndoChange } from './undo.ts';
 
 export interface InspectorBuilderDeps {
@@ -27,17 +27,17 @@ export interface InspectorBuilderDeps {
   fileSrc(file: string, w?: number): string;
   showToast(msg: unknown): void;
   showTagGroupMenu(tag: string, x: number, y: number, onChange: () => void, entityId?: number | null): void;
-  buildUsers(): HologramUserAgg[];
+  buildUsers(): DotUserAgg[];
   // #810: レコードが実体を指しているならその実体で、タグがまだ利用者が入力した
   // ただの文字列のままならその名前で（maybeDistinguishHomonym を参照）。
   tagGroupOf(tagId: number | null | undefined): string | null | undefined;
-  jumpToPoster(post: HologramPost): void;
-  openImageEntry(g: HologramPostGroup, mediaIndex?: number): void;
+  jumpToPoster(post: DotPost): void;
+  openImageEntry(g: DotPostGroup, mediaIndex?: number): void;
   pushUndo(changes: readonly UndoChange[]): (() => void) | null;
   inspectorTagPickerData(tags: string[], recordsForSource: any[], kind: string): any;
-  getViewGroups(): HologramPostGroup[];
-  getAllPosts(): HologramPost[];
-  getPostById(id: string): HologramPost | undefined;
+  getViewGroups(): DotPostGroup[];
+  getAllPosts(): DotPost[];
+  getPostById(id: string): DotPost | undefined;
   markPostsMutated(): void;
   renderPosts(keepLimit?: boolean): void;
   keepCurrentVisible(): void;
@@ -67,7 +67,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // フィールドだけを更新する（フル再オープンではない＝画像／メタ情報が
   // ちらつかず、フィールドがフォーカスを保つ）。
 
-  function refreshInspectorTagFields(g: HologramPostGroup | null | undefined) {
+  function refreshInspectorTagFields(g: DotPostGroup | null | undefined) {
     if (!g) return;
     refreshInspector();
   }
@@ -82,12 +82,12 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // 検査中グループの全レコードにタグの変更を適用し、即座に永続化し、undo を
   // 記録し、グリッド＋インスペクタのタグフィールドを更新する（フル showDetail
   // ではない＝画像／メタ情報がちらつかず、入力欄がフォーカスを保つ）。
-  async function applyInspectorTagChange(g: HologramPostGroup | null | undefined, mutate: (prev: string[]) => string[] | null | undefined) {
+  async function applyInspectorTagChange(g: DotPostGroup | null | undefined, mutate: (prev: string[]) => string[] | null | undefined) {
     if (!g) return;
     const recs = g.records && g.records.length ? g.records : [g.rep];
     deps.keepCurrentVisible(); // タグを外すと、有効なタグフィルタに一致しなくなることがある
     const changes: UndoChange[] = [];
-    const writes: Array<{ rec: HologramPost; next: string[]; image: string }> = [];
+    const writes: Array<{ rec: DotPost; next: string[]; image: string }> = [];
     for (const r of recs) {
       const prev: string[] = (r.tags || []).slice();
       const next = mutate(prev.slice());
@@ -129,13 +129,13 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // 瞬間に古くなる。古いタグから計算した2回目の編集は誤った集合を書き込む＝
   // その間にタグが増えていたカードからタグを1つ外そうとすると、古い `prev`
   // には新しいタグが入っていないので、両方とも落ちてしまう。
-  const freshGroup = (g: HologramPostGroup) => deps.getViewGroups().find((gg) => postIdKey(gg.rep) === store.getState().inspectedKey) || g;
+  const freshGroup = (g: DotPostGroup) => deps.getViewGroups().find((gg) => postIdKey(gg.rep) === store.getState().inspectedKey) || g;
 
-  async function addInspectorTag(g: HologramPostGroup, tag: string) {
+  async function addInspectorTag(g: DotPostGroup, tag: string) {
     const _adding = !(freshGroup(g).rep.tags || []).includes(tag);
     await applyInspectorTagChange(freshGroup(g), (prev) => (prev.includes(tag) ? prev : [...prev, tag]));
   }
-  async function removeInspectorTag(g: HologramPostGroup, tag: string) {
+  async function removeInspectorTag(g: DotPostGroup, tag: string) {
     await applyInspectorTagChange(freshGroup(g), (prev) => prev.filter((t) => t !== tag));
   }
 
@@ -151,7 +151,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // 1つではなく2つの独立したスロットにしている＝投稿は何かを quote しつつ
   // 同時に reply-to も持ちうるため。フィールドの写像自体は
   // records.ts の quotedCardModelOf にある。保存済みの引用先へ移動する機能をここで追加する。
-  function quotedCardOf(sub: any, kind: 'quote' | 'reply'): HologramQuotedCardModel | null {
+  function quotedCardOf(sub: any, kind: 'quote' | 'reply'): DotQuotedCardModel | null {
     const base = quotedCardModelOf(sub, kind, deps.t);
     if (!base) return null;
     const url: string | null = sub.url || null;
@@ -164,7 +164,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
     const key = postKeyOf(url);
     const savedRec = deps.getAllPosts().find((q) => postKeyOf(q.url) === key);
     const files = kind === 'quote' ? (sub.media || []).filter((m: any) => m.file) : [];
-    const localRec = { ...sub, captureId: sub.captureId || url, tags: [], tagIds: [], media: files } as HologramPost;
+    const localRec = { ...sub, captureId: sub.captureId || url, tags: [], tagIds: [], media: files } as DotPost;
     return {
       ...base,
       onOpen: () => jumpToQuotedPost(savedRec, url),
@@ -181,7 +181,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // 選択肢は結果であり、決して操作対象ではない（PollCard.tsx 参照）。
   //
   // パーセンテージの分母は、保存された選択肢の得票数の合計。
-  function pollCardOf(poll: any): HologramPollCardModel | null {
+  function pollCardOf(poll: any): DotPollCardModel | null {
     const choices = poll && Array.isArray(poll.choices) ? poll.choices.filter((c: any) => c && typeof c.text === 'string') : [];
     if (!choices.length) return null;
     const counted = choices.filter((c: any) => typeof c.votes === 'number');
@@ -217,7 +217,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // jumpToQuotedPost）と違い、リンクカードはアプリ内でナビゲートすべき別の
   // 「保存済みレコード」を決して指さない＝このライブラリが独立したエントリを
   // 持たない外部ページを指しているだけ。
-  function linkCardOf(card: any): HologramLinkCardModel | null {
+  function linkCardOf(card: any): DotLinkCardModel | null {
     if (!card || !card.url) return null;
     return {
       label: deps.t('linkCardLabel'),
@@ -225,7 +225,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
       description: card.description || '',
       domainLabel: hostOf(card.url) || '',
       thumbSrc: card.thumbnailFile ? deps.fileSrc(card.thumbnailFile) : null,
-      onOpen: () => hologramIpc.openExternal(card.url),
+      onOpen: () => dotIpc.openExternal(card.url),
     };
   }
 
@@ -236,9 +236,9 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // 手口（木をリセットし、フィルタを1つだけ追加する）＝それによって #144 の
   // 戻る／進むも新しいナビ履歴コードなしでついてくる理由は deps インターフェース
   // のコメントを参照。
-  function jumpToQuotedPost(rec: HologramPost | undefined, url: string) {
+  function jumpToQuotedPost(rec: DotPost | undefined, url: string) {
     if (!rec) {
-      hologramIpc.openExternal(url);
+      dotIpc.openExternal(url);
       return;
     }
     deps.navigateToPosts({ type: 'text', value: rec.url || url }, { replace: true });
@@ -259,7 +259,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
   // 無いと、閉じたパネルへの「タグを編集」は黙って何もしなかった＝利用者に見え
   // ない画面を埋めていただけだった。Eagle も Lightroom も同じ理由で自分たちの
   // インスペクターを表に出す。
-  function showDetail(g: HologramPostGroup, opts?: { openPanel?: boolean; focusTags?: boolean; showReplies?: boolean }) {
+  function showDetail(g: DotPostGroup, opts?: { openPanel?: boolean; focusTags?: boolean; showReplies?: boolean }) {
     if (!g) return;
     if (opts?.showReplies) revealPanels();
     if (opts?.openPanel || opts?.focusTags || opts?.showReplies) panelSetOpen(true);
@@ -273,7 +273,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
     requestDetailOptions(opts);
   }
 
-  function buildPostModel(g: HologramPostGroup, opts: DetailOptions = {}): Omit<HologramInspectorModel, 'openId'> {
+  function buildPostModel(g: DotPostGroup, opts: DetailOptions = {}): Omit<DotInspectorModel, 'openId'> {
     const p = g.rep;
     const postUrl = p.url;
     const engagementItems = [
@@ -302,7 +302,7 @@ export function makeInspector(deps: InspectorBuilderDeps) {
     // #180: 投稿自身の bodyText の直下に描画される（Inspector.tsx）＝配信元の
     // プラットフォームで quote されたツイート／renote のカードが座るのと同じ
     // 入れ子。
-    const quotedCards = [quotedCardOf(p.quotedPost, 'quote'), quotedCardOf(p.replyToPost, 'reply')].filter((c): c is HologramQuotedCardModel => !!c);
+    const quotedCards = [quotedCardOf(p.quotedPost, 'quote'), quotedCardOf(p.replyToPost, 'reply')].filter((c): c is DotQuotedCardModel => !!c);
     // #179: それらのすぐ後、それでも投稿自身のテキストの直下に描画される＝
     // アンケートを持つどのプラットフォームでも投稿テキストがそのままアンケートの
     // 問いなので、その間には何も入ってはいけない。
@@ -399,8 +399,8 @@ export function makeInspector(deps: InspectorBuilderDeps) {
         open: deps.t('detailOpen'),
         openProfile: deps.t('detailOpenProfile'),
       },
-      onOpenExternal: postUrl ? () => hologramIpc.openExternal(postUrl) : null,
-      onOpenProfile: posterProfileHref ? () => hologramIpc.openExternal(posterProfileHref) : null,
+      onOpenExternal: postUrl ? () => dotIpc.openExternal(postUrl) : null,
+      onOpenProfile: posterProfileHref ? () => dotIpc.openExternal(posterProfileHref) : null,
       onPosterJump: jumpUser ? () => deps.jumpToPoster(p) : null,
       onTagContextMenu: (tag: string, x: number, y: number) => {
         // #810: このカード自身の tags/tagIds は並行しているので、チップは自分の

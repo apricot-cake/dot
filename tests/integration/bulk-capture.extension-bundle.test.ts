@@ -50,9 +50,9 @@ const unavailableUrls = new Set<string>();
 const savedAnswer: Record<string, string | { id: string; media: string[]; post: boolean } | null> = { 'https://x.com/alice/status/111': '1780000000000-aa' };
 
 // #44: ページ内の UI は共有の ShadowRoot (ui-root.ts) の中にある。
-const uiRoot = () => (window.document.querySelector('hologram-extension-ui') as any)?.shadowRoot;
-const banner = () => uiRoot()?.querySelector('[data-hologram-bulk-banner]') ?? null;
-const bannerText = () => uiRoot()?.querySelector('[data-hologram-bulk-label]')?.textContent || '';
+const uiRoot = () => (window.document.querySelector('dot-extension-ui') as any)?.shadowRoot;
+const banner = () => uiRoot()?.querySelector('[data-dot-bulk-banner]') ?? null;
+const bannerText = () => uiRoot()?.querySelector('[data-dot-bulk-label]')?.textContent || '';
 const settle = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 const savePostFor = (url: string) => sent.find((m) => m.type === 'savePost' && m.postUrl === url);
 
@@ -186,7 +186,7 @@ test('取得できなかった投稿は「失敗」と別枠で数える（#492�
 });
 
 test('常駐オーバーレイの操作部を隠す規則を1つも入れない', () => {
-  const hidingRules = Array.from(window.document.querySelectorAll('style')).filter((s) => (s.textContent || '').includes('data-hologram-overlay'));
+  const hidingRules = Array.from(window.document.querySelectorAll('style')).filter((s) => (s.textContent || '').includes('data-dot-overlay'));
   expect(hidingRules).toHaveLength(0);
 });
 
@@ -209,8 +209,8 @@ test('停止すると、生のカウンタではなく要約が出る', async ()
   expect(bannerText().includes('画像なし') || bannerText().toLowerCase().includes('image-less')).toBe(false);
   // 失敗は結果の要約とは別の通知に残す。
   expect(banner()?.dataset.variant).toBe('toast');
-  const failure = uiRoot()?.querySelector('[data-hologram-save-banner][data-state="error"]');
-  expect(uiRoot()?.querySelector('[data-hologram-toast-details] a')?.getAttribute('href')).toBe('https://x.com/frank/status/666');
+  const failure = uiRoot()?.querySelector('[data-dot-save-banner][data-state="error"]');
+  expect(uiRoot()?.querySelector('[data-dot-toast-details] a')?.getAttribute('href')).toBe('https://x.com/frank/status/666');
   expect(failure?.querySelector('button')).toBeTruthy();
   expect(bannerText().includes('失敗') || bannerText().toLowerCase().includes('failed')).toBe(false);
   expect((window as any).__snsPostSaveActive).toBeFalsy();

@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../lib/harness.ts';
 
-test('タグタブで付与と解除が保存され、投稿を切り替えてもタブを維持する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('タグタブで付与と解除が保存され、投稿を切り替えてもタブを維持する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   const card = cards.filter({ hasText: '猫が机の上で寝ている' });
   await card.click();
@@ -25,8 +25,8 @@ test('タグタブで付与と解除が保存され、投稿を切り替えて�
   await expect(inspector.locator('[data-slot="inspector-post"]')).toBeVisible();
 });
 
-test('グループ作成、タグ作成、折りたたんだ移動先へのドラッグと右クリック編集', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('グループ作成、タグ作成、折りたたんだ移動先へのドラッグと右クリック編集', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="post-grid"] [data-slot="post-card"]').first().click();
   const inspector = page.locator('[data-slot="inspector"]');
   await inspector.getByRole('tab', { name: 'タグ', exact: true }).click();

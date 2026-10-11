@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "Hologram",
+    "message": "dot",
     "description": "Extension name shown in Web Store and browser"
   },
   "extDesc": {
@@ -12,15 +12,15 @@
     "description": "Toolbar button tooltip"
   },
   "actionInjectUnreadable": {
-    "message": "Hologram: can't start saving — the extension's own files can't be read. Reload it at chrome://extensions.",
+    "message": "dot: can't start saving — the extension's own files can't be read. Reload it at chrome://extensions.",
     "description": "Toolbar tooltip when the extension's own files can no longer be read, so injecting the capture UI fails on every page"
   },
   "actionInjectRefused": {
-    "message": "Hologram: couldn't start saving on this page",
+    "message": "dot: couldn't start saving on this page",
     "description": "Toolbar tooltip when the extension is healthy but this particular page refused the injection"
   },
   "optionsTitle": {
-    "message": "Hologram Settings",
+    "message": "dot Settings",
     "description": "Options page document title"
   },
   "optionsOpenDiag": {
@@ -32,7 +32,7 @@
     "description": "Options group label for the timeline saved-post mark"
   },
   "optionsSavedBadgeDesc": {
-    "message": "Shows a mark on images in posts already saved to Hologram. The check happens entirely on this computer.",
+    "message": "Shows a mark on images in posts already saved to dot. The check happens entirely on this computer.",
     "description": "Options description for the timeline saved-post mark"
   },
   "optionsSavedBadgeHover": {
@@ -56,7 +56,7 @@
     "description": "Options description for the hover save button"
   },
   "ctxSaveMedia": {
-    "message": "Save to Hologram",
+    "message": "Save to dot",
     "description": "Context menu item: save the selected image or video"
   },
   "ctxImportSaved": {

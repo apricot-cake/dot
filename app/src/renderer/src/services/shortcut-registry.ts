@@ -1,6 +1,6 @@
 import type { MessageKey } from './translation.ts';
 import { isEditing as isImageEditing } from './image-edit-controls.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { t } from '../_shared/i18n.ts';
 
 export interface ShortcutEntry {
@@ -206,7 +206,7 @@ export function resetToDefault(id: string): void {
 
 function persist(): void {
   try {
-    hologramIpc.setPref('shortcutOverrides', overrides);
+    dotIpc.setPref('shortcutOverrides', overrides);
   } catch {
     /* 握りつぶす */
   }
@@ -218,7 +218,7 @@ function persist(): void {
  * 実際にキーが押されたときだけ）。 */
 export async function load(): Promise<void> {
   try {
-    const prefs = hologramIpc.getPrefs ? await hologramIpc.getPrefs() : null;
+    const prefs = dotIpc.getPrefs ? await dotIpc.getPrefs() : null;
     const saved = prefs ? prefs.shortcutOverrides : null;
     if (saved && typeof saved === 'object') {
       overrides = { ...saved };

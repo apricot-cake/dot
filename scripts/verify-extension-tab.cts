@@ -22,14 +22,14 @@ async function main() {
     const result = await app
       .contexts()[0]
       .pages()[0]
-      .evaluate(async () => (globalThis as any).hologram.listPosts());
+      .evaluate(async () => (globalThis as any).dot.listPosts());
     if (path.resolve(result.saveFolder) !== library) throw new Error('検証用アプリの接続先が一致しません。');
   } finally {
     await app.close();
   }
-  const host = `com.hologram.host.verify.${createHash('sha256').update(configDir).digest('hex').slice(0, 12)}`;
-  process.env.HOLOGRAM_CONFIG_DIR = configDir;
-  process.env.HOLOGRAM_NATIVE_HOST_NAME = host;
+  const host = `com.dot.host.verify.${createHash('sha256').update(configDir).digest('hex').slice(0, 12)}`;
+  process.env.DOT_CONFIG_DIR = configDir;
+  process.env.DOT_NATIVE_HOST_NAME = host;
   const installer = require('../native-host/install.mts');
   installer.install({ extensionId: 'keggmjkemfcekcffohnpaojacdakpejh' });
   const options = developmentOptions();

@@ -10,10 +10,10 @@ async function openSubmenu(page: Page, label: string) {
   await expect(page.getByRole('menu', { name: label, exact: true })).toBeVisible();
 }
 
-test('キーボードで階層を開き、タグを即時選択してチェックを維持する', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('キーボードで階層を開き、タグを即時選択してチェックを維持する', async ({ launchDot }) => {
+  const { page } = await launchDot({
     seed({ saveFolder }) {
-      const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+      const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
       try {
         sqlite.prepare('INSERT OR REPLACE INTO store_state (key, value) VALUES (?, ?)').run('tagGroupLabels', JSON.stringify({ scene: '景色', style: '形式' }));
         sqlite.prepare('UPDATE tags SET groupId = ? WHERE name = ?').run('scene', '風景');
@@ -54,8 +54,8 @@ test('キーボードで階層を開き、タグを即時選択してチェッ�
   await expect(cards).toHaveCount(4);
 });
 
-test('投稿者検索、日付の階層、全解除を操作できる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('投稿者検索、日付の階層、全解除を操作できる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   await page.getByRole('button', { name: 'フィルタ', exact: true }).click();
   await openSubmenu(page, '投稿者');
@@ -74,8 +74,8 @@ test('投稿者検索、日付の階層、全解除を操作できる', async ({
   await expect(cards).toHaveCount(4);
 });
 
-test('狭い画面とキーボードでもサブメニューを開いて選択できる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('狭い画面とキーボードでもサブメニューを開いて選択できる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.setViewportSize({ width: 460, height: 700 });
   await page.getByRole('button', { name: 'フィルタ', exact: true }).click();
   const trigger = page.getByRole('menuitem', { name: 'メディア', exact: true });
@@ -96,8 +96,8 @@ test('狭い画面とキーボードでもサブメニューを開いて選択�
   await expect(menu).toBeHidden();
 });
 
-test('投稿者のメニューに切り替え、サイトを選んでフォロワー条件を開ける', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('投稿者のメニューに切り替え、サイトを選んでフォロワー条件を開ける', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.getByRole('button', { name: 'フィルタ', exact: true }).click();
   await expect(page.getByRole('menuitem', { name: '反応数', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
@@ -112,10 +112,10 @@ test('投稿者のメニューに切り替え、サイトを選んでフォロ�
   await expect(page.getByRole('button', { name: '適用', exact: true })).toBeEnabled();
 });
 
-test('大量の投稿者を分割表示し、全件から検索・選択できる', async ({ launchHologram }) => {
+test('大量の投稿者を分割表示し、全件から検索・選択できる', async ({ launchDot }) => {
   const { FIXTURE_POSTS } = await import('../lib/library.ts');
   const posts = Array.from({ length: 125 }, (_, i) => ({ ...FIXTURE_POSTS[0], captureId: `many-${i}`, displayName: `投稿者${String(i).padStart(3, '0')}`, screenName: `author_${i}`, width: 4, height: 4 }));
-  const { page } = await launchHologram({ posts });
+  const { page } = await launchDot({ posts });
   await page.getByRole('button', { name: 'フィルタ', exact: true }).click();
   await openSubmenu(page, '投稿者');
   await expect(page.getByRole('menuitemcheckbox')).toHaveCount(50);
@@ -131,8 +131,8 @@ test('大量の投稿者を分割表示し、全件から検索・選択でき�
   await expect(page.locator('[data-slot="post-grid"] [data-slot="post-card"]')).toHaveCount(1);
 });
 
-test('X選択中でもBlueskyの件数を表示し、ORで追加できる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('X選択中でもBlueskyの件数を表示し、ORで追加できる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.getByRole('button', { name: 'フィルタ', exact: true }).click();
   await openSubmenu(page, 'サイト');
   await page.getByRole('menuitemcheckbox', { name: /^X / }).click();

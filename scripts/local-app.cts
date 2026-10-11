@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 function personalEnv() {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
-    if (key.startsWith('HOLOGRAM_') || key === 'ELECTRON_RUN_AS_NODE' || key === 'ELECTRON_RENDERER_URL' || key === 'ELECTRON_ENTRY' || key === 'NODE_OPTIONS') delete env[key];
+    if (key.startsWith('DOT_') || key === 'ELECTRON_RUN_AS_NODE' || key === 'ELECTRON_RENDERER_URL' || key === 'ELECTRON_ENTRY' || key === 'NODE_OPTIONS') delete env[key];
   }
   return env;
 }
@@ -37,10 +37,10 @@ async function launch({ background = false } = {}) {
   // 既に起動中ならもう一つ作らず、single-instance の保持者へ表示要求だけを送る。
   // Command Palette の起動は「新しいウィンドウ」ではなく「既存のアプリを開く」操作として扱う。
   if (await isDevelopmentAppRunning()) {
-    if (!background) startRuntime(runtime, ['--hologram-activate-existing']);
+    if (!background) startRuntime(runtime, ['--dot-activate-existing']);
     return;
   }
-  const child = startRuntime(runtime, ['--remote-debugging-port=9222', ...(background ? ['--hologram-background'] : [])]);
+  const child = startRuntime(runtime, ['--remote-debugging-port=9222', ...(background ? ['--dot-background'] : [])]);
   let failure: Error | undefined;
   child.on('error', (error) => {
     failure = error;

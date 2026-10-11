@@ -33,7 +33,7 @@ const askTotal = async (url: string) => (await ask(url))[url]?.total ?? null;
 function writeInboxEnvelope(id: string, url: string, media: Array<{ url: string; file: string }> = []) {
   const record = normalizePostRecord({ captureId: id, url, image: `${id}.jpg`, media });
   const envelope = buildEnvelope(record);
-  const dir = path.join(saveFolder, '.hologram-inbox', 'new');
+  const dir = path.join(saveFolder, '.dot-inbox', 'new');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(envelope), 'utf8');
 }
@@ -50,14 +50,14 @@ function writeSavedIndex(records: Array<{ captureId: string; url: string; media?
   }
   fs.mkdirSync(configDir, { recursive: true });
   const p = path.join(configDir, 'bridge-saved-index.json');
-  fs.writeFileSync(p, JSON.stringify({ format: 'hologram-bridge-saved-index', version: 2, saveFolder, generatedAt: new Date(mtimeMs).toISOString(), entries }), 'utf8');
+  fs.writeFileSync(p, JSON.stringify({ format: 'dot-bridge-saved-index', version: 2, saveFolder, generatedAt: new Date(mtimeMs).toISOString(), entries }), 'utf8');
   fs.utimesSync(p, new Date(mtimeMs), new Date(mtimeMs));
 }
 
 const SNAP_MS = 1_700_000_000_000;
 
 beforeAll(async () => {
-  configDir = process.env.HOLOGRAM_CONFIG_DIR as string;
+  configDir = process.env.DOT_CONFIG_DIR as string;
   saveFolder = path.join(configDir, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.mkdirSync(saveFolder, { recursive: true });
@@ -279,7 +279,7 @@ describe('9. 保存済みの絵を投稿ごとに答える', async () => {
     const key = postKeyOf(legacy) as string;
     const p = path.join(configDir, 'bridge-saved-index.json');
     const mtime = new Date(Date.now() + 360_000);
-    fs.writeFileSync(p, JSON.stringify({ format: 'hologram-bridge-saved-index', version: 1, saveFolder, generatedAt: mtime.toISOString(), entries: { [key]: '1700000024000-e6' } }), 'utf8');
+    fs.writeFileSync(p, JSON.stringify({ format: 'dot-bridge-saved-index', version: 1, saveFolder, generatedAt: mtime.toISOString(), entries: { [key]: '1700000024000-e6' } }), 'utf8');
     fs.utimesSync(p, mtime, mtime);
     _resetSavedIndex();
 
@@ -302,7 +302,7 @@ describe('10. ゴミ箱の告知', async () => {
   function writeIndexWithTrash(entries: Record<string, unknown>, trashed: Record<string, unknown>, offsetMs: number) {
     const p = path.join(configDir, 'bridge-saved-index.json');
     const mtime = new Date(Date.now() + offsetMs);
-    fs.writeFileSync(p, JSON.stringify({ format: 'hologram-bridge-saved-index', version: 4, saveFolder, generatedAt: mtime.toISOString(), entries, trashed }), 'utf8');
+    fs.writeFileSync(p, JSON.stringify({ format: 'dot-bridge-saved-index', version: 4, saveFolder, generatedAt: mtime.toISOString(), entries, trashed }), 'utf8');
     fs.utimesSync(p, mtime, mtime);
     _resetSavedIndex();
   }

@@ -47,7 +47,7 @@ function reportImportError(error: string | undefined): void {
 }
 
 async function runImport(files: DroppedFile[], stackFolders: boolean): Promise<void> {
-  const id = 'hologram-drop-import';
+  const id = 'dot-drop-import';
   toast.loading(t('importing'), { id, description: t('dropImportProgress', { count: files.length }) });
   try {
     const out = await importDroppedPaths(files, stackFolders);

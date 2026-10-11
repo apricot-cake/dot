@@ -23,7 +23,7 @@ let downloadMedia: any;
 let downloadAvatar: any;
 
 beforeAll(async () => {
-  const configDir = process.env.HOLOGRAM_CONFIG_DIR as string;
+  const configDir = process.env.DOT_CONFIG_DIR as string;
   saveFolder = path.join(configDir, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.mkdirSync(saveFolder, { recursive: true });

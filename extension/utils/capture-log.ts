@@ -1,4 +1,4 @@
-// 設定ディレクトリの capture.log（Windows: %APPDATA%\Hologram）が使う語
+// 設定ディレクトリの capture.log（Windows: %APPDATA%\dot）が使う語
 // 彙と、ページ側がそこへ書き込む方法（#507、#519）。
 //
 // このログの仕事は、ディスクから、ずっと後になってからでも「あの保存に

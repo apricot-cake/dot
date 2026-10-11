@@ -1,10 +1,10 @@
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 
 // エンジンが返す一致箇所の表示名。
 export type FullTextFieldKey = 'text' | 'title' | 'seriesTitle' | 'alt' | 'quoted' | 'poll' | 'linkCard' | 'displayName' | 'screenName' | 'eagleName' | 'tag' | 'hashtag';
 
 export interface FullTextMatch {
-  post: HologramPost;
+  post: DotPost;
   field: FullTextFieldKey;
   snippetText: string;
   matchStart: number;
@@ -18,10 +18,10 @@ export interface FullTextSearchResult {
 }
 
 /** Meilisearchの一致結果を画面上の投稿へ対応させる。 */
-export async function runFullTextSearch(query: string, allPosts: readonly HologramPost[], limit: number): Promise<FullTextSearchResult> {
+export async function runFullTextSearch(query: string, allPosts: readonly DotPost[], limit: number): Promise<FullTextSearchResult> {
   const q = query.trim();
   if (!q) return { hits: [], total: 0 };
-  const rows = await hologramIpc.searchFullText(q);
+  const rows = await dotIpc.searchFullText(q);
   const byId = new Map(allPosts.map((p) => [p.captureId, p]));
   const hits: FullTextMatch[] = [];
   for (const row of rows) {
@@ -33,7 +33,7 @@ export async function runFullTextSearch(query: string, allPosts: readonly Hologr
 }
 
 export interface FullTextBridge {
-  allPosts(): HologramPost[];
+  allPosts(): DotPost[];
   /** 保存フォルダの asset:// の URL を組む関数（orchestrator.ts の fileSrc）＝結果の行は、投稿グリッドと同じやり方でサムネイルを出す。 */
   fileSrc(file: string, w?: number): string;
   /** `query` に絞った新しいタブを開き、`captureId` の1件をインスペクタに出す＝

@@ -24,7 +24,7 @@ export const CONTROL_TAG = 'span';
 // を最初に置いているのが、その後が続く理由だ: これによって、ページが
 // shadow の境界越しに押し付けてくるはずだった継承フォント・色・行高・
 // テキストレンダリングを落とす。カスタムプロパティはリセットしない＝だ
-// からこそ --hologram-* トークンは中にもちゃんと届く。
+// からこそ --dot-* トークンは中にもちゃんと届く。
 export const CONTROL_HOST_STYLE: Array<[string, string]> = [
   ['all', 'initial'],
   ['position', 'absolute'],
@@ -104,7 +104,7 @@ export function faceFor(ctx: FaceContext): Face | null {
 export function makeControlHost(): { el: HTMLElement; root: ShadowRoot } {
   const el = document.createElement(CONTROL_TAG);
   for (const [property, value] of CONTROL_HOST_STYLE) el.style.setProperty(property, value, 'important');
-  el.setAttribute('data-hologram-overlay', '');
+  el.setAttribute('data-dot-overlay', '');
   // 4つの面はアクセシブルな名前以外の何物でもない（下の drawFace を参
   // 照＝24pxのディスクは誰に対しても視覚的には何も説明しない）ので、
   // ページ自身の `lang` がそこへ届くかどうかが、それらが何語で読み上げ
@@ -210,7 +210,7 @@ export function drawFace(anchor: Anchor, face: Face, t: (key: string) => string,
   let el = anchor.control;
   el?.getAnimations?.({ subtree: true }).forEach((animation) => animation.cancel());
   if (!el || el instanceof HTMLButtonElement !== pressable) el = makeControl(anchor, pressable);
-  el.setAttribute('data-hologram-face', face);
+  el.setAttribute('data-dot-face', face);
   el.replaceChildren();
   el.onclick = null;
   el.onpointerdown = null;

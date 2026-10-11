@@ -195,7 +195,7 @@ export type { PosterTagNamesState } from '../shared/data-schemas.ts';
  * 永続化されたタブ1件。境界を越えるのはちょうどこの4つのフィールド: DB が列として
  * 索引する3つに加え、`state`——main がそのまま保存し中身を一切読まない不透明な
  * blob。この blob の形はレンダラーが所有する（services/tab-state.ts の
- * HologramTabPersist: クエリのスナップショット、ナビゲーションスタック、
+ * DotTabPersist: クエリのスナップショット、ナビゲーションスタック、
  * スクロール位置）ので、スキーマ変更なしにフィールドを増やせる。`state` の隣に
  * 送られてくるものは何であれ DB へ向かう途中で捨てられる（#565）。
  */
@@ -346,8 +346,8 @@ export interface ClipboardImportResult {
 /**
  * pick-repoint-folder（#37）: repoint の移動先を、何も書き込まずに決定・検証する
  * ——実際の書き込みは apply-repoint が行い、pick-save-folder/move-save-folder の
- * 二段階の形を踏襲する。`hasEvidence` は、そのフォルダが既存の Hologram
- * ライブラリらしく見えるかどうかを表す（.trash か .hologram-inbox の
+ * 二段階の形を踏襲する。`hasEvidence` は、そのフォルダが既存の dot
+ * ライブラリらしく見えるかどうかを表す（.trash か .dot-inbox の
  * サブフォルダ、またはライブラリのメディアファイルが直下にある）。レンダラーは
  * 何の形跡も無いフォルダへ repoint する前に、利用者へ確認する。
  */

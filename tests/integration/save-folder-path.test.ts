@@ -17,7 +17,7 @@ import { afterAll, describe, expect, test } from 'vitest';
 import { AVATAR_SUBDIR, TRASH_SUBDIR, resolveInSaveFolder } from '../../app/src/main/lib-save-folder-path';
 import { listTrashRecords } from '../../app/src/main/lib-trash-capture';
 
-const ROOT = path.resolve(path.sep === '\\' ? 'C:\\lib\\Hologram\\Library' : '/lib/Hologram/Library');
+const ROOT = path.resolve(path.sep === '\\' ? 'C:\\lib\\dot\\Library' : '/lib/dot/Library');
 const at = (...parts: string[]) => path.join(ROOT, ...parts);
 const resolve = (name: string | null | undefined) => resolveInSaveFolder(ROOT, name);
 
@@ -120,7 +120,7 @@ afterAll(() => {
   for (const d of tempDirs) fs.rmSync(d, { recursive: true, force: true });
 });
 function mkLibrary() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-trash-path-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-trash-path-'));
   tempDirs.push(dir);
   fs.mkdirSync(path.join(dir, TRASH_SUBDIR), { recursive: true });
   return dir;

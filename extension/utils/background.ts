@@ -149,7 +149,7 @@ export function startBackground(): void {
         // そうとしている native 接続を通ることになる。リロードを見て
         // いる開発者がすでに見ているのは service worker のコンソール
         // だ。
-        console.info(`[hologram] a newer extension build is on disk (${build}); reloading the extension`);
+        console.info(`[dot] a newer extension build is on disk (${build}); reloading the extension`);
         chrome.runtime.reload();
       })
       .catch(() => {})
@@ -433,7 +433,7 @@ export function startBackground(): void {
   // background-wiring.test.ts はそれを持つ方のテストで、理由はそちら
   // 自身のコメントを参照）。本物の Chrome は manifest の permission
   // が許可されていれば常にこれを持つ。
-  const SAVE_MENU_ID = 'hologram-save';
+  const SAVE_MENU_ID = 'dot-save';
   const IMPORT_SAVED_URLS = [
     'https://x.com/i/bookmarks*',
     'https://x.com/i/history',
@@ -1073,7 +1073,7 @@ export function startBackground(): void {
     try {
       tabs = await chrome.tabs.query({ url: RESIDENT_MATCHES });
     } catch (error) {
-      console.warn('[hologram] failed to find tabs that need resident rehydration:', error);
+      console.warn('[dot] failed to find tabs that need resident rehydration:', error);
       return;
     }
 
@@ -1090,7 +1090,7 @@ export function startBackground(): void {
                 .catch((error) => {
                   // タブは query と executeScript の間にも遷移・終了できる。個々のタブの
                   // 競合で、残りの既存タブを復旧し損ねてはいけない。
-                  console.warn(`[hologram] failed to rehydrate resident script in tab ${tab.id}:`, error);
+                  console.warn(`[dot] failed to rehydrate resident script in tab ${tab.id}:`, error);
                 }),
             ],
       ),

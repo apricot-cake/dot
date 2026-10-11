@@ -44,7 +44,7 @@ async function main() {
   const command = process.argv[2] || 'status';
   const folder = JSON.parse(fs.readFileSync(path.join(configDir(), 'config.json'), 'utf8')).saveFolder;
   if (!folder) throw Error('保存先が設定されていません');
-  const root = path.join(folder, '.hologram-metadata-backfill');
+  const root = path.join(folder, '.dot-metadata-backfill');
   fs.mkdirSync(path.join(root, 'results'), { recursive: true });
   const stateFile = path.join(root, 'progress.json');
   let state: any;
@@ -52,7 +52,7 @@ async function main() {
     state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
     if (state.folder !== folder || state.version !== 1) throw Error('進捗の保存先または形式が違います');
   } else {
-    const db = new DatabaseSync(path.join(folder, 'hologram.db'), { readOnly: true });
+    const db = new DatabaseSync(path.join(folder, 'dot.db'), { readOnly: true });
     const rows = db.prepare("SELECT captureId,url,platform,source,text,displayName FROM posts WHERE isContext=0 AND trashedAt IS NULL AND url IS NOT NULL AND (source='eagle-migration' OR text IS NULL OR displayName IS NULL)").all();
     db.close();
     const groups = new Map<string, any>();

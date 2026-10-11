@@ -7,13 +7,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { expect, test } from '../lib/harness.ts';
 
-test('インスペクタの投稿選択を閲覧に数え、同じ選択では増やさない', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('インスペクタの投稿選択を閲覧に数え、同じ選択では増やさない', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   const card = cards.filter({ hasText: '猫が机の上で寝ている' });
   const readCount = () =>
     page.evaluate(async () => {
-      const { posts } = await window.hologram.listPosts();
+      const { posts } = await window.dot.listPosts();
       return posts.find((p) => p.text?.includes('猫が机の上で寝ている'))?.localViewCount || 0;
     });
   const before = await readCount();
@@ -31,13 +31,13 @@ test('インスペクタの投稿選択を閲覧に数え、同じ選択では�
   expect(await readCount()).toBe(before + 2);
 });
 
-test('カードをクリックすると選択されインスペクタに内容が出る', async ({ launchHologram }) => {
-  const { page } = await launchHologram({
+test('カードをクリックすると選択されインスペクタに内容が出る', async ({ launchDot }) => {
+  const { page } = await launchDot({
     seed: ({ saveFolder }) => {
       fs.mkdirSync(path.join(saveFolder, 'avatars'), { recursive: true });
       fs.copyFileSync(path.join(saveFolder, 'items', 'e2e-0003', 'e2e-0003.png'), path.join(saveFolder, 'avatars', 'fixture.png'));
       const { openDatabase } = require('../../app/src/main/lib-db.ts');
-      const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'));
+      const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'));
       try {
         sqlite.prepare('UPDATE posts SET avatarFile = ? WHERE screenName = ?').run('avatars/fixture.png', 'mike_nekozawa');
       } finally {
@@ -88,8 +88,8 @@ test('カードをクリックすると選択されインスペクタに内容�
   await expect(inspector).toContainText('2026/3/5');
 });
 
-test('1件選択したカードの右クリックで通常メニューが開く', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('1件選択したカードの右クリックで通常メニューが開く', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const card = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' });
   await card.click();
   await expect(card).toHaveAttribute('data-selected', 'true');
@@ -103,8 +103,8 @@ test('1件選択したカードの右クリックで通常メニューが開く'
   await expect(card).toHaveAttribute('data-selected', 'true');
 });
 
-test('別のカードをクリックすると選択が入れ替わる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('別のカードをクリックすると選択が入れ替わる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const first = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' });
   const second = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '夕暮れの街並み' });
 
@@ -117,8 +117,8 @@ test('別のカードをクリックすると選択が入れ替わる', async ({
   await expect(page.locator('[data-slot="inspector-post"]')).toContainText('街田あかね');
 });
 
-test('単一選択はインスペクタで閲覧し、2件選択で一括操作を表示する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('単一選択はインスペクタで閲覧し、2件選択で一括操作を表示する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const first = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' });
   const second = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '夕暮れの街並み' });
   const bar = page.locator('[data-slot="selection-bar"]');
@@ -136,8 +136,8 @@ test('単一選択はインスペクタで閲覧し、2件選択で一括操作�
   await expect(bar.getByRole('button', { name: '投稿を削除' })).toBeVisible();
 });
 
-test('カードをダブルクリックすると画像ビューが開く', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('カードをダブルクリックすると画像ビューが開く', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' }).dblclick();
 
   // 配線がどうなっているかではなく、利用者に見えるものを検証する: メディア
@@ -151,8 +151,8 @@ test('カードをダブルクリックすると画像ビューが開く', async
   await expect(localViews.locator('xpath=following-sibling::dd[1]')).toHaveText('2');
 });
 
-test('画像ビューの投稿者と投稿者インスペクタの作品は中央ビューと左ナビゲーションも切り替える', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('画像ビューの投稿者と投稿者インスペクタの作品は中央ビューと左ナビゲーションも切り替える', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' }).dblclick();
   await expect(page.locator('[data-slot="image-tab-view"]')).toBeVisible();
 
@@ -186,8 +186,8 @@ async function deleteSelectionViaBar(page: import('@playwright/test').Page) {
   await confirm.getByRole('button', { name: '削除する' }).click();
 }
 
-test('画像ビューを開いたまま別タブで削除するとステージもインスペクタも投稿を手放す', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('画像ビューを開いたまま別タブで削除するとステージもインスペクタも投稿を手放す', async ({ launchDot }) => {
+  const { page } = await launchDot();
   // ダブルクリックはカードを選択すると同時に画像ビューを開く。
   await page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '猫が机の上で寝ている' }).dblclick();
   await expect(page.locator('[data-slot="image-tab-view"]')).toBeVisible();
@@ -220,8 +220,8 @@ test('画像ビューを開いたまま別タブで削除するとステージ�
   await expect(page.locator('[data-slot="inspector-empty"]')).toBeVisible();
 });
 
-test('グリッドで選択中の投稿を削除するとインスペクタが空になる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('グリッドで選択中の投稿を削除するとインスペクタが空になる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const card = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '夕暮れの街並み' });
   await card.click();
   await expect(page.locator('[data-slot="inspector-post"]')).toContainText('街田あかね');
@@ -237,8 +237,8 @@ test('グリッドで選択中の投稿を削除するとインスペクタが�
   await expect(page.locator('[data-slot="inspector-empty"]')).toBeVisible();
 });
 
-test('カードメニューから削除してもインスペクタが空になる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('カードメニューから削除してもインスペクタが空になる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   const card = page.locator('[data-slot="post-grid"] [data-slot="post-card"]').filter({ hasText: '青い空と海の写真' });
   // カードメニューは選択を「立てない」経路（その場合フローティングバーが
   // 一括操作を持つ）なので、このケース全体は選択無しのままでなければ
@@ -262,8 +262,8 @@ test('カードメニューから削除してもインスペクタが空にな�
   await expect(page.locator('[data-slot="inspector-empty"]')).toBeVisible();
 });
 
-test('投稿者インスペクタは現在値だけを表示し、順位・履歴・名寄せ・閉じる操作を持たない', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('投稿者インスペクタは現在値だけを表示し、順位・履歴・名寄せ・閉じる操作を持たない', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.getByRole('button', { name: '投稿者', exact: true }).click();
   const card = page.locator('[data-slot="poster-grid"] [data-slot="poster-card"]').filter({ hasText: '猫沢みけ' });
   await card.click();

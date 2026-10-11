@@ -23,7 +23,7 @@ let published = false;
 try {
   execFileSync(process.execPath, [npmCli, 'run', '_build', '--workspace', 'app'], {
     cwd: root,
-    env: { ...process.env, HOLOGRAM_APP_BUILD_OUT: stage },
+    env: { ...process.env, DOT_APP_BUILD_OUT: stage },
     stdio: 'inherit',
     windowsHide: true,
   });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactCrop from 'react-image-crop';
-import { hologramIpc } from '../services/ipc.ts';
+import { dotIpc } from '../services/ipc.ts';
 import { register } from '../services/image-edit-controls.ts';
 import type { ImageTabItem } from './ImageTab.tsx';
 import { flipEdit, rotateEdit, type ImageEdit } from './image-edit.ts';
@@ -42,7 +42,7 @@ export function ImageEditor({ item, onClose }: { item: ImageTabItem; onClose(): 
           if (!item.postId || item.mediaSeq == null || busy) return;
           setSaving(true);
           setError('');
-          void hologramIpc
+          void dotIpc
             .setMediaEdit(item.postId, item.mediaSeq, draft)
             .then(async (result) => {
               if (result.ok) {

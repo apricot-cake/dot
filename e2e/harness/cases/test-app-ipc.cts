@@ -2,7 +2,7 @@
 
 // 変更系のIPCハンドラ（update-tags、delete-post、restore-post）を、レンダラーに
 // それらを呼ばせることでヘッドレスに試し、結果を検証する:
-// - update-tagsはDBのみの書き込み。タグはhologram.dbから読み戻す
+// - update-tagsはDBのみの書き込み。タグはdot.dbから読み戻す
 // - delete-postはメディアを.trash/へ移動し、そこにレコードをJSONとして書く
 //   （ゴミ箱は自己記述的＝ipc-trash.tsのモジュールコメント参照）。一方
 //   ライブラリのフォルダは投稿ごとのJSONを一切保持しない（#302）
@@ -25,8 +25,8 @@ const { openDatabase } = require(path.join(appDir, 'src', 'main', 'lib-db.ts'));
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 const { evalSource } = require('../../../scripts/lib-wait.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-ipc-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-ipc-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -59,7 +59,7 @@ fs.writeFileSync(path.join(saveFolder, 'dummy-0004-poster.jpg'), jpeg);
 seedLibrary(configDir, records);
 
 const evalJs = evalSource(async () => {
-  const h = (window as any).hologram;
+  const h = (window as any).dot;
   await h.updateTags('dummy-0001.jpg', ['tagX']);
   await h.deletePost('dummy-0002.jpg');
   await h.updateTags('dummy-0003.jpg', ['tagY'], { userKind: 'plain', tagReviewed: true });
@@ -72,9 +72,9 @@ const evalJs = evalSource(async () => {
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: path.join(tmp, 'Hologram'),
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: path.join(tmp, 'dot'),
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
@@ -88,8 +88,8 @@ child.on('close', () => {
   // #302: ライブラリのフォルダはメディアだけを保持する＝編集がそこにレコードを置いてはならない。
   const noLibraryJsonOk = fs.readdirSync(saveFolder).filter((f) => f.toLowerCase().endsWith('.json')).length === 0;
 
-  // #176: hologram.db は今は configDir ではなく保存フォルダの中にある。
-  const { sqlite } = openDatabase(path.join(saveFolder, 'hologram.db'), { readonly: true });
+  // #176: dot.db は今は configDir ではなく保存フォルダの中にある。
+  const { sqlite } = openDatabase(path.join(saveFolder, 'dot.db'), { readonly: true });
   const tagsOf = (id) =>
     sqlite
       .prepare('SELECT t.name FROM post_tags pt JOIN tags t ON t.id = pt.tagId WHERE pt.postId = ? ORDER BY pt.rowid')

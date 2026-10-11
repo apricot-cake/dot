@@ -10,7 +10,7 @@ import { createArchiveStage, acquireArchiveActor, registerArchiveActor, recoverA
 let root: string, profile: string, library: string;
 const held: Array<{ close(): Promise<void> }> = [];
 beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), 'hologram-stage-ownership-test-'));
+  root = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-stage-ownership-test-'));
   profile = path.join(root, 'profile');
   library = path.join(root, 'library');
   await fs.mkdir(profile);
@@ -85,7 +85,7 @@ test('別profile、別library、markerなしの旧stageは保持する', async (
       root,
     ),
   ).toBe(0);
-  const unmarked = path.join(root, 'hologram-archive-import-old');
+  const unmarked = path.join(root, 'dot-archive-import-old');
   await fs.mkdir(unmarked);
   await fs.writeFile(path.join(unmarked, 'keep'), 'original');
   expect(await recover()).toBe(1);

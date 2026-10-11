@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "Hologram",
+    "message": "dot",
     "description": "Extension name shown in Web Store and browser"
   },
   "extDesc": {
-    "message": "ウェブで見つけた投稿や作品を、画像・本文・投稿者・元 URL とともに PC へ保存します。保存後はライブラリで検索できます。Hologram のサーバーへは送信しません。",
+    "message": "ウェブで見つけた投稿や作品を、画像・本文・投稿者・元 URL とともに PC へ保存します。保存後はライブラリで検索できます。dot のサーバーへは送信しません。",
     "description": "Extension description shown in Web Store"
   },
   "actionTitle": {
@@ -12,15 +12,15 @@
     "description": "Toolbar button tooltip"
   },
   "actionInjectUnreadable": {
-    "message": "Hologram: 拡張機能のファイルを読めません。chrome://extensions で「再読み込み」を選んでください。",
+    "message": "dot: 拡張機能のファイルを読めません。chrome://extensions で「再読み込み」を選んでください。",
     "description": "Toolbar tooltip when the extension's own files can no longer be read, so injecting the capture UI fails on every page"
   },
   "actionInjectRefused": {
-    "message": "Hologram: このページでは保存を開始できませんでした",
+    "message": "dot: このページでは保存を開始できませんでした",
     "description": "Toolbar tooltip when the extension is healthy but this particular page refused the injection"
   },
   "optionsTitle": {
-    "message": "Hologram 設定",
+    "message": "dot 設定",
     "description": "Options page document title"
   },
   "optionsOpenDiag": {
@@ -56,7 +56,7 @@
     "description": "Options description for the hover save button"
   },
   "ctxSaveMedia": {
-    "message": "Hologramに保存",
+    "message": "dotに保存",
     "description": "Context menu item: save the selected image or video"
   },
   "ctxImportSaved": {

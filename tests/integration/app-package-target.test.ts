@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
+import { configDir, defaultLibraryDir } from '../../native-host/paths.mts';
+import { DEFAULT_HOST_NAME } from '../../native-host/install.mts';
+import { POST_LINK_SCHEME } from '../../app/src/shared/post-link.ts';
 
 const root = path.join(import.meta.dirname, '../..');
 const appPackage = JSON.parse(fs.readFileSync(path.join(root, 'app', 'package.json'), 'utf8'));
@@ -14,12 +17,12 @@ describe('desktop package targets', () => {
     expect(forgeConfig.makers).toHaveLength(1);
     expect(forgeConfig.makers[0]).toMatchObject({
       name: '@electron-forge/maker-squirrel',
-      config: { setupExe: 'HologramSetup.exe', noMsi: true },
+      config: { name: 'dot', title: 'dot', exe: 'dot.exe', setupExe: 'dotSetup.exe', noMsi: true },
     });
   });
 
   test('配布物は asar とネイティブモジュールの展開を両立する', async () => {
-    const temporary = fs.mkdtempSync(path.join(tmpdir(), 'hologram-package-asar-'));
+    const temporary = fs.mkdtempSync(path.join(tmpdir(), 'dot-package-asar-'));
     const source = path.join(temporary, 'app');
     const archive = path.join(temporary, 'app.asar');
     const unpacked = [
@@ -58,10 +61,10 @@ describe('desktop package targets', () => {
   test('AVIF 検査器とライセンスを asar の外の resources/avif に配布する', async () => {
     const resource = forgeConfig.packagerConfig.extraResource.find((filename: string) => filename === path.join(root, 'app', 'vendor', 'avif'));
     expect(resource).toBeDefined();
-    const temporary = fs.mkdtempSync(path.join(tmpdir(), 'hologram-package-resource-'));
+    const temporary = fs.mkdtempSync(path.join(tmpdir(), 'dot-package-resource-'));
     const source = path.join(temporary, 'vendor', path.basename(resource));
     const stagingPath = path.join(temporary, 'package');
-    const files = ['avif-validator.exe', 'build.json', 'libavif-LICENSE', 'dav1d-COPYING', 'hologram-LICENSE'];
+    const files = ['avif-validator.exe', 'build.json', 'libavif-LICENSE', 'dav1d-COPYING', 'dot-LICENSE'];
     try {
       fs.mkdirSync(source, { recursive: true });
       for (const filename of files) fs.writeFileSync(path.join(source, filename), `fixture:${filename}`);
@@ -91,6 +94,23 @@ describe('desktop package targets', () => {
     const packageScript = fs.readFileSync(path.join(root, 'scripts', 'package-app.cjs'), 'utf8');
     expect(packageScript).toContain("require('@electron/packager')");
     expect(packageScript).toContain('name: appPackage.productName || appPackage.name');
-    expect(appPackage.productName).toBe('Hologram');
+    expect(appPackage.productName).toBe('dot');
+  });
+
+  test('設定・ライブラリと外部接続の識別子を dot に統一する', () => {
+    // 表示名に加えて保存先と外部接続も新しい製品名に統一する。
+    if (process.platform === 'win32') {
+      vi.stubEnv('DOT_CONFIG_DIR', '');
+      try {
+        expect(path.basename(configDir())).toBe('dot');
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    }
+    expect(path.basename(path.dirname(defaultLibraryDir()))).toBe('dot');
+    expect(DEFAULT_HOST_NAME).toBe('com.dot.host');
+    expect(POST_LINK_SCHEME).toBe('dot');
+    expect(appPackage.repository).toBe('https://github.com/apricot-cake/dot');
+    expect(forgeConfig.publishers[0].config.repository).toEqual({ owner: 'apricot-cake', name: 'dot' });
   });
 });

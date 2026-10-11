@@ -1,8 +1,8 @@
 {
-  "name": "hologram-dev",
+  "name": "dot-dev",
   "private": true,
   "version": "0.0.0",
-  "description": "Hologram development tooling",
+  "description": "dot development tooling",
   "workspaces": [
     "app"
   ],

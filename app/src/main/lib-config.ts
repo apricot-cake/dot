@@ -162,7 +162,7 @@ function dirExists(p) {
 
 // --- 現在のライブラリの設定 ---
 //
-// Hologram は1つのライブラリを移動して使う。エクスポート通知と整合性状態は
+// dot は1つのライブラリを移動して使う。エクスポート通知と整合性状態は
 // config.json の現在の設定として持ち、過去のライブラリ一覧は保持しない。
 const EXPORT_REMINDER_DEFAULTS = {
   enabled: true,

@@ -1,6 +1,6 @@
 import { matchesPost } from './search-results.ts';
 import { aspectRatiosOf } from './aspect-ratio.ts';
-// クエリエンジン＝Hologram の絞り込みにおける論理条件木の核（改訂③）。viewer.js
+// クエリエンジン＝dot の絞り込みにおける論理条件木の核（改訂③）。viewer.js
 // から1:1で抽出した、viewer 分解（最終形B）における最初の「純粋ロジック→
 // サービス」切り出し。実体は本物の ES モジュール（named exports）で、
 // 利用側（viewer.ts / query-chips.ts / sidebar.ts / tabs.ts）から相対パスで
@@ -11,11 +11,11 @@ import { aspectRatiosOf } from './aspect-ratio.ts';
 // --- 条件木の仕組み。木は常にルートグループ（既定で op は 'and'）。葉は
 // {kind:'cond', type, value, …}、グループは children と任意の neg を持つ。
 // 2つのクエリビルダー（posts / posters）の両方で共有する。 ---
-/** @returns {HologramQueryGroup} */
+/** @returns {DotQueryGroup} */
 export function emptyTree() {
-  return { kind: 'group', op: 'and', neg: false, children: [] } as HologramQueryGroup;
+  return { kind: 'group', op: 'and', neg: false, children: [] } as DotQueryGroup;
 }
-export function treeLeaves(n: HologramQueryNode | null | undefined, out?: HologramQueryLeaf[]): HologramQueryLeaf[] {
+export function treeLeaves(n: DotQueryNode | null | undefined, out?: DotQueryLeaf[]): DotQueryLeaf[] {
   out = out || [];
   if (!n) return out;
   if (n.kind === 'cond') out.push(n);
@@ -25,9 +25,9 @@ export function treeLeaves(n: HologramQueryNode | null | undefined, out?: Hologr
 export function opposite(op: string): 'and' | 'or' {
   return op === 'and' ? 'or' : 'and';
 }
-export const cloneTree = (tree: HologramQueryNode) => JSON.parse(JSON.stringify(tree, (k, v) => (k[0] === '_' ? undefined : v)));
+export const cloneTree = (tree: DotQueryNode) => JSON.parse(JSON.stringify(tree, (k, v) => (k[0] === '_' ? undefined : v)));
 // 移行専用: 古い永続化ファセット状態（f + typeOps）から木を再構築する。
-export function facetTreeFrom(f: ReadonlyArray<{ type: string; [k: string]: any }>, ops?: Record<string, string> | null): HologramQueryGroup {
+export function facetTreeFrom(f: ReadonlyArray<{ type: string; [k: string]: any }>, ops?: Record<string, string> | null): DotQueryGroup {
   const root = emptyTree();
   const NO_OP = new Set(['date']);
   const byType = new Map<string, { type: string; [k: string]: any }[]>();
@@ -41,19 +41,19 @@ export function facetTreeFrom(f: ReadonlyArray<{ type: string; [k: string]: any 
     list.push(x);
   }
   for (const [type, list] of byType) {
-    const leaves: HologramQueryLeaf[] = list.map((x) => Object.assign({ kind: 'cond' as const }, x));
+    const leaves: DotQueryLeaf[] = list.map((x) => Object.assign({ kind: 'cond' as const }, x));
     if (NO_OP.has(type)) {
       root.children.push(...leaves);
       continue;
     }
     const op = (ops || {})[type] || 'or';
-    root.children.push({ kind: 'group', op: op === 'and' ? 'and' : 'or', neg: op === 'not', children: leaves } as HologramQueryGroup);
+    root.children.push({ kind: 'group', op: op === 'and' ? 'and' : 'or', neg: op === 'not', children: leaves } as DotQueryGroup);
   }
   return root;
 }
 // クエリ木を1件のアイテムに対して再帰的に評価する。view 側が渡す葉の述語
 // ファクトリ（predOf）を使う。両ビルダー（post + poster）で共有する。
-export function evalNode(n: HologramQueryNode, item: unknown, predOf: (f: HologramQueryLeaf) => (item: any) => boolean): boolean {
+export function evalNode(n: DotQueryNode, item: unknown, predOf: (f: DotQueryLeaf) => (item: any) => boolean): boolean {
   if (n.kind === 'cond') {
     const r = predOf(n)(item);
     return n.neg ? !r : r;
@@ -68,9 +68,9 @@ export function evalNode(n: HologramQueryNode, item: unknown, predOf: (f: Hologr
 // viewer.ts（createQueryBuilder）側に残り、そこがこれらをインスタンスごとの木に
 // 結び付ける。 ---
 /** 子 → 親 のマップ。1回の手術パスごとに作り直す。 */
-export function treeParentMap(tree: HologramQueryGroup): Map<HologramQueryNode, HologramQueryGroup> {
-  const m = new Map<HologramQueryNode, HologramQueryGroup>();
-  (function rec(n: HologramQueryNode) {
+export function treeParentMap(tree: DotQueryGroup): Map<DotQueryNode, DotQueryGroup> {
+  const m = new Map<DotQueryNode, DotQueryGroup>();
+  (function rec(n: DotQueryNode) {
     if (n.kind !== 'group') return;
     (n.children || []).forEach((c) => {
       m.set(c, n);
@@ -79,12 +79,12 @@ export function treeParentMap(tree: HologramQueryGroup): Map<HologramQueryNode, 
   })(tree);
   return m;
 }
-export function nodeContains(a: HologramQueryNode | null | undefined, b: HologramQueryNode | null | undefined): boolean {
+export function nodeContains(a: DotQueryNode | null | undefined, b: DotQueryNode | null | undefined): boolean {
   if (a === b) return true;
   if (!a || a.kind !== 'group') return false;
   return (a.children || []).some((c) => nodeContains(c, b));
 }
-export function detachNode(node: HologramQueryNode, pmap: Map<HologramQueryNode, HologramQueryGroup>): void {
+export function detachNode(node: DotQueryNode, pmap: Map<DotQueryNode, DotQueryGroup>): void {
   const par = pmap.get(node);
   if (!par) return;
   const i = par.children.indexOf(node);
@@ -93,10 +93,10 @@ export function detachNode(node: HologramQueryNode, pmap: Map<HologramQueryNode,
 // 自動整理: 空のグループを落とし、ルート以外の単一メンバーのグループは
 // 折り畳み、グループの否定を残ったメンバーに畳み込む（「グループがメンバー
 // 1つまで減ったら括弧は消える」）。
-export function cleanupTree(tree: HologramQueryGroup): void {
-  (function rec(node: HologramQueryNode) {
+export function cleanupTree(tree: DotQueryGroup): void {
+  (function rec(node: DotQueryNode) {
     if (node.kind !== 'group') return;
-    const out: HologramQueryNode[] = [];
+    const out: DotQueryNode[] = [];
     for (const c of node.children) {
       rec(c);
       if (c.kind === 'group') {
@@ -113,14 +113,14 @@ export function cleanupTree(tree: HologramQueryGroup): void {
     node.children = out;
   })(tree);
 }
-export function hasLeafValue(tree: HologramQueryGroup, type: string, value: unknown): boolean {
+export function hasLeafValue(tree: DotQueryGroup, type: string, value: unknown): boolean {
   return treeLeaves(tree).some((c) => c.type === type && c.value === value);
 }
 // pred に一致する cond の葉を木のどこからでも削除する（+ 整理）。実際に何か
 // 削除されたかを返す（呼び出し側はこれを見て再描画するかを決める）。
-export function removeCondsMatching(tree: HologramQueryGroup, pred: (c: HologramQueryLeaf) => boolean): boolean {
+export function removeCondsMatching(tree: DotQueryGroup, pred: (c: DotQueryLeaf) => boolean): boolean {
   const before = treeLeaves(tree).length;
-  (function rec(node: HologramQueryNode) {
+  (function rec(node: DotQueryNode) {
     if (node.kind !== 'group') return;
     node.children = node.children.filter((c) => !(c.kind === 'cond' && pred(c)));
     node.children.forEach(rec);
@@ -134,7 +134,7 @@ export interface SameLeafOptions {
   /** post のタグだけが持つ、ID なし `__none` を「タグなし」とする規則。 */
   tagNoneIsSentinel?: boolean;
 }
-export function sameLeaf(c: HologramQueryLeaf, f: { type: string; [k: string]: any }, options: SameLeafOptions = {}): boolean {
+export function sameLeaf(c: DotQueryLeaf, f: { type: string; [k: string]: any }, options: SameLeafOptions = {}): boolean {
   if (c.type !== f.type) return false;
   if (f.type === 'date') return true; // date 条件は常に1つ
   // #162: dimension の葉は軸（width/height/long/bytes）で一意＝value では
@@ -151,13 +151,13 @@ export function sameLeaf(c: HologramQueryLeaf, f: { type: string; [k: string]: a
   return c.value === f.value;
 }
 /** 木がすでに `f` と sameLeaf 判定で同一の葉を持っているか？（addFilter の重複防止用）。 */
-export function hasSameLeaf(tree: HologramQueryGroup, f: { type: string; [k: string]: any }, options?: SameLeafOptions): boolean {
+export function hasSameLeaf(tree: DotQueryGroup, f: { type: string; [k: string]: any }, options?: SameLeafOptions): boolean {
   return treeLeaves(tree).some((c) => sameLeaf(c, f, options));
 }
 // フラットな（重複除去済みの）葉のシャドウ＝サイドバーのハイライト／行の
 // バッジ／タブのタイトルが使うもの。date/dimension は（木専用フィールドを
 // 除いて）そのまま通す。それ以外の type は type+value で重複除去する。
-export function buildShadow(tree: HologramQueryGroup): Array<{ type: string; [k: string]: any }> {
+export function buildShadow(tree: DotQueryGroup): Array<{ type: string; [k: string]: any }> {
   const seen = new Set<string>();
   const out: Array<{ type: string; [k: string]: any }> = [];
   for (const c of treeLeaves(tree)) {
@@ -186,13 +186,13 @@ export function buildShadow(tree: HologramQueryGroup): Array<{ type: string; [k:
 // （周囲のグループと逆の演算子を持つ）でくるむ、'inside' は drag を target
 // グループのメンバーとして加える、'root' は最上位へ移す。ドロップが却下される
 // とき（自分自身へ、または自分の子孫へ）は false を返す（木は変更しない）。
-export function dropNode(tree: HologramQueryGroup, drag: HologramQueryNode | null | undefined, target: HologramQueryNode | null | undefined, mode: 'pair' | 'inside' | 'root'): boolean {
+export function dropNode(tree: DotQueryGroup, drag: DotQueryNode | null | undefined, target: DotQueryNode | null | undefined, mode: 'pair' | 'inside' | 'root'): boolean {
   if (!target || !drag || target === drag || nodeContains(drag, target)) return false;
   const pmap = treeParentMap(tree);
   detachNode(drag, pmap); // まず今の親から切り離す
   if (mode === 'pair') {
     const par = pmap.get(target) || tree;
-    const g: HologramQueryGroup = { kind: 'group', op: opposite(par.op), neg: false, children: [target, drag] };
+    const g: DotQueryGroup = { kind: 'group', op: opposite(par.op), neg: false, children: [target, drag] };
     const i = par.children.indexOf(target);
     if (i >= 0) par.children[i] = g;
     else par.children.push(g);
@@ -207,10 +207,10 @@ export function dropNode(tree: HologramQueryGroup, drag: HologramQueryNode | nul
 // 現在の式全体を1つのグループでくるむ（押すたびにさらに深く入れ子になる）。
 // 新しいルートを返す（呼び出し側がその木を再代入する）。くるむものが無ければ
 // null。単一条件のくるみは整理で潰れる（グループ化する意味が無いため）。
-export function wrapAllInGroup(tree: HologramQueryGroup): HologramQueryGroup | null {
+export function wrapAllInGroup(tree: DotQueryGroup): DotQueryGroup | null {
   if (!tree.children.length) return null;
-  const g = { kind: 'group', op: tree.op, neg: false, children: tree.children } as HologramQueryGroup;
-  const root = { kind: 'group', op: 'and', neg: false, children: [g] } as HologramQueryGroup;
+  const g = { kind: 'group', op: tree.op, neg: false, children: tree.children } as DotQueryGroup;
+  const root = { kind: 'group', op: 'and', neg: false, children: [g] } as DotQueryGroup;
   cleanupTree(root);
   return root;
 }
@@ -226,7 +226,7 @@ export function wrapAllInGroup(tree: HologramQueryGroup): HologramQueryGroup | n
 // 持つ type スキーマ（posts と posters で異なる）。predOf 同様に注入される。 ---
 /** クラスタ内の既定演算子: 複数値を取る属性は既定で絞り込む（「すべて」）。
  *  単一値の属性は「いずれか」だけが充足可能な読みになる。 */
-export function facetDefaultOp(type: string, opts: HologramFacetOpts): 'and' | 'or' {
+export function facetDefaultOp(type: string, opts: DotFacetOpts): 'and' | 'or' {
   return (opts.multiValueTypes || []).includes(type) ? 'and' : 'or';
 }
 // 厳密なファセット解析。null＝ファセット形でない（OR ルート／本物の入れ子／
@@ -234,13 +234,13 @@ export function facetDefaultOp(type: string, opts: HologramFacetOpts): 'and' | '
 // 要約にフォールバックする。意味は保存しつつ、意図した修復を1つだけ行う:
 // 同じ type の単独・単一値の葉が2つ以上あれば 'or' として読む（それらの
 // ルート-AND は改訂③の「2プラットフォームで常に false になる」罠だった）。
-export function facetViewOf(tree: HologramQueryGroup, opts: HologramFacetOpts): HologramFacetView | null {
+export function facetViewOf(tree: DotQueryGroup, opts: DotFacetOpts): DotFacetView | null {
   if (!tree || tree.kind !== 'group' || tree.op !== 'and' || tree.neg) return null;
   const standalone = new Set<string>(opts.standaloneTypes || []);
   const multi = new Set<string>(opts.multiValueTypes || []);
-  const clusters = new Map<string, HologramFacetCluster>(); // type → cluster（挿入順＝表示順）
-  const singles: HologramQueryLeaf[] = [];
-  const excl: HologramQueryLeaf[] = [];
+  const clusters = new Map<string, DotFacetCluster>(); // type → cluster（挿入順＝表示順）
+  const singles: DotQueryLeaf[] = [];
+  const excl: DotQueryLeaf[] = [];
   for (const c of tree.children) {
     if (c.kind === 'cond') {
       if (c.neg) {
@@ -264,7 +264,7 @@ export function facetViewOf(tree: HologramQueryGroup, opts: HologramFacetOpts): 
     const t = first.kind === 'cond' ? first.type : null;
     if (!t || standalone.has(t) || clusters.has(t)) return null;
     for (const l of c.children) if (l.kind !== 'cond' || l.neg || l.type !== t) return null;
-    clusters.set(t, { type: t, op: multi.has(t) ? c.op : 'or', leaves: c.children.slice() as HologramQueryLeaf[], grouped: true });
+    clusters.set(t, { type: t, op: multi.has(t) ? c.op : 'or', leaves: c.children.slice() as DotQueryLeaf[], grouped: true });
   }
   return { clusters: Array.from(clusters.values()), singles, excl };
 }
@@ -272,11 +272,11 @@ export function facetViewOf(tree: HologramQueryGroup, opts: HologramFacetOpts): 
 // すべて本物のグループになる（「すべて」／「いずれか」のトグルには書き込み先の
 // ノードが要る）。順序はクラスタ→単独の葉→除外された葉。木がファセット形
 // だった（今は正準形になった）場合は true、そうでなければ木は変更せず false。
-export function canonicalizeFacet(tree: HologramQueryGroup, opts: HologramFacetOpts): boolean {
+export function canonicalizeFacet(tree: DotQueryGroup, opts: DotFacetOpts): boolean {
   const v = facetViewOf(tree, opts);
   if (!v) return false;
-  const out: HologramQueryNode[] = [];
-  for (const cl of v.clusters) out.push(cl.leaves.length === 1 ? cl.leaves[0] : ({ kind: 'group', op: cl.op, neg: false, children: cl.leaves } as HologramQueryGroup));
+  const out: DotQueryNode[] = [];
+  for (const cl of v.clusters) out.push(cl.leaves.length === 1 ? cl.leaves[0] : ({ kind: 'group', op: cl.op, neg: false, children: cl.leaves } as DotQueryGroup));
   out.push(...v.singles, ...v.excl);
   tree.children = out;
   return true;
@@ -285,7 +285,7 @@ export function canonicalizeFacet(tree: HologramQueryGroup, opts: HologramFacetO
 // 既存の単独の葉と新顔を新しいグループ（既定の op）でくるむか、最上位に置く
 // （standalone な type は常にこれ）。単一値の置き換えと重複チェックは呼び出し側
 // が行う。ファセット形の木に対してのみ呼ぶこと。
-export function facetAdd(tree: HologramQueryGroup, node: HologramQueryLeaf, opts: HologramFacetOpts): HologramQueryLeaf {
+export function facetAdd(tree: DotQueryGroup, node: DotQueryLeaf, opts: DotFacetOpts): DotQueryLeaf {
   if (!(opts.standaloneTypes || []).includes(node.type)) {
     for (let i = 0; i < tree.children.length; i++) {
       const c = tree.children[i];
@@ -305,7 +305,7 @@ export function facetAdd(tree: HologramQueryGroup, node: HologramQueryLeaf, opts
 // 「すべて」／「いずれか」のトグル: クラスタの演算子を設定する。値が2つ以上の
 // クラスタは正準形の木では本物のグループになっている。そのグループが無ければ
 // false。
-export function facetSetOp(tree: HologramQueryGroup, type: string, op: string): boolean {
+export function facetSetOp(tree: DotQueryGroup, type: string, op: string): boolean {
   for (const c of tree.children) {
     if (c.kind === 'group' && !c.neg && c.children.length && c.children[0].kind === 'cond' && c.children[0].type === type) {
       c.op = op === 'and' ? 'and' : 'or';
@@ -317,7 +317,7 @@ export function facetSetOp(tree: HologramQueryGroup, type: string, op: string): 
 // 葉をそのクラスタと「除外」クラスタの間で移動する: 切り離し、neg を反転し、
 // 再挿入する（否定→最上位、正→facetAdd を通して戻す）。すでに正の値として
 // 存在するものが戻ってきた場合は冗長として捨てる。
-export function facetSetNeg(tree: HologramQueryGroup, node: HologramQueryLeaf, neg: boolean, opts: HologramFacetOpts): boolean {
+export function facetSetNeg(tree: DotQueryGroup, node: DotQueryLeaf, neg: boolean, opts: DotFacetOpts): boolean {
   if (!!node.neg === !!neg) return false;
   detachNode(node, treeParentMap(tree));
   cleanupTree(tree);
@@ -363,14 +363,14 @@ export const hostOf = (url: string | null | undefined): string => {
 // （userId/screenName を持たない＝users.ts の buildUsers 自身の identity ゲートが
 // ポスターグリッドから完全に締め出す）が、将来 identity 情報を持つプラットフォーム
 // レスのレコード（#239）は到達しうる。
-export const userKey = (p: HologramPost): string => {
+export const userKey = (p: DotPost): string => {
   const id = p.userId || '@' + (p.screenName || '');
   if (!p.platform) return 'web:' + hostOf(p.url) + ':' + id;
   return p.platform + ':' + id;
 };
 // 'post' と 'image' は出典 URL の有無で分ける。URL だけのブックマークは新規に
 // 作らないため、独立した種別を持たない。
-export const kindOf = (p: HologramPost): 'post' | 'image' => (p.url ? 'post' : 'image');
+export const kindOf = (p: DotPost): 'post' | 'image' => (p.url ? 'post' : 'image');
 // #365: このレコードが視覚的な media を何か持っているか＝自身の image、video
 // フィールド、または media[] のエントリのいずれか。あえて `p.mediaType == null`
 // ではなく生のフィールドから判定している＝その null は曖昧（media は宣言されて
@@ -378,7 +378,7 @@ export const kindOf = (p: HologramPost): 'post' | 'image' => (p.url ? 'post' : '
 // でも起こる）ので、「この投稿にはサムネイルとして出せるものが何も無い」の
 // 代わりにはできない。これが false になる投稿こそ、#365 がサムネイルの代わりに
 // 本文テキストのカード面を与える「テキストのみ」のケースそのもの。
-export const hasVisualMedia = (p: HologramPost): boolean => !!p.image || !!p.video || (Array.isArray(p.media) && p.media.some((m: any) => m && m.file));
+export const hasVisualMedia = (p: DotPost): boolean => !!p.image || !!p.video || (Array.isArray(p.media) && p.media.some((m: any) => m && m.file));
 // --- 廃止された葉タイプ名に対する、保存済み葉スキーマの自己修復 --------------
 // 廃止された葉タイプの改名を記録する唯一の場所。sanitizeSavedTabs は読み込み時に
 // 永続化された木＋シャドウ（state.tree / state.f）をすべて normalizeTree /
@@ -420,10 +420,10 @@ export function normalizeTree(node: any): any {
 export function makePostPredOf(deps: {
   /** `only` = 葉の「このフォルダのみ」フラグ。無ければフォルダはそのサブツリー全体を表す（#41）。 */
   isInFolder(id: string, captureId: string, only?: boolean): boolean;
-  postMatcher?(q: string): (post: HologramPost) => boolean;
+  postMatcher?(q: string): (post: DotPost) => boolean;
   postKeyOf?(url: string | null | undefined): string | null;
   tagIdOf?(name: string): number | undefined;
-}): (f: HologramQueryLeaf) => (p: HologramPost) => boolean {
+}): (f: DotQueryLeaf) => (p: DotPost) => boolean {
   return function postPredOf(f) {
     switch (f.type) {
       // 'post' = SNS の投稿（リンクを持つ）／'image' = 取得した画像（リンク無し）。
@@ -516,11 +516,9 @@ export function makePostPredOf(deps: {
           const lq = q.toLowerCase();
           const urlish = /[./]/.test(q);
           const qKey = urlish && deps.postKeyOf ? deps.postKeyOf(q) : null;
-          const urlHit: ((p: HologramPost) => boolean) | null = !urlish
-            ? null
-            : (p: HologramPost) => (qKey != null && (p._postKey === qKey || p._quotedKey === qKey)) || (p.url || '').toLowerCase().includes(lq) || (p.quotedUrl || '').toLowerCase().includes(lq) || ((p.linkCard as any)?.url || '').toLowerCase().includes(lq);
-          const match = deps.postMatcher ? deps.postMatcher(q) : (p: HologramPost) => matchesPost(q, p);
-          f._compiled = (p: HologramPost) => (urlHit != null && urlHit(p)) || match(p);
+          const urlHit: ((p: DotPost) => boolean) | null = !urlish ? null : (p: DotPost) => (qKey != null && (p._postKey === qKey || p._quotedKey === qKey)) || (p.url || '').toLowerCase().includes(lq) || (p.quotedUrl || '').toLowerCase().includes(lq) || ((p.linkCard as any)?.url || '').toLowerCase().includes(lq);
+          const match = deps.postMatcher ? deps.postMatcher(q) : (p: DotPost) => matchesPost(q, p);
+          f._compiled = (p: DotPost) => (urlHit != null && urlHit(p)) || match(p);
         }
         return f._compiled;
       }
@@ -530,7 +528,7 @@ export function makePostPredOf(deps: {
   };
 }
 
-export function makePosterPredOf(deps: { posterTagEntriesOf(key: string): HologramTagEntry[] }): (f: HologramQueryLeaf) => (u: HologramUserAgg) => boolean {
+export function makePosterPredOf(deps: { posterTagEntriesOf(key: string): DotTagEntry[] }): (f: DotQueryLeaf) => (u: DotUserAgg) => boolean {
   return function posterPredOf(f) {
     switch (f.type) {
       case 'platform':
@@ -543,7 +541,7 @@ export function makePosterPredOf(deps: { posterTagEntriesOf(key: string): Hologr
           return f.tagId != null ? entries.some((e) => e.id === f.tagId) : entries.some((e) => e.name === f.value);
         };
       case 'date': {
-        // あえて keyof HologramUserAgg より狭くしている（#23 St1 が追加した
+        // あえて keyof DotUserAgg より狭くしている（#23 St1 が追加した
         // members/platforms は string[] で、new Date() には渡せない）:
         // date の葉が指すのはこの3つの文字列値フィールドのどれか1つだけ。
         const field = (f.dateField || 'latest') as 'latest' | 'lastCapture' | 'authorCreatedAt';

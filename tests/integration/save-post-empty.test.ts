@@ -21,7 +21,7 @@ let handleSavePost: any;
 let configDir: string;
 let saveFolder: string;
 
-const inboxNew = () => path.join(saveFolder, '.hologram-inbox', 'new');
+const inboxNew = () => path.join(saveFolder, '.dot-inbox', 'new');
 const envelopeExists = (base: string) => fs.existsSync(path.join(inboxNew(), `${base}.json`));
 const journal = () => {
   try {
@@ -32,7 +32,7 @@ const journal = () => {
 };
 
 beforeAll(async () => {
-  configDir = process.env.HOLOGRAM_CONFIG_DIR as string;
+  configDir = process.env.DOT_CONFIG_DIR as string;
   saveFolder = path.join(configDir, 'saves');
   fs.mkdirSync(configDir, { recursive: true });
   fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder }));

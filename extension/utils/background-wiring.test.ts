@@ -194,7 +194,7 @@ function setupBackground(failRegistration = false) {
       return reloadCalls;
     },
     tabsSent,
-    clickMedia(tab: any, srcUrl: string, menuItemId = 'hologram-save', mediaType: 'image' | 'video' = 'image') {
+    clickMedia(tab: any, srcUrl: string, menuItemId = 'dot-save', mediaType: 'image' | 'video' = 'image') {
       for (const listener of contextMenuListeners) listener({ menuItemId, srcUrl, mediaType }, tab);
     },
     clickMenu(tab: any, menuItemId: string) {
@@ -318,7 +318,7 @@ describe('残した起動経路', () => {
       env.setFileScript(() => {
         env.dispatch({ type: 'logCapture', entry: { stage: 'bulk', phase: 'begin', platform: 'x', site: 'x.com', category: 'bulk-capture', message: 'Bulk capture started' } }, { tab: { id: 42, url: 'https://x.com/i/bookmarks?token=token0#token0' }, frameId: 0 });
       });
-      env.clickMenu({ id: 42, url: 'https://x.com/i/bookmarks?token=token0#token0' }, 'hologram-save');
+      env.clickMenu({ id: 42, url: 'https://x.com/i/bookmarks?token=token0#token0' }, 'dot-save');
       await vi.advanceTimersByTimeAsync(0);
 
       // 先行 batch は無応答のままだが、executeScript は timeout を待たない。
@@ -355,7 +355,7 @@ describe('残した起動経路', () => {
         'https://pixiv.net/*/users/*/bookmarks/artworks*',
       ],
     });
-    env.clickMenu({ id: 42, url: 'https://x.com/i/history' }, 'hologram-save');
+    env.clickMenu({ id: 42, url: 'https://x.com/i/history' }, 'dot-save');
     await vi.waitFor(() => expect(env.executed).toEqual([{ target: { tabId: 42 }, files: ['bulk.js'] }]));
   });
 
@@ -367,7 +367,7 @@ describe('残した起動経路', () => {
       order.push('fixture-ran');
     });
 
-    env.clickMenu({ id: 42, url: 'https://x.com/i/bookmarks?token=token0#token0' }, 'hologram-save');
+    env.clickMenu({ id: 42, url: 'https://x.com/i/bookmarks?token=token0#token0' }, 'dot-save');
 
     await vi.waitFor(() => expect(order).toContain('fixture-ran'));
     const bulkEntry = await loggedEntry(env.ports, (entry) => entry.stage === 'bulk' && entry.phase === 'begin');
@@ -400,7 +400,7 @@ describe('残した起動経路', () => {
     const ports = env.connectAsControllablePort({ ok: true, extBuild: 'next-build' });
     env.failFileScript(quotedFailure);
 
-    env.clickMenu({ id: 42, url: pageUrl }, 'hologram-save');
+    env.clickMenu({ id: 42, url: pageUrl }, 'dot-save');
 
     const nativeEntry = await loggedEntry(ports, (entry) => entry.stage === 'activate' && entry.phase === 'fail');
     await vi.waitFor(() => expect([...env.localStore.keys()].some((key) => key.startsWith('diaglog_'))).toBe(true));
@@ -476,7 +476,7 @@ describe('右クリックメディア保存', () => {
 
   test('メディア用メニューを画像と動画に登録する', () => {
     expect(env.contextMenuCreateCalls).toHaveLength(1);
-    expect(env.contextMenuCreateCalls).toContainEqual({ id: 'hologram-save', title: 'msg:ctxSaveMedia', contexts: ['image', 'video'] });
+    expect(env.contextMenuCreateCalls).toContainEqual({ id: 'dot-save', title: 'msg:ctxSaveMedia', contexts: ['image', 'video'] });
   });
 
   test('対応サイトでは画像保存を隠し、対応サイト外では表示する', async () => {
@@ -583,7 +583,7 @@ describe('右クリックメディア保存', () => {
     const videoUrl = 'https://cdn.example.com/selected.mp4';
     const ports = env.connectAsControllablePort();
     env.setTabMessage(async () => ({ context: null }));
-    env.clickMedia(TAB, videoUrl, 'hologram-save', 'video');
+    env.clickMedia(TAB, videoUrl, 'dot-save', 'video');
     await vi.waitFor(() => expect(env.executed).toContainEqual({ target: { tabId: 42 }, files: ['read-meta.js'] }));
     env.dispatch({ type: 'pageMetaExtracted', result: { title: 'Video', description: null, author: null, published: null, siteName: 'Example', image: null, url: TAB.url, metaSource: {} } }, { tab: TAB });
     const port = await portThatSent(ports, 'saveMedia');

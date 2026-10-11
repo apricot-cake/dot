@@ -19,7 +19,7 @@ export default defineContentScript({
     // で再度実行される。owner シンボルは、入ってくる世代が出ていく世代を見
     // つけて先に片付ける手段だ（#727）。これがないと両者が同じ UI を二重に
     // 描いてしまう。
-    const OWNER = Symbol.for('hologram.resident-runtime');
+    const OWNER = Symbol.for('dot.resident-runtime');
 
     interface ResidentOwner {
       generation: number;

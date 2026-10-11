@@ -28,7 +28,7 @@ vi.mock('electron', () => ({
   },
 }));
 vi.mock('./archive-stage-ownership', () => ({
-  createArchiveStage: async () => ({ stage: await fs.mkdtemp(path.join(os.tmpdir(), 'hologram-archive-import-test-')), close: async () => {} }),
+  createArchiveStage: async () => ({ stage: await fs.mkdtemp(path.join(os.tmpdir(), 'dot-archive-import-test-')), close: async () => {} }),
   registerArchiveActor: async () => 'actor',
   removeOwnedArchiveStage: async (stage: string) => fs.rm(stage, { recursive: true, force: true }),
   recoverArchiveStages: vi.fn(),

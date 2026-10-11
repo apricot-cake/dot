@@ -49,10 +49,10 @@ beforeEach(() => {
   stub.saveCalls = 0;
   stub.trash = null;
   stub.dialogError = null;
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-export-complete-'));
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-export-complete-'));
   folder = path.join(root, 'library');
   fs.mkdirSync(folder, { recursive: true });
-  const handle = openDatabase(path.join(folder, 'hologram.db'));
+  const handle = openDatabase(path.join(folder, 'dot.db'));
   sqlite = handle.sqlite;
 
   const captureId = '1700000000000-export';
@@ -172,7 +172,7 @@ describe('完全エクスポートと通知状態', () => {
     const copy = fs.promises.copyFile.bind(fs.promises);
     const hook = vi.spyOn(fs.promises, 'copyFile').mockImplementation(async (...args) => {
       expect(path.dirname(path.dirname(String(args[1])))).toBe(outputDir);
-      expect(path.basename(path.dirname(String(args[1])))).toMatch(/^\.hologram-complete-export-/);
+      expect(path.basename(path.dirname(String(args[1])))).toMatch(/^\.dot-complete-export-/);
       start();
       await gate;
       return copy(...args);

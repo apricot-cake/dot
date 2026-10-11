@@ -86,10 +86,10 @@ let cached = manifest?.sourceHash === currentSourceHash && manifest?.platform ==
 if (cached) {
   try {
     cached = hash(await read(executable)) === manifest.sha256;
-    const builtExecutable = path.join(buildDirectory, `hologram-avif-validator${process.platform === 'win32' ? '.exe' : ''}`);
+    const builtExecutable = path.join(buildDirectory, `dot-avif-validator${process.platform === 'win32' ? '.exe' : ''}`);
     cached &&= hash(await read(builtExecutable)) === manifest.sha256;
     for (const [source, destination] of licenseFiles) cached &&= hash(await read(path.join(buildDirectory, source))) === hash(await read(path.join(outputDirectory, destination)));
-    cached &&= hash(await read(path.join(root, 'LICENSE'))) === hash(await read(path.join(outputDirectory, 'hologram-LICENSE')));
+    cached &&= hash(await read(path.join(root, 'LICENSE'))) === hash(await read(path.join(outputDirectory, 'dot-LICENSE')));
     await verifySources();
     verifyVersion();
   } catch {
@@ -104,14 +104,14 @@ if (!cached) {
     run('cmake', ['--build', buildDirectory, '--config', 'Release']);
     run('ctest', ['--test-dir', buildDirectory, '--build-config', 'Release', '--output-on-failure']);
     await fs.mkdir(outputDirectory, { recursive: true });
-    await fs.copyFile(path.join(buildDirectory, 'hologram-avif-validator'), executable);
+    await fs.copyFile(path.join(buildDirectory, 'dot-avif-validator'), executable);
     await fs.chmod(executable, 0o755);
     for (const [source, destination] of licenseFiles) await fs.copyFile(path.join(buildDirectory, source), path.join(outputDirectory, destination));
   }
   await verifySources();
   verifyVersion();
   if ((await sourceHash()) !== currentSourceHash) throw new Error('ビルド中に検査器のソースが変更されました。prepare を再実行してください。');
-  await fs.copyFile(path.join(root, 'LICENSE'), path.join(outputDirectory, 'hologram-LICENSE'));
+  await fs.copyFile(path.join(root, 'LICENSE'), path.join(outputDirectory, 'dot-LICENSE'));
   const sha256 = hash(await read(executable));
   manifest = { platform, libavif: '1.4.2', dav1d: '1.5.3', ...revisions, sourceHash: currentSourceHash, sha256 };
   await fs.writeFile(`${manifestPath}.tmp`, `${JSON.stringify(manifest, null, 2)}\n`);

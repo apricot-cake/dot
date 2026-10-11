@@ -5,7 +5,7 @@
 // 復元ポイントはライブラリの保存フォルダにだけ書く。外部の保存先へ送る責務は持たない。
 //
 // ストアは保存フォルダの中に、ドット始まりのディレクトリとして `.trash/` や
-// `.hologram-inbox/` と並べて置く。ライブラリを移すと一緒に付いて行き、ドット始まりの
+// `.dot-inbox/` と並べて置く。ライブラリを移すと一緒に付いて行き、ドット始まりの
 // 名前のおかげで書き出しの書庫には入らない（書庫はディレクトリを1つも集めない）。
 //
 // 保持は daily / weekly / monthly の期間ごとに間引く。新しい方から
@@ -41,12 +41,12 @@ function generationsDir(saveFolder: string): string {
 // ファイル名に入れるのは ISO/UTC の刻印ではなくローカルの壁時計の時刻。この名前は復元
 // ポイントを選ぶ人間が読むものであり、下にある保持のバケツも、同じローカル時計の上の
 // 暦の日・週・月だから。
-const NAME_RE = /^hologram-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/;
+const NAME_RE = /^dot-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/;
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
 function generationName(at: Date): string {
-  return `hologram-${at.getFullYear()}${pad2(at.getMonth() + 1)}${pad2(at.getDate())}-${pad2(at.getHours())}${pad2(at.getMinutes())}${pad2(at.getSeconds())}.db`;
+  return `dot-${at.getFullYear()}${pad2(at.getMonth() + 1)}${pad2(at.getDate())}-${pad2(at.getHours())}${pad2(at.getMinutes())}${pad2(at.getSeconds())}.db`;
 }
 
 /** 世代のファイル名が表している時刻。こちらの名前でなければ null。 */

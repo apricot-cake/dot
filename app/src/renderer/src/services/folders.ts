@@ -1,10 +1,10 @@
 import type { Translate } from './translation.ts';
 import { notify as uiNotify, type NotifyAction } from './ui.ts';
-import { hologramI18n } from './i18n.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotI18n } from './i18n.ts';
+import { dotIpc } from './ipc.ts';
 
-export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: string; persist: () => void; isLibrary?: boolean }): HologramFolderStore {
-  let folders: HologramFolder[] = [];
+export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: string; persist: () => void; isLibrary?: boolean }): DotFolderStore {
+  let folders: DotFolder[] = [];
   const genId = () => idPrefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
   const allRaw = () => folders;
   const all = () => folders;
@@ -13,7 +13,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   // ファイルには残っている欄がストアへ入る途中で落ち、次の保存でそのフォルダが根へ
   // 書き戻されてしまう。
   function setAll(list: unknown) {
-    folders = Array.isArray(list) ? (list as HologramFolder[]) : [];
+    folders = Array.isArray(list) ? (list as DotFolder[]) : [];
     if (isLibrary)
       folders = folders.map((f) => ({
         ...f,
@@ -27,8 +27,8 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   // ID と親 → 子の索引。必要になった時に一緒に組み直し、構造が変わったら捨てる。兄弟の
   // 順序は配列の順序そのもの（`order` の欄は無い）なので、子索引も歩いた順序を保つ。
   // 壊れた入力に ID 重複があっても、従来の find と同じく先に現れた方を byId の答えにする。
-  let ids: Map<string, HologramFolder> | null = null;
-  let kids: Map<string | null, HologramFolder[]> | null = null;
+  let ids: Map<string, DotFolder> | null = null;
+  let kids: Map<string | null, DotFolder[]> | null = null;
   function invalidateTree() {
     ids = null;
     kids = null;
@@ -48,7 +48,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   }
   const childrenOf = (id: string | null) => {
     ensureIndexes();
-    return (kids as Map<string | null, HologramFolder[]>).get(id || null) || [];
+    return (kids as Map<string | null, DotFolder[]>).get(id || null) || [];
   };
   // そのフォルダ自身と、その下にあるものすべて。呼び出し側は、親が部分木を代表する2つの
   // 場面で使う＝投稿の照合（既定は集約＝親は子が持つものを見せる）と、カスケード削除。
@@ -113,7 +113,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
     if (!f || !draggedId || draggedId === targetId) return false;
     const target = byId(targetId);
     if (mode !== 'into' && !target) return false; // 「隣に置く」には、隣にする行が要る
-    const newParent = mode === 'into' ? (target ? target.id : null) : (target as HologramFolder).parentId || null;
+    const newParent = mode === 'into' ? (target ? target.id : null) : (target as DotFolder).parentId || null;
     // 親の付け替えと同じ拒否。フォルダは自分の部分木の中には着地できない。
     if (newParent && subtreeIds(draggedId).has(newParent)) return false;
     const parentChanged = (f.parentId || null) !== newParent;
@@ -131,7 +131,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   const byId = (id: string | null | undefined) => {
     if (id == null) return null;
     ensureIndexes();
-    return (ids as Map<string, HologramFolder>).get(id) || null;
+    return (ids as Map<string, DotFolder>).get(id) || null;
   };
   const has = (id: string | null | undefined, key: string) => {
     const f = byId(id);
@@ -140,7 +140,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   function create(name: string | null | undefined, opts?: { parentId?: string | null } | null) {
     const nm = (name || '').trim();
     if (!nm) return null;
-    const f: HologramFolder = { id: genId(), name: nm, items: [] };
+    const f: DotFolder = { id: genId(), name: nm, items: [] };
     if (isLibrary) {
       f.kind = 'static';
       f.created = Date.now();
@@ -258,19 +258,19 @@ const subs: Array<(kind?: string) => void> = [];
 
 // i18n。このモジュール自身のトースト（foldAdded/foldRemoved。下の業務ロジックから、
 // どのコンポーネントの描画の外でも発火する）は、レンダラーの i18n を使い回す＝
-// hologramI18n は i18n.ts が返す promise。一度だけ解決して getMessage を t() として
+// dotI18n は i18n.ts が返す promise。一度だけ解決して getMessage を t() として
 // キャッシュし、それまでは t() がキーをそのまま返す。自前のラベル（タイトル、
 // プレースホルダ、改名や削除の問い合わせ）が要るコンポーネントは、代わりに共有の
 // _shared/i18n.ts の t() を JSX で直接使う。
 let t: Translate = (key) => key;
-hologramI18n.then((api) => {
+dotI18n.then((api) => {
   if (api && api.getMessage) t = api.getMessage;
 });
 
 function persist() {
   loadPromise = null; // 読み込みのキャッシュを無効にして、後の load() がディスクを読み直すようにする（念のため。このセッション中はメモリ上の状態が正本のまま）
-  if (hologramIpc && hologramIpc.setFolders)
-    hologramIpc.setFolders({ folders: store.allRaw() }).catch(() => {
+  if (dotIpc && dotIpc.setFolders)
+    dotIpc.setFolders({ folders: store.allRaw() }).catch(() => {
       /* できる範囲で */
     });
 }
@@ -286,7 +286,7 @@ function notify(kind?: string) {
 
 async function doLoad() {
   try {
-    const r = hologramIpc && hologramIpc.getFolders ? await hologramIpc.getFolders() : null;
+    const r = dotIpc && dotIpc.getFolders ? await dotIpc.getFolders() : null;
     store.setAll((r && r.folders) || []);
     // activeId は旧来のもの（かつての 🔖 の対象）＝無視する。以前の選択中のフォルダは、
     // 普通のフォルダとしてそのまま残るだけ。
@@ -304,9 +304,9 @@ export function load() {
 // 時点でディスクは既に最新）、購読側すべて（サイドバーのフォルダの木）へ描き直すよう伝える。
 // これが具体的な受け入れの場面（設計:「コレクション作成が org-changed 経由で他窓の
 // サイドバーに反映」）。できる範囲で。Node（単体テスト）ではブリッジが無い＝このモジュールの
-// どの hologramIpc の呼び出しも既に使っている握り潰しと同じ。
+// どの dotIpc の呼び出しも既に使っている握り潰しと同じ。
 try {
-  hologramIpc.onOrgChanged((kind) => {
+  dotIpc.onOrgChanged((kind) => {
     if (kind !== 'folders') return;
     loadPromise = doLoad().then(() => notify('list'));
   });
@@ -391,7 +391,7 @@ export function all() {
 }
 
 // 旧保存済み検索はデータを保全し、通常のフォルダ一覧から除外する。
-export const isSavedSearch = (f: HologramFolder) => f.kind === 'dynamic';
+export const isSavedSearch = (f: DotFolder) => f.kind === 'dynamic';
 // 投稿を持てるのは静的なフォルダだけなので、フォルダを行き先として出す画面はすべて
 // staticFolders() を読む＝サイドバーのフライアウトの行（facets.ts）、投稿ごとの
 // 「フォルダに追加」のメニュー（post-grid-builder.ts）、フォルダの管理画面。この3つを

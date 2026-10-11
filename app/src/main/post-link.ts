@@ -15,7 +15,7 @@ export function registerPostLinkProtocol(): void {
   if (!app.setAsDefaultProtocolClient(POST_LINK_SCHEME, process.execPath, args)) throw new Error('投稿リンクの登録に失敗しました');
   if (process.platform === 'win32') {
     // リンクを開く確認画面で、共用の Electron 実行ファイル名ではなくアプリ名を表示する。
-    execFileSync('reg.exe', ['add', `HKCU\\Software\\Classes\\${POST_LINK_SCHEME}\\Application`, '/v', 'ApplicationName', '/t', 'REG_SZ', '/d', 'Hologram', '/f'], {
+    execFileSync('reg.exe', ['add', `HKCU\\Software\\Classes\\${POST_LINK_SCHEME}\\Application`, '/v', 'ApplicationName', '/t', 'REG_SZ', '/d', 'dot', '/f'], {
       windowsHide: true,
       stdio: 'ignore',
     });

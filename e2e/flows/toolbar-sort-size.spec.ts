@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('ソート項目だけを常時表示し、サイズ操作を独立させる', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('ソート項目だけを常時表示し、サイズ操作を独立させる', async ({ launchDot }) => {
+  const { page } = await launchDot();
   for (const mode of ['ホーム', '投稿者', 'ゴミ箱']) {
     await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: mode }).press('Enter');
     await expect(page.getByRole('button', { name: '表示', exact: true })).toHaveCount(0);

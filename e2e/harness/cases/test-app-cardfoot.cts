@@ -27,8 +27,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 const electronPath = resolveElectron();
 const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-cf-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-cf-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -72,7 +72,7 @@ async function main() {
       executablePath: electronPath,
       args: ['.', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'],
       cwd: appDir,
-      env: { ...process.env, APPDATA: tmp, HOLOGRAM_CONFIG_DIR: configDir, HOLOGRAM_START_INACTIVE: '1', HOLOGRAM_SANDBOX: '1', HOLOGRAM_E2E: '1', HOLOGRAM_E2E_HIDDEN: '1', HOLOGRAM_LANG: 'ja' },
+      env: { ...process.env, APPDATA: tmp, DOT_CONFIG_DIR: configDir, DOT_START_INACTIVE: '1', DOT_SANDBOX: '1', DOT_E2E: '1', DOT_E2E_HIDDEN: '1', DOT_LANG: 'ja' },
     });
     app = launched;
     const page = await launched.firstWindow();

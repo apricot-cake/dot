@@ -165,7 +165,7 @@ interface RendererWaits {
   neverHappens(label: string, fn: () => unknown, ms: number): Promise<boolean>;
 }
 
-// HOLOGRAM_SMOKE_EVAL に渡す文字列を、テンプレートリテラルではなく「本物の
+// DOT_SMOKE_EVAL に渡す文字列を、テンプレートリテラルではなく「本物の
 // 関数」から組み立てる。
 //
 //   const evalJs = evalSource(async ({ waitFor }, args) => {

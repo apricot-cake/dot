@@ -1,10 +1,10 @@
 import { get as confirmGet } from './confirm.ts';
 import { isOpen as fulltextIsOpen } from './fulltext-dialog.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { isOpen as settingsIsOpen } from './settings.ts';
 import { isTypingTarget, registerShortcut, tryRun } from './shortcut-registry.ts';
 
-const KEY = 'hologram-panels-hidden';
+const KEY = 'dot-panels-hidden';
 const DEFAULT_HIDDEN = false;
 
 function readCache(): boolean | null {
@@ -61,7 +61,7 @@ export function setHidden(next: boolean): void {
   chosen = true;
   writeCache(next);
   try {
-    hologramIpc.setPref('panelsHidden', next);
+    dotIpc.setPref('panelsHidden', next);
   } catch {
     /* 握りつぶす */
   }
@@ -91,7 +91,7 @@ export function reveal(): void {
 // そのまま立つ。
 export async function load(): Promise<void> {
   try {
-    const prefs = hologramIpc.getPrefs ? await hologramIpc.getPrefs() : null;
+    const prefs = dotIpc.getPrefs ? await dotIpc.getPrefs() : null;
     const saved = prefs ? prefs.panelsHidden : null;
     if (chosen || typeof saved !== 'boolean' || saved === hidden) return;
     hidden = saved;

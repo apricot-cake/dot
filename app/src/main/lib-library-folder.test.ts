@@ -6,7 +6,7 @@ import { classifyLibraryFolder } from './lib-library-folder';
 
 const dirs: string[] = [];
 const tempDir = () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-classify-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-classify-'));
   dirs.push(dir);
   return dir;
 };
@@ -18,13 +18,13 @@ afterEach(() => {
 describe('classifyLibraryFolder', () => {
   test('データベースがある保存先を復旧候補として認識する', () => {
     const dir = tempDir();
-    fs.writeFileSync(path.join(dir, 'hologram.db'), '');
+    fs.writeFileSync(path.join(dir, 'dot.db'), '');
     expect(classifyLibraryFolder(dir)).toBe('has-db');
   });
 
   test('ゴミ箱または取込キューだけが残る保存先を復旧候補として認識する', () => {
     const dir = tempDir();
-    fs.mkdirSync(path.join(dir, '.hologram-inbox'));
+    fs.mkdirSync(path.join(dir, '.dot-inbox'));
     expect(classifyLibraryFolder(dir)).toBe('evidence-no-db');
   });
 

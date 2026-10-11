@@ -1,4 +1,4 @@
-// Chrome がブリッジを起動できるように、Hologram の Native Messaging ホストを
+// Chrome がブリッジを起動できるように、dot の Native Messaging ホストを
 // 登録する（または登録を消す）。
 //
 // 使い方は2通り:
@@ -29,8 +29,8 @@ import { assertWindowsUserContext } from './windows-user-context.mts';
 // ばならない。さもないと2つが黙って半分だけ登録された状態になる。Native Messaging は
 // この名前で経路を決めるので、開発中に取ったキャプチャを本物のライブラリの外に留めるのは、
 // 2つ目の拡張機能の id ではなくこの名前だ。
-export const DEFAULT_HOST_NAME = 'com.hologram.host';
-export const HOST_NAME = process.env.HOLOGRAM_NATIVE_HOST_NAME || DEFAULT_HOST_NAME;
+export const DEFAULT_HOST_NAME = 'com.dot.host';
+export const HOST_NAME = process.env.DOT_NATIVE_HOST_NAME || DEFAULT_HOST_NAME;
 // ソースではなくバンドル（bridge.mts とそのローカルのモジュールを1ファイルにしたもの）
 // ＝app/build-native-host-bridge.mjs が作る。deployBridge() を参照。
 export const BRIDGE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'dist', 'bridge.js');
@@ -84,7 +84,7 @@ export function readExtensionId(): string | null {
 }
 
 export function launcherPath(): string {
-  return path.join(configDir(), 'hologram-host.bat');
+  return path.join(configDir(), 'dot-host.bat');
 }
 
 export function manifestPath(): string {
@@ -117,7 +117,7 @@ interface PreserveSharedRegistrationArgs {
 // 開発用の worktree は、意図して使い捨てにしてある。その Electron のパスをユーザーの
 // 本物のランチャーに残すと、その worktree を消した途端にブラウザからの保存がすべて失敗
 // する。設定の明示的な上書きは隔離されたテスト環境なので、そこでの登録は許したままにする。
-export function shouldPreserveSharedRegistration({ exe, runAsNode, configDirOverride = process.env.HOLOGRAM_CONFIG_DIR }: PreserveSharedRegistrationArgs): boolean {
+export function shouldPreserveSharedRegistration({ exe, runAsNode, configDirOverride = process.env.DOT_CONFIG_DIR }: PreserveSharedRegistrationArgs): boolean {
   return runAsNode && !configDirOverride && isLinkedWorktreeRuntime(exe);
 }
 
@@ -166,9 +166,9 @@ function writeLauncher({ exe, runAsNode, bridgePath }: WriteLauncherArgs): strin
   // Chrome はこのランチャーを、インストーラが走った環境ではなくブラウザの環境で
   // 起動する。だから隔離したインストールは、自分の設定ディレクトリを必ず焼き込まな
   // ければならない。さもないと開発用のホストが、本物の設定ディレクトリ
-  // （%APPDATA%\Hologram）を解決して本物のライブラリに書き込むブリッジを起動して
+  // （%APPDATA%\dot）を解決して本物のライブラリに書き込むブリッジを起動して
   // しまう（#732）。
-  if (process.env.HOLOGRAM_CONFIG_DIR) lines.push(`set "HOLOGRAM_CONFIG_DIR=${configDir()}"`);
+  if (process.env.DOT_CONFIG_DIR) lines.push(`set "DOT_CONFIG_DIR=${configDir()}"`);
   if (runAsNode) lines.push('set ELECTRON_RUN_AS_NODE=1');
   lines.push(`"${exeRef}" "${bridgePath}" %*`);
   fs.writeFileSync(p, lines.join('\r\n') + '\r\n', 'utf8');
@@ -192,7 +192,7 @@ function writeManifest(launcher: string, extensionId: string | null): string {
   }
   const manifest = {
     name: HOST_NAME,
-    description: 'Hologram native messaging host',
+    description: 'dot native messaging host',
     path: launcher,
     type: 'stdio',
     allowed_origins: allowedOrigins,

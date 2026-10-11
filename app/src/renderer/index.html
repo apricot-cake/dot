@@ -13,7 +13,7 @@
        for and what was measured (#683). Delivering it here again would mean two
        policies intersecting, and the one directive this move exists to enable —
        frame-ancestors — is ignored in <meta> anyway. -->
-  <title>Hologram</title>
+  <title>dot</title>
   <!-- Design tokens (colours, type, spacing, elevation, light/dark) — the ONE stylesheet
        this document links. Everything that consumes them is a Tailwind utility written at
        its own element; there is no app stylesheet in here any more (#6), and with the
@@ -38,9 +38,9 @@
        orchestrator in electron-vite's renderer bundle: src/app/index.tsx is the entry,
        which side-effect-imports every service, every component, then (last)
        services/orchestrator.ts + services/shell-ready.ts. orchestrator.ts owns
-       data/state/event-delegation + the remaining window.hologram* bridges; each
+       data/state/event-delegation + the remaining window.dot* bridges; each
        component subscribes and renders. Ordering is robust — orchestrator's body awaits
-       hologramI18n so it stays deferred behind the synchronous component mounts, and
+       dotI18n so it stays deferred behind the synchronous component mounts, and
        components pull current state on mount. theme.js stays its own pre-paint <script>
        (head, above) — it must run before first paint, which this module script
        (deferred by spec) cannot guarantee. -->

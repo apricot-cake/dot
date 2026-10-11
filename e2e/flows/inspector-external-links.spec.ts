@@ -1,7 +1,7 @@
 import { expect, test } from '../lib/harness.ts';
 
-test('投稿URLと投稿者のユーザー名に外部リンクアイコンを表示する', async ({ launchHologram }) => {
-  const { page } = await launchHologram();
+test('投稿URLと投稿者のユーザー名に外部リンクアイコンを表示する', async ({ launchDot }) => {
+  const { page } = await launchDot();
   await page.locator('[data-slot="post-grid"] [data-slot="post-card"]').first().click();
   const postLink = page.getByRole('link', { name: '元投稿を開く', exact: true });
   await expect(postLink.locator('svg.lucide-external-link')).toBeVisible();

@@ -5,9 +5,9 @@ import { handlers as searchBoxHandlers } from './searchbox.ts';
 import { store } from './store.ts';
 export interface SearchSuggestionDeps {
   t: Translate;
-  allPosts(): HologramPost[];
-  buildUsers(): HologramUserAgg[];
-  listFolders(): HologramFolder[];
+  allPosts(): DotPost[];
+  buildUsers(): DotUserAgg[];
+  listFolders(): DotFolder[];
   folderPath(id: string): string;
   openFolder(id: string): void;
   /** 投稿者ビューのタグの語彙（一般タグと、作品／キャラ）。件数は、今の絞り込みを当てた後の投稿者の数。 */

@@ -99,7 +99,7 @@ export function checkForRedirect(dir: string, options: RedirectCheckOptions = {}
   const unlinkSync = deps.unlinkSync ?? ((f: string) => fs.unlinkSync(f));
   const realpathNative = deps.realpathNative ?? ((f: string) => fs.realpathSync.native(f));
 
-  const probePath = path.join(dir, `.hologram-realpath-probe-${process.pid}-${Date.now()}`);
+  const probePath = path.join(dir, `.dot-realpath-probe-${process.pid}-${Date.now()}`);
   try {
     if (options.ensureDir) mkdirSync(dir);
     writeFileSync(probePath, '');

@@ -17,7 +17,7 @@
    resolve の API、OS 変化への追従、config.json との整合――は
    services/theme-api.ts にあり、通常のレンダラーバンドルの一部。 */
 (function () {
-  const KEY = 'hologram-theme';
+  const KEY = 'dot-theme';
   function cleanPref(t: string): string {
     return t === 'light' || t === 'dark' ? t : 'auto';
   }

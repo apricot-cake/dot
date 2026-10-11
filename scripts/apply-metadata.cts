@@ -9,7 +9,7 @@ const { downloadAvatar, pixivRefererFor } = require('../native-host/media-downlo
 
 async function main() {
   const folder = JSON.parse(fs.readFileSync(path.join(configDir(), 'config.json'), 'utf8')).saveFolder;
-  const root = path.join(folder, '.hologram-metadata-backfill');
+  const root = path.join(folder, '.dot-metadata-backfill');
   const state = JSON.parse(fs.readFileSync(path.join(root, 'progress.json'), 'utf8'));
   if (state.folder !== folder) throw Error('対象ライブラリが違います');
   const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
@@ -20,11 +20,11 @@ async function main() {
       .find((page) => page.url().includes('index.html'));
     if (!page) throw Error('アプリ画面がありません');
     const live = await page.evaluate(async () => {
-      const api = (window as any).hologram;
+      const api = (window as any).dot;
       return { folder: (await api.listPosts()).saveFolder, ready: typeof api.applyCachedMetadata === 'function' };
     });
     if (live.folder !== folder || !live.ready) throw Error('補完に対応した対象アプリが起動していません');
-    const db = new DatabaseSync(path.join(folder, 'hologram.db'), { readOnly: true });
+    const db = new DatabaseSync(path.join(folder, 'dot.db'), { readOnly: true });
     try {
       const backupFile = path.join(root, 'before-apply.db');
       if (!fs.existsSync(backupFile)) {
@@ -55,7 +55,7 @@ async function main() {
           fs.writeFileSync(assetFile + '.tmp', JSON.stringify(assets));
           fs.renameSync(assetFile + '.tmp', assetFile);
         }
-        const appliedResult = await page.evaluate((key) => (window as any).hologram.applyCachedMetadata(key), entry.key);
+        const appliedResult = await page.evaluate((key) => (window as any).dot.applyCachedMetadata(key), entry.key);
         if (!appliedResult.ok) throw Error(`反映できません: ${entry.key}`);
         applied++;
         console.log(JSON.stringify({ key: entry.key, ...appliedResult, applied }));

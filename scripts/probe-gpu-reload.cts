@@ -3,7 +3,7 @@
 // リロード累積プローブ（#66）: レンダラーのリロードを繰り返すと GPU プロセスが
 // 大きくなっていくか、その増加は dev サーバー固有のものか。
 //
-// 両方の腕は、隔離された HOLOGRAM_CONFIG_DIR の中で「同じ」アプリを「同じ」
+// 両方の腕は、隔離された DOT_CONFIG_DIR の中で「同じ」アプリを「同じ」
 // シード済みフィクスチャライブラリに対して動かす。ポートは :9222（本物の
 // アプリ）ともサンドボックスの範囲（scripts/lib-sandbox-instance.cts）とも
 // 外れているので、プローブの実行が常駐アプリ・本物のライブラリ・別のツリーの
@@ -35,7 +35,7 @@
 // 一緒に計測する。そこに現れるリークは、GPU プロセスにしか現れないリークとは
 // 別のバグだから。
 //
-// ウィンドウは非アクティブ状態で起動する（HOLOGRAM_START_INACTIVE=1）ので、
+// ウィンドウは非アクティブ状態で起動する（DOT_START_INACTIVE=1）ので、
 // プローブがキーボードの前にいる人からフォーカスを奪うことは無い。それは
 // レンダラーをバックグラウンド化し、rAF をゼロまでスロットルして FPS の軸を
 // 無意味にしてしまうので、下のスロットル抑制フラグは「両方の」腕に渡す —
@@ -438,9 +438,9 @@ async function main() {
   const port = await findFreePort();
   const env = Object.assign({}, process.env, {
     APPDATA: appData,
-    HOLOGRAM_CONFIG_DIR: configDir,
-    HOLOGRAM_SANDBOX: '1',
-    HOLOGRAM_START_INACTIVE: '1',
+    DOT_CONFIG_DIR: configDir,
+    DOT_SANDBOX: '1',
+    DOT_START_INACTIVE: '1',
   });
   console.log(`${opts.mode} の腕を :${port} で起動（config ${configDir}, ${opts.empty ? 'empty library' : '24 posts'}）`);
   const child = launch(opts, port, env);

@@ -15,7 +15,7 @@
 // 所属だけを落とし、それでも成功する（そうでなければ外部キーが復元全体を
 // 巻き添えにしてしまう）。
 //
-// 正解は IPC の答えからではなく、アプリが終了した後の hologram.db から読む。
+// 正解は IPC の答えからではなく、アプリが終了した後の dot.db から読む。
 // そうすれば、読み取り経路の何かが欠けた行を存在するように見せかけることが
 // できない。
 //
@@ -34,8 +34,8 @@ const { createDbWriter } = require(path.join(appDir, 'src', 'main', 'lib-db-writ
 const { openDatabase } = require(path.join(appDir, 'src', 'main', 'lib-db.ts'));
 const electronPath = resolveElectron();
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-restore-'));
-const configDir = path.join(tmp, 'Hologram');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-restore-'));
+const configDir = path.join(tmp, 'dot');
 const saveFolder = path.join(tmp, 'saves');
 fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(saveFolder, { recursive: true });
@@ -82,12 +82,12 @@ handle.sqlite.close();
 // 落として、それでも先へ進まなければならない。
 const evalJs = evalSource(
   async ({ sleep }, args) => {
-    const hologram = (window as any).hologram;
-    await hologram.listPosts();
-    await hologram.deletePost(args.image);
-    const folders = await hologram.getFolders();
-    await hologram.setFolders({ ...folders, folders: folders.folders.filter((f) => f.id !== 'doomed') });
-    await hologram.restorePost(args.image);
+    const dot = (window as any).dot;
+    await dot.listPosts();
+    await dot.deletePost(args.image);
+    const folders = await dot.getFolders();
+    await dot.setFolders({ ...folders, folders: folders.folders.filter((f) => f.id !== 'doomed') });
+    await dot.restorePost(args.image);
     // restore-post は解決する時点で自身の書き込みをコミット済みだが、
     // await しない後続処理も蹴っている（posts-changed の再取得と、デバウンス
     // された saved-index の書き込み、ipc-trash.ts）— この余裕は、その途中で
@@ -102,9 +102,9 @@ const evalJs = evalSource(
 
 const env = Object.assign({}, process.env, {
   APPDATA: tmp,
-  HOLOGRAM_CONFIG_DIR: configDir,
-  HOLOGRAM_SMOKE: '1',
-  HOLOGRAM_SMOKE_EVAL: evalJs,
+  DOT_CONFIG_DIR: configDir,
+  DOT_SMOKE: '1',
+  DOT_SMOKE_EVAL: evalJs,
 });
 
 const child = spawn(electronPath, ['.'], { cwd: appDir, env, stdio: ['inherit', 'pipe', 'inherit'] });
@@ -117,8 +117,8 @@ child.stdout.on('data', (d) => {
 child.on('close', () => {
   const evalOk = /EVAL_RESULT "restored"/.test(out);
 
-  // #176: hologram.db は今や configDir ではなく保存フォルダの中にある。
-  const db = openDatabase(path.join(saveFolder, 'hologram.db'), { readonly: true }).sqlite;
+  // #176: dot.db は今や configDir ではなく保存フォルダの中にある。
+  const db = openDatabase(path.join(saveFolder, 'dot.db'), { readonly: true }).sqlite;
   const post = db.prepare('SELECT captureId, trashedAt FROM posts WHERE captureId = ?').get(CAPTURE_ID);
   const folders = (db.prepare('SELECT folderId FROM folder_items WHERE postId = ? ORDER BY folderId').all(CAPTURE_ID) as Array<{ folderId: string }>).map((r) => r.folderId);
   const group = db.prepare('SELECT groupId, seq FROM manual_group_items WHERE postId = ?').get(CAPTURE_ID);

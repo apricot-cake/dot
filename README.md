@@ -1,4 +1,4 @@
-# hologram
+# dot
 
 ## 公式サイト
 
@@ -14,7 +14,7 @@
 
 ## 脆弱性報告
 
-[非公開フォーム](https://github.com/apricot-cake/hologram/security/advisories/new)から報告してください。
+[非公開フォーム](https://github.com/apricot-cake/dot/security/advisories/new)から報告してください。
 
 ## ライセンス
 

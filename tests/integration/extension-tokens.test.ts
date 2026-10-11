@@ -119,10 +119,10 @@ const SOURCES = [
 const read = (rel: string) => fs.readFileSync(path.join(EXT, rel), 'utf8');
 
 describe('拡張コードとの噛み合わせ', () => {
-  test('参照している --hologram-* は全て生成されている', () => {
+  test('参照している --dot-* は全て生成されている', () => {
     const dangling: string[] = [];
     for (const rel of SOURCES) {
-      for (const [, name] of read(rel).matchAll(/(--hologram-[\w-]+)/g)) {
+      for (const [, name] of read(rel).matchAll(/(--dot-[\w-]+)/g)) {
         if (!light.has(name)) dangling.push(`${rel}: ${name}`);
       }
     }
@@ -131,7 +131,7 @@ describe('拡張コードとの噛み合わせ', () => {
 
   test('生成されたトークンは全て使われている（使われない値を配らない）', () => {
     const used = new Set<string>();
-    for (const rel of SOURCES) for (const [, name] of read(rel).matchAll(/(--hologram-[\w-]+)/g)) used.add(name);
+    for (const rel of SOURCES) for (const [, name] of read(rel).matchAll(/(--dot-[\w-]+)/g)) used.add(name);
     expect([...light.keys()].filter((n) => !used.has(n)).sort()).toEqual([]);
   });
 
@@ -170,39 +170,39 @@ describe('拡張コードとの噛み合わせ', () => {
 // === (4) コントラスト ======================================================
 
 describe.each(THEMES)('コントラスト（%s テーマ）', (_name, v) => {
-  const surface = () => rgb(v.get('--hologram-surface') as string);
+  const surface = () => rgb(v.get('--dot-surface') as string);
 
   test('本文のインクがカード上で 4.5:1 以上', () => {
-    expect(ratio(rgb(v.get('--hologram-ink') as string), surface())).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(rgb(v.get('--dot-ink') as string), surface())).toBeGreaterThanOrEqual(4.5);
   });
 
   test('補助テキストがカード上で 4.5:1 以上', () => {
-    expect(ratio(rgb(v.get('--hologram-ink-muted') as string), surface())).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(rgb(v.get('--dot-ink-muted') as string), surface())).toBeGreaterThanOrEqual(4.5);
   });
 
   test.each(Object.entries(HOSTS))('カードの輪郭が %s の上で 3:1 以上（対下地・対塗りとも）', (_host, bg) => {
-    const border = rgb(v.get('--hologram-overlay-border') as string);
+    const border = rgb(v.get('--dot-overlay-border') as string);
     expect(ratio(border, bg)).toBeGreaterThanOrEqual(3);
     expect(ratio(border, surface())).toBeGreaterThanOrEqual(3);
   });
 
   // 保存中のバッジやフォーカス表示は任意のページ上で読める必要がある。
   test.each(Object.entries(HOSTS))('アクセントが %s の上で 3:1 以上', (_host, bg) => {
-    expect(ratio(rgb(v.get('--hologram-accent') as string), bg)).toBeGreaterThanOrEqual(3);
+    expect(ratio(rgb(v.get('--dot-accent') as string), bg)).toBeGreaterThanOrEqual(3);
   });
 
   test('アクセントの塗りに乗るアイコンが 4.5:1 以上', () => {
-    expect(ratio(rgb(v.get('--hologram-on-accent') as string), rgb(v.get('--hologram-accent') as string))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(rgb(v.get('--dot-on-accent') as string), rgb(v.get('--dot-accent') as string))).toBeGreaterThanOrEqual(4.5);
   });
 
   test('アクセントがカードの上で 3:1 以上', () => {
-    expect(ratio(rgb(v.get('--hologram-accent') as string), surface())).toBeGreaterThanOrEqual(3);
+    expect(ratio(rgb(v.get('--dot-accent') as string), surface())).toBeGreaterThanOrEqual(3);
   });
 
   test.each([
-    ['success', '--hologram-success', '--hologram-on-success'],
-    ['warning', '--hologram-warning', '--hologram-on-warning'],
-    ['danger', '--hologram-danger', '--hologram-on-danger'],
+    ['success', '--dot-success', '--dot-on-success'],
+    ['warning', '--dot-warning', '--dot-on-warning'],
+    ['danger', '--dot-danger', '--dot-on-danger'],
   ])('%s: 塗りの上のグリフが 4.5:1 以上、塗り自体がカードと 3:1 以上', (_what, fillName, inkName) => {
     const fill = rgb(v.get(fillName) as string);
     expect(ratio(rgb(v.get(inkName) as string), fill)).toBeGreaterThanOrEqual(4.5);
@@ -212,7 +212,7 @@ describe.each(THEMES)('コントラスト（%s テーマ）', (_name, v) => {
   // 小さな操作子(保存ボタン)のホバー時の塗り。カードと同じ面を使うので、ホバーで面が
   // 変わってもインクは読めるままでなければならない。
   test('ホバー時の面の上でもインクが 4.5:1 以上', () => {
-    expect(ratio(rgb(v.get('--hologram-ink') as string), rgb(v.get('--hologram-hover') as string))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(rgb(v.get('--dot-ink') as string), rgb(v.get('--dot-hover') as string))).toBeGreaterThanOrEqual(4.5);
   });
 
   // 保存済みの印と、保存中の面は半透明＝下地が「どんな写真でもありうる」ので、最悪の
@@ -222,8 +222,8 @@ describe.each(THEMES)('コントラスト（%s テーマ）', (_name, v) => {
     ['真っ黒な写真', { r: 0, g: 0, b: 0 }],
     ['真っ白な写真', { r: 255, g: 255, b: 255 }],
   ] as [string, Rgb][])('保存済みマークのグリフが %s の上で 4.5:1 以上', (_what, photo) => {
-    const disc = over(v.get('--hologram-control-surface') as string, photo);
-    expect(ratio(rgb(v.get('--hologram-ink') as string), disc)).toBeGreaterThanOrEqual(4.5);
+    const disc = over(v.get('--dot-control-surface') as string, photo);
+    expect(ratio(rgb(v.get('--dot-ink') as string), disc)).toBeGreaterThanOrEqual(4.5);
   });
 
   // ホバー時の保存ボタンも同じ半透明の円盤に乗る(2026-07-29 に利用者が決めた)。ホバーは
@@ -232,8 +232,8 @@ describe.each(THEMES)('コントラスト（%s テーマ）', (_name, v) => {
     ['真っ黒な写真', { r: 0, g: 0, b: 0 }],
     ['真っ白な写真', { r: 255, g: 255, b: 255 }],
   ] as [string, Rgb][])('ホバー中の保存ボタンのグリフが %s の上で 4.5:1 以上', (_what, photo) => {
-    const disc = over(v.get('--hologram-control-surface-hover') as string, photo);
-    expect(ratio(rgb(v.get('--hologram-ink') as string), disc)).toBeGreaterThanOrEqual(4.5);
+    const disc = over(v.get('--dot-control-surface-hover') as string, photo);
+    expect(ratio(rgb(v.get('--dot-ink') as string), disc)).toBeGreaterThanOrEqual(4.5);
   });
 });
 
@@ -250,7 +250,7 @@ describe('ツールバーのバッジ', () => {
   });
 
   test('生成された値はライトの danger 対そのもの（手で置き換えられていない）', () => {
-    expect(badge.background).toBe(light.get('--hologram-danger'));
-    expect(badge.text).toBe(light.get('--hologram-on-danger'));
+    expect(badge.background).toBe(light.get('--dot-danger'));
+    expect(badge.text).toBe(light.get('--dot-on-danger'));
   });
 });

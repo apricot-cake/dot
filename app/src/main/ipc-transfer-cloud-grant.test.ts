@@ -76,7 +76,7 @@ describe('クラウド同期先への移動許可', () => {
     stub.messageOptions = null;
     savedLanguage = 'ja';
     libraryMissing = false;
-    root = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-cloud-grant-'));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-cloud-grant-'));
     source = path.join(root, 'current-library');
     fs.mkdirSync(source);
     relocateLibrary = vi.fn((_src, dest) => ({ ok: true, saveFolder: dest, moved: 0 }));
@@ -137,7 +137,7 @@ describe('クラウド同期先への移動許可', () => {
     expect(relocateLibrary).toHaveBeenCalledOnce();
     expect(pauseLibraryRelocation).toHaveBeenCalledOnce();
     expect(finishLibraryRelocation).toHaveBeenCalledWith(1);
-    expect(relocateLibrary.mock.calls[0][1]).toBe(path.join(stub.picked, 'Hologram', 'Library'));
+    expect(relocateLibrary.mock.calls[0][1]).toBe(path.join(stub.picked, 'dot', 'Library'));
   });
 
   test('保存済み English 設定で main 所有の警告を英語表示する', async () => {
@@ -167,7 +167,7 @@ describe('クラウド同期先への移動許可', () => {
     await expect(stub.handlers.get('move-save-folder')?.(eventFor(approved))).resolves.toMatchObject({ ok: true });
     await expect(stub.handlers.get('move-save-folder')?.(eventFor(approved))).resolves.toEqual({ ok: false, error: 'invalid' });
     expect(relocateLibrary).toHaveBeenCalledOnce();
-    expect(relocateLibrary.mock.calls[0][1]).toBe(path.join(stub.picked, 'Hologram', 'Library'));
+    expect(relocateLibrary.mock.calls[0][1]).toBe(path.join(stub.picked, 'dot', 'Library'));
   });
 
   test('古い承認は新しい picker の取消後に許可を復活させない', async () => {
@@ -202,7 +202,7 @@ describe('クラウド同期先への移動許可', () => {
     await expect(oldPick).resolves.toMatchObject({ canceled: true });
     await expect(stub.handlers.get('move-save-folder')?.(eventFor(sender))).resolves.toMatchObject({ ok: true });
     expect(relocateLibrary).toHaveBeenCalledOnce();
-    expect(relocateLibrary.mock.calls[0][1]).toBe(path.join(root, 'Dropbox', 'B', 'Hologram', 'Library'));
+    expect(relocateLibrary.mock.calls[0][1]).toBe(path.join(root, 'Dropbox', 'B', 'dot', 'Library'));
   });
 
   test('25回の承認と終了を繰り返しても destroyed listener は一つだけ', async () => {

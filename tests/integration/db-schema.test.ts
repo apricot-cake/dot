@@ -7,7 +7,7 @@ import { openDatabase } from '../../app/src/main/lib-db';
 
 const dirs: string[] = [];
 function mkdb() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-db-schema-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-db-schema-'));
   dirs.push(dir);
   return path.join(dir, 'test.db');
 }

@@ -12,10 +12,10 @@
 // しないので、2つが同じシンボルをエクスポートすると、ビルドのたびに
 // どちらを落としたか警告する。
 export const generatedMotion = {
-  durationBase: 180, // --hologram-duration-base
-  durationFast: 120, // --hologram-duration-fast
-  easeOut: 'cubic-bezier(0, 0, 0.2, 1)', // --hologram-ease-out
-  easeIn: 'cubic-bezier(0.4, 0, 1, 1)', // --hologram-ease-in
+  durationBase: 180, // --dot-duration-base
+  durationFast: 120, // --dot-duration-fast
+  easeOut: 'cubic-bezier(0, 0, 0.2, 1)', // --dot-ease-out
+  easeIn: 'cubic-bezier(0.4, 0, 1, 1)', // --dot-ease-in
 } as const;
 
 // ツールバーアイコンの警告バッジ（#269）。ライト側の行のみ — service
@@ -23,8 +23,8 @@ export const generatedMotion = {
 // 2つ目の値を渡す分岐が存在しない。ピルは不透明で自前のインクを持つので、
 // その裏でツールバーが何をしていようとコントラストには一切関係しない。
 export const generatedActionBadge = {
-  background: '#e7000b', // --hologram-danger
-  text: '#ffffff', // --hologram-on-danger
-  verificationBackground: '#b45309', // --hologram-warning
-  verificationText: '#ffffff', // --hologram-on-warning
+  background: '#e7000b', // --dot-danger
+  text: '#ffffff', // --dot-on-danger
+  verificationBackground: '#b45309', // --dot-warning
+  verificationText: '#ffffff', // --dot-on-warning
 } as const;

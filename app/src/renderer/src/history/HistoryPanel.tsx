@@ -68,7 +68,7 @@ function historyThumbFile(row: HistoryRow): string | null {
   return post ? post.image || (Array.isArray(post.media) && post.media[0]?.file) || null : null;
 }
 
-function toEntry(row: HistoryRow): HologramNavEntry {
+function toEntry(row: HistoryRow): DotNavEntry {
   return NavEntrySchema.parse(row);
 }
 

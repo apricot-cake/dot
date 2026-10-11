@@ -5,8 +5,8 @@
 // これが何を買うか。開発用のChromeプロファイルは日常使いのものと同じ拡張機能
 // idで動く＝署名鍵は意図的に固定されている。だから隔離はidからは来ない。
 // ホスト名から来る。共有リリースビルドは、開発用プロファイルの設定に従って
-// `com.hologram.host.dev`（extension/utils/native-host.ts）を求め、それがこの登録に解決される。その
-// ランチャーはHOLOGRAM_CONFIG_DIRを%APPDATA%/Hologram-Devに固定する。それより下流の
+// `com.dot.host.dev`（extension/utils/native-host.ts）を求め、それがこの登録に解決される。その
+// ランチャーはDOT_CONFIG_DIRを%APPDATA%/dot-Devに固定する。それより下流の
 // 設定とログを分ける。保存先は既存設定を維持し、初回だけ普段のライブラリに揃える。
 // テスト保存の隔離は verify-extension-tab.cts のタブ専用ホストが担当する。
 //
@@ -25,7 +25,7 @@
 //
 // 緑のレポートが証明するのは、依然としてChromeがそのホストを「見つける」こと
 // だけ。エンドツーエンドの証明は、開発プロファイルからのcaptureと
-// %APPDATA%/Hologram-Dev/bridge.log。
+// %APPDATA%/dot-Dev/bridge.log。
 
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
@@ -36,22 +36,22 @@ const path = require('node:path');
 // extension/wxt.config.tsにある）。導出するのではなく直書きする＝鍵が足元で
 // 変わったとき、登録が声高に失敗するように。
 const EXTENSION_ID = 'keggmjkemfcekcffohnpaojacdakpejh';
-const DEV_HOST_NAME = 'com.hologram.host.dev';
-const DEV_CONFIG_DIR = process.env.HOLOGRAM_DEV_CONFIG_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Hologram-Dev');
+const DEV_HOST_NAME = 'com.dot.host.dev';
+const DEV_CONFIG_DIR = process.env.DOT_DEV_CONFIG_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'dot-Dev');
 const { assertWindowsUserContext } = require('../native-host/windows-user-context.mts');
 
 // installerをrequireする「前」に設定する: ホスト名とconfigディレクトリはどちらも
-// モジュール読み込み時に読まれる。paths.mtsがHOLOGRAM_CONFIG_DIRを読むのと
+// モジュール読み込み時に読まれる。paths.mtsがDOT_CONFIG_DIRを読むのと
 // ちょうど同じように。
-process.env.HOLOGRAM_CONFIG_DIR = DEV_CONFIG_DIR;
-process.env.HOLOGRAM_NATIVE_HOST_NAME = DEV_HOST_NAME;
+process.env.DOT_CONFIG_DIR = DEV_CONFIG_DIR;
+process.env.DOT_NATIVE_HOST_NAME = DEV_HOST_NAME;
 
 const installer = require('../native-host/install.mts');
 
 function seedConfig(): void {
   fs.mkdirSync(DEV_CONFIG_DIR, { recursive: true });
   const { defaultLibraryDir } = require('../native-host/paths.mts');
-  const usualConfigFile = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Hologram', 'config.json');
+  const usualConfigFile = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'dot', 'config.json');
   const usualConfig = fs.existsSync(usualConfigFile) ? JSON.parse(fs.readFileSync(usualConfigFile, 'utf8').replace(/^\uFEFF/, '')) : {};
   const library = usualConfig.saveFolder || defaultLibraryDir();
   fs.mkdirSync(library, { recursive: true });

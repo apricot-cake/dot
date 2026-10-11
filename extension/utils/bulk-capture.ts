@@ -37,7 +37,7 @@ import { StatusSurface } from './status-surface.ts';
 import { SaveToasts, SAVE_TOAST_DURATION_MS } from './save-toasts.ts';
 import { saveResultText } from './save-result-text.ts';
 import { userOnly } from './user-gesture.ts';
-import type { HologramI18nApi } from './i18n.ts';
+import type { DotI18nApi } from './i18n.ts';
 import type { CheckSavedMessage, CheckSavedResponse, SavePostMessage, SaveResponse } from './messages.ts';
 
 type EntryState = 'unknown' | 'queued' | 'saving' | 'saved' | 'skipped' | 'unavailable' | 'ageRestricted' | 'failed';
@@ -49,7 +49,7 @@ type EntryState = 'unknown' | 'queued' | 'saving' | 'saved' | 'skipped' | 'unava
 const MIN_SAVE_PERIOD_MS = 1000;
 const END_QUIET_MS = 4000;
 
-export function startBulkCapture(site: ContentSite, i18n: HologramI18nApi): void {
+export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
   const t = i18n.getMessage;
   const toasts = new SaveToasts(t);
   const retryTargets = new Map<string, string>();
@@ -112,8 +112,8 @@ export function startBulkCapture(site: ContentSite, i18n: HologramI18nApi): void
   //
   // 一括取り込みの進捗と停止操作を持つバナー（#44 — status-surface.ts）。
   const banner = new StatusSurface({ resting: ICONS.drop });
-  banner.el.setAttribute('data-hologram-bulk-banner', '');
-  banner.label.setAttribute('data-hologram-bulk-label', '');
+  banner.el.setAttribute('data-dot-bulk-banner', '');
+  banner.label.setAttribute('data-dot-bulk-label', '');
   banner.setState('busy', '');
 
   // これらの画面の中で唯一の操作: ユーザーが始めた実行には止める手段

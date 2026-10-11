@@ -132,9 +132,9 @@ describe('tabTitleOf', () => {
 const E = (v: unknown) => ({ u: '/posts', kind: 'posts', state: { v } });
 
 test('スクロール位置は履歴を増やさず、戻る・進むと永続化で保持する', () => {
-  const applied: HologramNavEntry[] = [];
-  const posts: HologramNavEntry = { u: '/posts', kind: 'posts', state: {} };
-  const posters: HologramNavEntry = { u: '/posters', kind: 'posters', state: {} };
+  const applied: DotNavEntry[] = [];
+  const posts: DotNavEntry = { u: '/posts', kind: 'posts', state: {} };
+  const posters: DotNavEntry = { u: '/posters', kind: 'posters', state: {} };
   const nav = makeNavHistory({ cap: 10, enabled: () => true, snapshot: () => posts, apply: (e) => applied.push(e), onChange: () => {} });
   nav.push(posts);
   nav.saveScrollTop(600);
@@ -148,7 +148,7 @@ test('スクロール位置は履歴を増やさず、戻る・進むと永続�
   expect(applied.at(-1)?.scrollTop).toBe(600);
   nav.forward();
   expect(applied.at(-1)?.scrollTop).toBe(1800);
-  const tab = { id: 'scroll-test', state: {} } as HologramTab;
+  const tab = { id: 'scroll-test', state: {} } as DotTab;
   nav.saveInto(tab);
   nav.adopt(tab);
   expect(nav.current()?.scrollTop).toBe(1800);

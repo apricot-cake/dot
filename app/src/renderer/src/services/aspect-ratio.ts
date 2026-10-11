@@ -8,7 +8,7 @@ export const ASPECT_RATIOS = [
 ] as const;
 
 /** 各画像の保存寸法で判定する。別画像の最大幅と最大高さは組み合わせない。 */
-export function aspectRatiosOf(post: Pick<HologramPost, 'media' | 'image' | 'shotW' | 'shotH'>): AspectRatio[] {
+export function aspectRatiosOf(post: Pick<DotPost, 'media' | 'image' | 'shotW' | 'shotH'>): AspectRatio[] {
   const result = new Set<AspectRatio>();
   const add = (width: number | null | undefined, height: number | null | undefined) => {
     if (!width || !height || width <= 0 || height <= 0 || !Number.isFinite(width) || !Number.isFinite(height)) return;

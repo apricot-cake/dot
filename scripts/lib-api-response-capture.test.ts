@@ -13,7 +13,7 @@ let temporaryRoot: string;
 let env: { LOCALAPPDATA: string };
 
 beforeEach(() => {
-  temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-api-capture-test-'));
+  temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-api-capture-test-'));
   env = { LOCALAPPDATA: temporaryRoot };
 });
 
@@ -69,7 +69,7 @@ describe('開発用 API 応答の保存', () => {
   });
 
   test('保存先はリポジトリ外に限定し、UUID 以外による再読込を拒否する', () => {
-    expect(captureRoot(env)).toBe(path.join(temporaryRoot, 'Hologram', 'verification', 'api-responses'));
+    expect(captureRoot(env)).toBe(path.join(temporaryRoot, 'dot', 'verification', 'api-responses'));
     expect(() => captureRoot({ LOCALAPPDATA: path.resolve(__dirname, '..') })).toThrow(/リポジトリ内/);
     expect(() => captureRoot({ LOCALAPPDATA: 'relative' })).toThrow();
     for (const id of ['../outside', '..\\outside', path.join(temporaryRoot, 'outside'), '123']) expect(() => readSession(id, env)).toThrow(/UUID/);

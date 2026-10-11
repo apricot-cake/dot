@@ -3,7 +3,7 @@ import type { Translate } from './translation.ts';
 // inspector-builder.ts / post-grid-builder.ts を鏡写しにしている: 純粋ロジック
 // はここへ移り、それに届くジェスチャーは今ではセル自身の props になっている
 // （services/grid.ts の cardActions、orchestrator.ts で配線）。selection.ts
-// （hologramStore に支えられた selectedSet/anchor のブリッジ）は変更しない＝
+// （dotStore に支えられた selectedSet/anchor のブリッジ）は変更しない＝
 // このモジュールはその利用側の1つ（もう1つは FloatingBar コンポーネント自身の
 // モデル導出で、ここでは影響を受けない）。
 // 「タグを追加」（openBulkTagDialog）は bulk-tag-builder.ts の領分（P2⑦で
@@ -11,7 +11,7 @@ import type { Translate } from './translation.ts';
 // モジュール自身の selectedRecords を必要とするため）ので、このモジュールは
 // 遅延 dep 経由でそれを呼ぶだけ＝inspector-builder.ts の
 // jumpToPoster/showToast の前方参照と同じ形。
-import { hologramImageTabSource } from './image-tab.ts';
+import { dotImageTabSource } from './image-tab.ts';
 import { fileOfSrc } from './asset-src.ts';
 import { copyImage, copyableImages, get as getImageCopy } from './image-copy.ts';
 import * as selection from './selection.ts';
@@ -30,21 +30,21 @@ import { gridSlot } from './content-area.ts';
 export interface SelectionBarDeps {
   t: Translate;
   showToast(msg: unknown): void;
-  getViewGroups(): HologramPostGroup[];
+  getViewGroups(): DotPostGroup[];
   renderPosts(inPlace?: boolean): void;
   removePosts(ids: Iterable<string>): void;
   loadPosts(keepLimit?: boolean): Promise<void>;
-  showFoldMenu(g: HologramPostGroup, at: HologramMenuAnchor): void;
+  showFoldMenu(g: DotPostGroup, at: DotMenuAnchor): void;
   // openBulkTagDialog は bulk-tag-builder.ts にある＝遅延 dep、
   // inspector-builder.ts の jumpToPoster/showToast と同じ形。
   openBulkTagDialog(): void;
   // コピー対象の解決と IPC は post-grid-builder.ts が担当する。
-  copyGroupsImage(groups: HologramPostGroup[]): void;
+  copyGroupsImage(groups: DotPostGroup[]): void;
 }
 
 export function makeSelectionBar(deps: SelectionBarDeps) {
   // クリックは選択だけを変更する。インスペクタはその状態から導出される。
-  function clickSelect(g: HologramPostGroup, e: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) {
+  function clickSelect(g: DotPostGroup, e: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) {
     gridSlot('post')?.querySelector<HTMLElement>('[role="grid"]')?.focus({ preventScroll: true });
     const idx = deps.getViewGroups().indexOf(g);
     const key = postIdKey(g.rep);
@@ -75,7 +75,7 @@ export function makeSelectionBar(deps: SelectionBarDeps) {
   }
 
   // 手で同期すべきものはもう何も残っていない: 表示中のセルはどれも
-  // hologramStore の 'selectedSet'（selection.ts がすでに書き込んでいる）を
+  // dotStore の 'selectedSet'（selection.ts がすでに書き込んでいる）を
   // 購読しているので、選択が変わった瞬間に自分自身を再描画する。以前グリッド
   // コンテナに付け外ししていた `.selecting` クラスは、カードのホバー操作を
   // 隠すために存在していたが、それらはもう無い（#618 決定Aで確認済み）。
@@ -95,7 +95,7 @@ export function makeSelectionBar(deps: SelectionBarDeps) {
   // もアンマウントした（代わりは下部のフローティングバー）ので、呼ぶたびに
   // `null.style` になる＝選択が変わるたびに TypeError を投げていた。無害に
   // 見えていた（ストアへの書き込みが先に走るのでリングは更新され続けていた）。選択バーが戻ってくるなら、
-  // SelectionBar.tsx がすでにそうしているように hologramStore から自分の
+  // SelectionBar.tsx がすでにそうしているように dotStore から自分の
   // 表示状態を導出するべき（count === 0 → null）＝ここを経由しては戻ってこない。
 
   function toggleSelectAll() {
@@ -137,7 +137,7 @@ export function makeSelectionBar(deps: SelectionBarDeps) {
 
   // Ctrl/Cmd+C は画像が複数ある場合だけ選択画面を開く。
   function activeCopyFile() {
-    const model = hologramImageTabSource.get();
+    const model = dotImageTabSource.get();
     const item = model?.items[model.idx];
     return item && !item.video ? copyableImages([fileOfSrc(item.src)])[0] : undefined;
   }
@@ -255,7 +255,7 @@ export function makeSelectionBar(deps: SelectionBarDeps) {
     // しか読まない）。ピッカーは「フォルダへ追加」ボタン自身の上にぶら下がる:
     // バーは下部に固定されているので `side: 'top'` がはまる位置（万一そうで
     // なければ Base UI が下向きに反転させる）。
-    deps.showFoldMenu({ rep: { captureId: ids[0] }, records: recs } as unknown as HologramPostGroup, { anchorEl, side: 'top', align: 'center' });
+    deps.showFoldMenu({ rep: { captureId: ids[0] }, records: recs } as unknown as DotPostGroup, { anchorEl, side: 'top', align: 'center' });
   }
 
   return {

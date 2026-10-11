@@ -1,7 +1,7 @@
 'use strict';
 
 // SQLite の Online Backup API による DB スナップショット (#5 St8 / #301)。生きた DB が
-// WAL の書き込み下にあってもコピーして安全な、一貫したファイルを1つ作る。hologram.db
+// WAL の書き込み下にあってもコピーして安全な、一貫したファイルを1つ作る。dot.db
 // （と -wal/-shm）を fs.copyFile で生コピーすると、書きかけの千切れた状態を掴みうる。
 // better-sqlite3 の Database#backup() は sqlite3_backup_init/step/finish をそのまま包む
 // （13.0.1 で確認済み＝SQLite の C API であって、アプリ層のコピーループではない）。

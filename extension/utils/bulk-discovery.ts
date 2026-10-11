@@ -35,7 +35,7 @@ export function startBulkDiscovery(): () => void {
     shown = true;
     const banner = new StatusSurface({ resting: ICONS.drop });
     surface = banner;
-    banner.el.dataset.hologramBulkDiscovery = '';
+    banner.el.dataset.dotBulkDiscovery = '';
     banner.setState('idle');
     const title = document.createElement('div');
     title.textContent = t('bulkIntro');
@@ -85,12 +85,12 @@ export function startBulkDiscovery(): () => void {
   };
   const refresh = () => void check().catch((error) => reportCaughtException(logSaveEvent, 'content', error, 'bulk-discovery-check'));
   const timer = setInterval(refresh, 1000);
-  window.addEventListener('hologram:bulk-start', hide);
+  window.addEventListener('dot:bulk-start', hide);
   refresh();
   return () => {
     disposed = true;
     clearInterval(timer);
-    window.removeEventListener('hologram:bulk-start', hide);
+    window.removeEventListener('dot:bulk-start', hide);
     pendingStart?.cancel();
     pendingStart = undefined;
     hide();

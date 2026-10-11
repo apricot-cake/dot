@@ -26,8 +26,8 @@ const FIELD_LABEL: Record<FullTextMatch['field'], MessageKey> = {
 const FULLTEXT_DEBOUNCE_MS = 150; // #29 設計:「150ms デバウンス」
 const FULLTEXT_CAP = 50; // #29 設計: 上限50件＋「すべて表示」
 
-const authorLabelOf = (p: HologramPost): string => p.displayName || p.screenName || t('unnamedUser');
-const thumbFileOf = (p: HologramPost): string | null => p.image || (Array.isArray(p.media) && p.media[0]?.file) || null;
+const authorLabelOf = (p: DotPost): string => p.displayName || p.screenName || t('unnamedUser');
+const thumbFileOf = (p: DotPost): string | null => p.image || (Array.isArray(p.media) && p.media[0]?.file) || null;
 
 function FulltextBody() {
   const generation = useSyncExternalStore(subscribePosts, getGeneration);

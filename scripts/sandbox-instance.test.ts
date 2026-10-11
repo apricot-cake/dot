@@ -6,7 +6,7 @@ import { SANDBOX_PORT, assertMainWorkingTree, clearInstance, foreignSandboxAt, i
 
 const dirs: string[] = [];
 function mkdir() {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-sbx-'));
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-sbx-'));
   dirs.push(d);
   return d;
 }

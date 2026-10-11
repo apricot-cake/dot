@@ -1,5 +1,5 @@
 // 停止の取り決め（app/src/main/restart-signal.ts）の単体テスト。restart-app.ps1 は
-// もう、機械の electron.exe の一覧から実機を選び出さない。--hologram-quit を積んだ
+// もう、機械の electron.exe の一覧から実機を選び出さない。--dot-quit を積んだ
 // 使い捨てのコピーを起動し、それが単一インスタンスの錠を取り損ねて、錠を持っている側
 // ＝この設定ディレクトリの唯一のインスタンスへ自分の argv を渡す。純ロジックなので
 // Electron は要らない。端から端までの挙動（動いているアプリが本当に終了するか）は、
@@ -26,8 +26,8 @@ describe('終了の合図の検出', () => {
   // startsWith ではなく完全一致で見る。これは動いているアプリが自分を落とすかどうかを
   // 決めるので、頭が同じだけの長いフラグで発火してはいけない。
   test('似た名前のフラグは合図ではない', () => {
-    expect(hasQuitSignal(['--hologram-quit-later'])).toBe(false);
-    expect(hasQuitSignal(['--hologram-quiet'])).toBe(false);
+    expect(hasQuitSignal(['--dot-quit-later'])).toBe(false);
+    expect(hasQuitSignal(['--dot-quiet'])).toBe(false);
   });
 });
 
@@ -59,7 +59,7 @@ describe('scripts/restart-app.ps1 との取り決め', () => {
 
   // 2026-08-07 に実測: このファイルを BOM 無しで保存すると、中の日本語文字列が
   // powershell.exe では全部解釈に失敗した（Windows PowerShell 5.1 は BOM が無ければ
-  // .ps1 を ANSI として読む）。そして docs/開発ガイド.md とスキル run-hologram が起動に
+  // .ps1 を ANSI として読む）。そして docs/開発ガイド.md とスキル run-dot が起動に
   // 使えと言っているのがその 5.1 だ。失敗は全面的で、スクリプトがまったく動かない。
   // しかもエディタやエージェントがファイルを書き直すと、BOM は黙って落ちる。
   test('UTF-8 BOM 付きで保存されている', () => {

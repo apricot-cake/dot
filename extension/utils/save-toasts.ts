@@ -1,4 +1,4 @@
-import type { HologramI18nApi } from './i18n.ts';
+import type { DotI18nApi } from './i18n.ts';
 import { ICONS, makeIcon } from './icons.ts';
 import { StatusSurface } from './status-surface.ts';
 import { userOnly } from './user-gesture.ts';
@@ -22,7 +22,7 @@ export class SaveToasts {
   private failureGroup: HTMLElement | null = null;
   private detailsOpen = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
-  constructor(private t: HologramI18nApi['getMessage']) {}
+  constructor(private t: DotI18nApi['getMessage']) {}
 
   clearFailure(id: string) {
     if (this.failures.delete(id)) this.renderFailures();
@@ -45,7 +45,7 @@ export class SaveToasts {
   notice(id: string, target: string, text: string, retry?: () => void, severity: 'error' | 'partial' | 'idle' = 'error', details?: SaveNoticeDetails) {
     if (severity === 'idle' || (!details && !retry)) {
       const surface = new StatusSurface({ resting: ICONS.warn, variant: 'toast', role: severity === 'error' ? 'alert' : 'status' });
-      surface.el.dataset.hologramSaveBanner = '';
+      surface.el.dataset.dotSaveBanner = '';
       surface.setState(severity, severity === 'error' ? text : undefined);
       this.close(surface, () => surface.remove());
       surface.mount();
@@ -92,7 +92,7 @@ export class SaveToasts {
     }
     if (!this.progress) {
       this.progress = new StatusSurface({ resting: ICONS.check, variant: 'toast' });
-      this.progress.el.dataset.hologramSaveProgress = '';
+      this.progress.el.dataset.dotSaveProgress = '';
       this.progress.mount();
       this.progress.enter();
     }
@@ -153,15 +153,15 @@ export class SaveToasts {
     const severity = [...this.failures.values()].some((x) => x.severity === 'error') ? 'error' : ([...this.failures.values()][0]?.severity ?? 'idle');
     const surface = new StatusSurface({ resting: ICONS.warn, variant: 'toast', role: severity === 'error' ? 'alert' : 'status' });
     this.failure = surface;
-    surface.el.dataset.hologramSaveBanner = '';
+    surface.el.dataset.dotSaveBanner = '';
     const entries = [...this.failures.values()];
     const text = entries.length === 1 && entries[0] ? entries[0].text : this.t('toastFailed', [entries.length]);
     surface.setState(severity, severity === 'error' ? text : undefined);
     const panel = document.createElement('div');
     panel.className = 'surface';
     panel.dataset.variant = 'toast';
-    panel.dataset.hologramToastDetails = '';
-    panel.id = `hologram-toast-details-${crypto.randomUUID()}`;
+    panel.dataset.dotToastDetails = '';
+    panel.id = `dot-toast-details-${crypto.randomUUID()}`;
     panel.setAttribute('role', 'region');
     panel.setAttribute('aria-label', this.t('toastFailureDetails'));
     this.failureDetails = panel;

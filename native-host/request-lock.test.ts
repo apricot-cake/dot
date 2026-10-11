@@ -8,7 +8,7 @@ import { acquireExactRequestLock } from './request-lock.mts';
 
 test('同じ要求は待機せず拒否し、別要求は独立して取得できる', async () => {
   if (process.platform !== 'win32' && process.platform !== 'linux') return;
-  const folder = fs.mkdtempSync(path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'exact-lock-'));
+  const folder = fs.mkdtempSync(path.join(process.env.DOT_CONFIG_DIR!, 'exact-lock-'));
   const owner = await acquireExactRequestLock(folder, '1789600000000-abcd');
   let other: Awaited<ReturnType<typeof acquireExactRequestLock>> = null;
   try {
@@ -26,7 +26,7 @@ test('同じ要求は待機せず拒否し、別要求は独立して取得で�
 
 test('Windows のパス・要求IDの別表記で同じ排他を共有する', async () => {
   if (process.platform !== 'win32') return;
-  const folder = fs.mkdtempSync(path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'exact-lock-alias-'));
+  const folder = fs.mkdtempSync(path.join(process.env.DOT_CONFIG_DIR!, 'exact-lock-alias-'));
   const owner = await acquireExactRequestLock(folder, '1789600000000-abcd');
   try {
     await expect(acquireExactRequestLock(folder.replaceAll('\\', '/') + '/./', '1789600000000-ABCD')).rejects.toMatchObject({ code: 'request-in-progress' });
@@ -37,7 +37,7 @@ test('Windows のパス・要求IDの別表記で同じ排他を共有する', a
 
 test('NODE_PENDING_PIPE_INSTANCES を継承しても競合を拒否し、設定値を保持する', async () => {
   if (process.platform !== 'win32') return;
-  const folder = fs.mkdtempSync(path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'exact-lock-pending-'));
+  const folder = fs.mkdtempSync(path.join(process.env.DOT_CONFIG_DIR!, 'exact-lock-pending-'));
   const previous = process.env.NODE_PENDING_PIPE_INSTANCES;
   process.env.NODE_PENDING_PIPE_INSTANCES = '32';
   let owner: Awaited<ReturnType<typeof acquireExactRequestLock>> = null;
@@ -54,7 +54,7 @@ test('NODE_PENDING_PIPE_INSTANCES を継承しても競合を拒否し、設定�
 
 test('別プロセスの所有者が終了するまで再取得せず、強制終了後は残留ファイルなしで回収する', async () => {
   if (process.platform !== 'win32' && process.platform !== 'linux') return;
-  const folder = fs.mkdtempSync(path.join(process.env.HOLOGRAM_CONFIG_DIR!, 'exact-lock-process-'));
+  const folder = fs.mkdtempSync(path.join(process.env.DOT_CONFIG_DIR!, 'exact-lock-process-'));
   const moduleUrl = pathToFileURL(path.resolve('native-host/request-lock.mts')).href;
   const setup = `import { acquireExactRequestLock } from ${JSON.stringify(moduleUrl)}; const folder = ${JSON.stringify(folder)};`;
   const owner = spawn(process.execPath, ['--input-type=module', '-e', `${setup} await acquireExactRequestLock(folder, '1789600000000-cafe'); process.send('owned');`], { stdio: ['ignore', 'pipe', 'pipe', 'ipc'], env: { ...process.env, NODE_PENDING_PIPE_INSTANCES: '32' } });

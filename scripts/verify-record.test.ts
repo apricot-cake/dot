@@ -49,7 +49,7 @@ let dir = '';
 let lines: string[] = [];
 
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-verify-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-verify-'));
   lines = [];
   vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
     lines.push(args.join(' '));

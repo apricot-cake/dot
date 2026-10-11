@@ -1,7 +1,7 @@
 import type { SaveLogEntry } from './capture-log.ts';
 
 export const DIAGNOSTIC_RATE_KEY = 'captureLogRateState';
-export const DIAGNOSTIC_ALARM = 'hologram:capture-log-window';
+export const DIAGNOSTIC_ALARM = 'dot:capture-log-window';
 export const DIAGNOSTIC_WINDOW_MS = 60_000;
 const LIMIT = 200;
 const MAX_COUNTER = 2_147_483_647;

@@ -48,7 +48,7 @@ function validateSaveFolder(dir) {
   if (pathIsInside(dir, configDir()) || pathIsInside(configDir(), dir)) return { ok: false, error: 'config-overlap' };
   try {
     fs.mkdirSync(dir, { recursive: true });
-    const probe = path.join(dir, `.hologram-write-probe-${Date.now()}`);
+    const probe = path.join(dir, `.dot-write-probe-${Date.now()}`);
     fs.writeFileSync(probe, '');
     fs.unlinkSync(probe);
   } catch {

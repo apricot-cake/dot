@@ -1,4 +1,4 @@
-# Hologram のネイティブメッセージングホスト
+# dot のネイティブメッセージングホスト
 
 このディレクトリには、Chrome 拡張機能とローカルライブラリをつなぐネイティブメッセージングホストがあります。Chrome は [`chrome.runtime.connectNative`](https://developer.chrome.com/docs/extensions/reference/api/runtime#method-connectNative) を通じてホストを起動します。デスクトップアプリを閉じている間も投稿を保存できます。
 
@@ -8,7 +8,7 @@
 
 ```text
 items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
-.hologram-inbox/    アプリがデータベースへ反映する取り込みキュー
+.dot-inbox/    アプリがデータベースへ反映する取り込みキュー
 ```
 
 ホストは既存の項目ファイルを変更しません。削除、編集、索引の更新はデスクトップアプリが担当します。
@@ -24,7 +24,7 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 | `media-download.mts` | メディアをダウンロードし、接続先、サイズ、件数、時間を制限します。 |
 | `config-recovery.mts` | 保存先を復旧し、破壊的な操作を防ぎます。 |
 | `install.mts` | Chrome 用のホストマニフェストを登録または削除します。 |
-| `com.hologram.host.json` | `install.mts` が生成するホストマニフェストのひな形です。 |
+| `com.dot.host.json` | `install.mts` が生成するホストマニフェストのひな形です。 |
 
 ソースは ESM の `.mts` ファイルです。Node.js の型除去を使うため、開発時はコンパイルせずに実行できます。`install.mts` は Electron アプリからも読み込みます。Electron 側は CommonJS のバンドルですが、Node.js の `require(esm)` で同期的に読み込みます。詳しい理由は `native-host/tsconfig.json` に記載しています。
 
@@ -42,15 +42,15 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 
 ## 設定
 
-保存先は `<configDir>/config.json` に記録します。既定の場所は `%APPDATA%\Hologram\config.json` です。
+保存先は `<configDir>/config.json` に記録します。既定の場所は `%APPDATA%\dot\config.json` です。
 
-開発用ホストの設定は `%APPDATA%\Hologram-Dev\config.json` に分けます。`npm run ext:dev:register` で登録し、必要な場合は `HOLOGRAM_DEV_CONFIG_DIR` で設定ディレクトリを指定できます。Squirrel インストーラーはアプリ本体を `%LOCALAPPDATA%\Hologram` に配置します。
+開発用ホストの設定は `%APPDATA%\dot-Dev\config.json` に分けます。`npm run ext:dev:register` で登録し、必要な場合は `DOT_DEV_CONFIG_DIR` で設定ディレクトリを指定できます。Squirrel インストーラーはアプリ本体を `%LOCALAPPDATA%\dot` に配置します。
 
 ```json
-{ "saveFolder": "D:\\Hologram" }
+{ "saveFolder": "D:\\dot" }
 ```
 
-デスクトップアプリで選んだフォルダの下に `Hologram\Library` を作り、その場所を `saveFolder` に記録します。`Hologram` フォルダを選んだ場合はその下の `Library` を使い、`Library` フォルダ自体を選んだ場合はそのまま使います。設定がない場合は `~/Hologram/Library` を使います。設定ディレクトリは `HOLOGRAM_CONFIG_DIR` で変更できます。
+デスクトップアプリで選んだフォルダの下に `dot\Library` を作り、その場所を `saveFolder` に記録します。`dot` フォルダを選んだ場合はその下の `Library` を使い、`Library` フォルダ自体を選んだ場合はそのまま使います。設定がない場合は `~/dot/Library` を使います。設定ディレクトリは `DOT_CONFIG_DIR` で変更できます。
 
 ## 開発環境へ手動で登録する
 

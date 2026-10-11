@@ -23,7 +23,7 @@ function uniquePath(output: string, kind: string): string {
 }
 
 function shouldPublish(): boolean {
-  if (process.env.HOLOGRAM_CONFIG_DIR) return true;
+  if (process.env.DOT_CONFIG_DIR) return true;
   try {
     return fs.statSync(path.join(ROOT, '.git')).isDirectory();
   } catch {
@@ -133,7 +133,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
             try {
               fs.rmSync(backup, { recursive: true, force: true });
             } catch (error) {
-              console.warn(`[hologram] 旧ビルドの後片付けに失敗しました（公開は完了済み、退避を保持します）: ${backup}: ${error instanceof Error ? error.message : error}`);
+              console.warn(`[dot] 旧ビルドの後片付けに失敗しました（公開は完了済み、退避を保持します）: ${backup}: ${error instanceof Error ? error.message : error}`);
               return { buildId: built.buildId, backup };
             }
           }
@@ -216,7 +216,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
       try {
         fs.rmSync(stage, { recursive: true, force: true });
       } catch (error) {
-        console.warn(`[hologram] staging の後片付けに失敗しました: ${stage}: ${error instanceof Error ? error.message : error}`);
+        console.warn(`[dot] staging の後片付けに失敗しました: ${stage}: ${error instanceof Error ? error.message : error}`);
       }
     }
   }
@@ -255,9 +255,9 @@ async function main(): Promise<void> {
   } finally {
     await session?.release();
   }
-  console.log(`[hologram] 検証済み共有リリースビルド ${result.buildId} を配備しました: ${SHARED_OUTPUT}`);
-  if (!publish) console.log('[hologram] 連結されたworktreeのため、ブラウザへの告知を省略しました');
-  else if (!developmentOpen) console.log('[hologram] 開発用Chromeは起動していないため、CDPでの読み込み直しを省略しました');
+  console.log(`[dot] 検証済み共有リリースビルド ${result.buildId} を配備しました: ${SHARED_OUTPUT}`);
+  if (!publish) console.log('[dot] 連結されたworktreeのため、ブラウザへの告知を省略しました');
+  else if (!developmentOpen) console.log('[dot] 開発用Chromeは起動していないため、CDPでの読み込み直しを省略しました');
 }
 
 if (require.main === module) {

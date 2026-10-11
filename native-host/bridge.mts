@@ -1,13 +1,13 @@
-// Hologram の Native Messaging ホスト。
+// dot の Native Messaging ホスト。
 //
 // Chrome が接続ごとにこのプロセスを起動する（chrome.runtime.connectNative）。取得した
 // 投稿を stdin で受け取り、ユーザーの保存フォルダへ書く:
 //   items/<captureId>/<file> 投稿が所有するメディア
-//   .hologram-inbox/new/<captureId>.json   消えない取込のエンベロープ（#5 St6 / #299）
+//   .dot-inbox/new/<captureId>.json   消えない取込のエンベロープ（#5 St6 / #299）
 //
 // ブリッジはもう、投稿ごとのサイドカーの JSON を保存フォルダへ直接書かない。その書き込みの
 // 経路は #5 の移行の「広げる」局面のものだった（当時はサイドカーが正本だった）。デスクトップ
-// アプリが hologram.db を唯一の書き手として持つ今（lib-db.ts の単一書き手の不変条件）、
+// アプリが dot.db を唯一の書き手として持つ今（lib-db.ts の単一書き手の不変条件）、
 // 2つ目のプロセスが DB の派生した状態へ直接書けば、その境界を破ることになる。代わりに
 // ブリッジは取込キュー（native-host/inbox.mts）へエンベロープを追記する。アプリは起動時と
 // 変更時にそれを DB へ送り出す。ファイル（メディア、アバター）は今も1度きりしか書かず、
@@ -301,7 +301,7 @@ interface OutputOwner {
 }
 
 type OutputJournal = OutputOwner & ({ phase: 'downloading' } | { phase: 'publishing'; envelope: InboxEnvelope; ack: SaveAck });
-const ITEM_OWNER_FILE = '.hologram-request-owner.json';
+const ITEM_OWNER_FILE = '.dot-request-owner.json';
 
 function outputOwner(context: ReceiptContext, itemId: string): OutputOwner {
   return { requestId: context.requestId, generation: context.generation, requestNonce: context.requestNonce, payloadHash: context.payloadHash, itemId };
@@ -474,7 +474,7 @@ async function recoverRequestOutput(folder: string, req: SavePostRequest | SaveM
     const itemDir = path.join(dir, 'item');
     if (!fs.existsSync(itemDir)) return null;
     assertOutputOwner(itemDir, journal);
-    if (fs.realpathSync(itemDir) !== path.join(fs.realpathSync(folder), '.hologram-inbox', 'requests', req.captureId, 'item')) throw new Error('Save staging directory escapes its library');
+    if (fs.realpathSync(itemDir) !== path.join(fs.realpathSync(folder), '.dot-inbox', 'requests', req.captureId, 'item')) throw new Error('Save staging directory escapes its library');
     fs.rmSync(itemDir, { recursive: true, force: true });
     return null;
   }
@@ -518,7 +518,7 @@ function itemizeMedia(captureId: string, media: MediaDescriptor[]): MediaDescrip
 // ＝アプリではなくブリッジに尋ねる理由はまさにそこだ。
 //
 // #299 は、走査から作っていた古いスナップショットを bridge-saved-index.json に置き換えた。
-// これは postKey から captureId への小さな map で、アプリが hologram.db から直接組み直し
+// これは postKey から captureId への小さな map で、アプリが dot.db から直接組み直し
 // （lib-saved-index.ts）、投稿が変わるたびに間引いてアトミックに書き直す。安く大量に読める
 // 出所であり（ライブラリを走査せずに1回読むだけ）、同時に古くなる出所でもある。アプリの
 // 最後の書き込み以降に保存（取り込み、削除）されたものは、そこに無い。その隙間は独立した
@@ -528,7 +528,7 @@ function itemizeMedia(captureId: string, media: MediaDescriptor[]): MediaDescrip
 //      ここに追記する。これがまさにアプリが閉じていた場合であり、そのとき起きていた
 //      唯一のプロセスが記録する。
 //   2. 保存済み索引のスナップショットより新しい、取込キューにばらけて残るエンベロープ
-//      （.hologram-inbox/new）の、上限付きの読み直し。eventId は `<epochMillis>-<hex>` で
+//      （.dot-inbox/new）の、上限付きの読み直し。eventId は `<epochMillis>-<hex>` で
 //      エンベロープはその名前を持つので、「スナップショットより新しい」はファイル名から
 //      読める。ファイルごとの stat() は要らない。これは1の帯に対する吊りひもだ。2つ目の
 //      ブラウザのプロファイル（別のブリッジのプロセス、別のジャーナル）が行った保存も
@@ -1024,7 +1024,7 @@ async function compactRequestReceipts(folder: string): Promise<void> {
     return;
   }
   names.sort();
-  const cursor = path.join(folder, '.hologram-inbox', 'request-gc.json');
+  const cursor = path.join(folder, '.dot-inbox', 'request-gc.json');
   let after = '';
   try {
     after = JSON.parse(fs.readFileSync(cursor, 'utf8')).after || '';
@@ -1090,7 +1090,7 @@ function writeRequestReceipt(folder: string, requestId: string, receipt: Request
 // receipt の世代交代でパスを空けない。SQLite の OS ロックは終了時にも解放される。
 // アプリの DB とは別の接続で、要求ごとの固定ファイルを削除・rename しない。
 function acquireRequestLock(folder: string, requestId: string, legacy = false): DatabaseSync {
-  const root = path.join(folder, '.hologram-inbox', 'request-locks');
+  const root = path.join(folder, '.dot-inbox', 'request-locks');
   fs.mkdirSync(root, { recursive: true });
   // 固定256個のstripeを共有し、要求数に比例してファイルを増やさない。
   const name = legacy ? requestId : createHash('sha256').update(requestId).digest()[0].toString(16).padStart(2, '0');
@@ -1124,7 +1124,7 @@ async function withRequestReceipt<T extends SavePostAck | SaveMediaAck>(req: Sav
   try {
     // 旧ホストの回収と競合しないよう、既存の v1/v2 ロックを回収・世代交代中は
     // 保持する。新版の processing を書いてから解放し、媒体取得は直列化しない。
-    const root = path.join(folder, '.hologram-inbox', 'request-locks');
+    const root = path.join(folder, '.dot-inbox', 'request-locks');
     if (fs.existsSync(path.join(root, `${req.captureId}.sqlite`))) legacyLock = acquireRequestLock(folder, req.captureId, true);
     const legacyId = legacyReceiptRequestId(folder, req.captureId);
     const stripe = createHash('sha256').update(legacyId).digest()[0].toString(16).padStart(2, '0');

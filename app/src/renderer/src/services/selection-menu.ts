@@ -1,5 +1,5 @@
 import type { Translate } from './translation.ts';
-import { hologramIpc } from './ipc.ts';
+import { dotIpc } from './ipc.ts';
 import { open as menuOpen } from './menu.ts';
 
 // メニューの行のグリフ。カードのメニューが描くのと同じ 24×24 の線画寸法に揃える。
@@ -59,7 +59,7 @@ export function makeSelectionMenu(deps: SelectionMenuDeps) {
   // 並びは Chromium に合わせる。テキストの行が先に来る＝それを出した操作がテキストを
   // 狙っていたから。カードの上でも同じ理由でカード自身の行の上に置く（そして選択が
   // ある間だけ。それ以外ではカードのメニューは変わらない）。
-  function items(): HologramMenuItem[] {
+  function items(): DotMenuItem[] {
     return [
       { label: deps.t('ctxCopyText'), act: 'selCopy', icon: SEL_IC.copy },
       { label: deps.t('ctxSearchWeb'), act: 'selWeb', icon: SEL_IC.web },
@@ -68,13 +68,13 @@ export function makeSelectionMenu(deps: SelectionMenuDeps) {
   }
 
   /** true なら、その act はこのメニューのもので、処理を済ませたことを表す。 */
-  function pick(text: string, item: HologramMenuItem): boolean {
+  function pick(text: string, item: DotMenuItem): boolean {
     const act = item.act;
     if (!act || !ACTS.includes(act)) return false;
     const term = searchTermOf(text || '');
     if (!term) return true; // こちらのものではあるが、働きかける先が残っていない
-    if (act === 'selCopy') hologramIpc.copyText(term);
-    else if (act === 'selWeb') hologramIpc.openExternal(webSearchUrl(term));
+    if (act === 'selCopy') dotIpc.copyText(term);
+    else if (act === 'selWeb') dotIpc.openExternal(webSearchUrl(term));
     else if (act === 'selLibrary') deps.searchInLibrary(term);
     return true;
   }

@@ -50,7 +50,7 @@ describe('タグ行のトグル対象', () => {
 });
 
 describe('保存済み name-only タグ条件との統合', () => {
-  const restored = (value: string): HologramQueryGroup => ({ kind: 'group', op: 'and', neg: false, children: [{ kind: 'cond', type: 'tag', value }] });
+  const restored = (value: string): DotQueryGroup => ({ kind: 'group', op: 'and', neg: false, children: [{ kind: 'cond', type: 'tag', value }] });
 
   test('post は復元後の述語評価で tree だけ ID 解決されても facet toggle で解除・再選択できる', () => {
     const predOf = makePostPredOf({ isInFolder: () => false, tagIdOf: (name) => (name === '作者' ? 31 : undefined) });
@@ -59,7 +59,7 @@ describe('保存済み name-only タグ条件との統合', () => {
     expect(qb.shadow()).toEqual([{ type: 'tag', value: '作者' }]);
 
     expect(qb.eval({ tags: ['作者'], tagIds: [31] })).toBe(true);
-    expect((qb.getTree().children[0] as HologramQueryLeaf).tagId).toBe(31);
+    expect((qb.getTree().children[0] as DotQueryLeaf).tagId).toBe(31);
     expect(qb.shadow()).toEqual([{ type: 'tag', value: '作者' }]);
 
     const qf = makeQfPop({

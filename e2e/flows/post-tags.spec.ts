@@ -3,9 +3,9 @@ import { FIXTURE_POSTS } from '../lib/library';
 
 for (const viewer of [false, true]) {
   for (const platform of ['x', 'pixiv']) {
-    test(`${viewer ? 'ビューア' : 'ライブラリ'}：${platform}のタグで絞り込み、ユーザータグは変更しない`, async ({ launchHologram }) => {
+    test(`${viewer ? 'ビューア' : 'ライブラリ'}：${platform}のタグで絞り込み、ユーザータグは変更しない`, async ({ launchDot }) => {
       const posts = FIXTURE_POSTS.map((p, i) => (i === 0 ? { ...p, platform, text: platform === 'x' ? '本文 #猫' : '本文', hashtags: ['猫', '風景'] } : p));
-      const { page } = await launchHologram({ posts });
+      const { page } = await launchDot({ posts });
       const card = page.locator('[data-slot="post-card"]').filter({ hasText: '本文' });
       if (viewer) await card.dblclick();
       else await card.click();

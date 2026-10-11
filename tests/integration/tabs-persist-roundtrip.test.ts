@@ -22,7 +22,7 @@ let sqlite: any;
 let writer: ReturnType<typeof createDbWriter>;
 
 beforeAll(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hologram-tabs-roundtrip-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-tabs-roundtrip-'));
   ({ sqlite } = openDatabase(path.join(dir, 'test.db')));
   writer = createDbWriter(sqlite);
 });
@@ -33,13 +33,13 @@ afterAll(() => {
 });
 
 // レンダラー側では、履歴のスタックは「JSON 文字列の配列」（makeNavHistory が実際に作る形）。
-const entry = (kind: HologramNavEntry['kind'], state: any) => JSON.stringify({ u: navEntryUrl(kind, state), kind, state });
+const entry = (kind: DotNavEntry['kind'], state: any) => JSON.stringify({ u: navEntryUrl(kind, state), kind, state });
 
 // 生きているタブが2つ。グリッドのタブ（3コマの履歴＝1つ戻った位置で、途中までスクロール
 // した状態）と、画像を開いたまま見出しを焼き付けてあるタブ。
 const gridHist = [entry('posts', { f: [], tree: null, search: '', sort: 'date-desc' }), entry('posts', { f: [{ type: 'tag', value: 'alpha' }], tree: null, search: '', sort: 'date-desc' }), entry('posters', { tree: null, sort: 'count', search: '' })];
 const imageHist = [entry('image', { recs: ['cap-1', 'cap-2'], idx: 1 })];
-const liveTabs: HologramTab[] = [
+const liveTabs: DotTab[] = [
   {
     id: 'tab-grid',
     pinned: true,

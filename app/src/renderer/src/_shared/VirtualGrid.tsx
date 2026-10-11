@@ -27,14 +27,14 @@ export interface GridCellProps {
   width: number;
 }
 
-const ModelCtx = createContext<HologramGridModel | null>(null);
+const ModelCtx = createContext<DotGridModel | null>(null);
 // セルは生きているモデルをコンテキスト越しに読む。おかげでブリッジの render()/patch()
 // （paint を増やして再描画）で modelOf がカードの状態を導き直せる（選択と詳細表示中は
-// Cell の中の hologramStore の購読であって、このクロージャで読むモデルには入っていない）。
+// Cell の中の dotStore の購読であって、このクロージャで読むモデルには入っていない）。
 // セルは必ずプロバイダの中で載るので、null の既定値が外へ漏れることはない。
-export const useGridModel = () => useContext(ModelCtx) as HologramGridModel;
+export const useGridModel = () => useContext(ModelCtx) as DotGridModel;
 
-export function VirtualGridHost({ model, cell, nav, anchor, onBackgroundClick }: { model: HologramGridModel; cell: ComponentType<GridCellProps>; nav?: boolean; anchor?: boolean; onBackgroundClick?: () => void }) {
+export function VirtualGridHost({ model, cell, nav, anchor, onBackgroundClick }: { model: DotGridModel; cell: ComponentType<GridCellProps>; nav?: boolean; anchor?: boolean; onBackgroundClick?: () => void }) {
   // アプリのスクロール容器（ウィンドウではない）。シェルが載るときに登録し、このホストが
   // 描画されるのは必ず後から取り付けたポータルの中なので、その時点では必ず存在する。
   const scroller = contentScroller() as HTMLElement;
@@ -313,12 +313,12 @@ export function VirtualGridHost({ model, cell, nav, anchor, onBackgroundClick }:
 // する）。ブリッジの push はどれも React の外から始まるので、flushSync を使ってよい。
 // ブリッジは render/patch のたびに新しいモデルの参照を返す（{...model, paint:++}）ので、
 // setModel は必ず再描画になる＝paint が増えると、見えているセルが modelOf 越しに
-// viewer の生きた状態を読み直す（選択と詳細表示中は Cell の中の別々の hologramStore の
+// viewer の生きた状態を読み直す（選択と詳細表示中は Cell の中の別々の dotStore の
 // 購読）。itemsKey が変われば positioner が初期化される。
-// bridge に必要なのは get()/subscribe() だけ（HologramGridSource）＝投稿の供給元も
+// bridge に必要なのは get()/subscribe() だけ（DotGridSource）＝投稿の供給元も
 // 投稿者の供給元もそれを満たすし、加えて自前の configure() などを持つが、GridMount は
 // そこに一切触れない。
-export function GridMount({ bridge, container, renderHost }: { bridge: HologramGridSource; container: () => HTMLElement | null; renderHost: (model: HologramGridModel) => ReactNode }) {
+export function GridMount({ bridge, container, renderHost }: { bridge: DotGridSource; container: () => HTMLElement | null; renderHost: (model: DotGridModel) => ReactNode }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   if (!hostRef.current) {
     const h = document.createElement('div');
@@ -326,7 +326,7 @@ export function GridMount({ bridge, container, renderHost }: { bridge: HologramG
     hostRef.current = h;
   }
   const host = hostRef.current;
-  const [model, setModel] = useState<HologramGridModel | null>(null);
+  const [model, setModel] = useState<DotGridModel | null>(null);
 
   useEffect(() => {
     // ホストへ描画する前に、ホストを容器へ取り付ける＝masonic は載る時に offsetWidth を

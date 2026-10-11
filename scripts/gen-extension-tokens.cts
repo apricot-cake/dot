@@ -48,8 +48,8 @@ const OUT_TS = path.join(ROOT, 'extension', 'utils', 'tokens.generated.ts');
 // Web Animations を通り、その `duration` はミリ秒の数値であってカスタム
 // プロパティを受け取れない。ここで出力しておくことで、モーションの調子は
 // 単一の正本のままになり、2つの数値がずれる余地を残さない。
-const MOTION_MS = ['--hologram-duration-base', '--hologram-duration-fast'];
-const MOTION_EASE = ['--hologram-ease-out', '--hologram-ease-in'];
+const MOTION_MS = ['--dot-duration-base', '--dot-duration-fast'];
+const MOTION_EASE = ['--dot-ease-out', '--dot-ease-in'];
 
 // ツールバーのバッジ（#269）。var() にできない2つ目のもの: 拡張機能が自分の
 // UI を注入できなかった時に出す警告は「ブラウザ」が描画する。
@@ -63,7 +63,7 @@ const MOTION_EASE = ['--hologram-ease-out', '--hologram-ease-in'];
 // どのみち関係しない。この組はそれ自身の中だけで保たれれば足り、それはすでに
 // ライト側の行が保証している（tests/integration/extension-tokens.test.ts がこの用途に
 // 対してもう一度それを検証する）。
-const BADGE = { background: '--hologram-danger', text: '--hologram-on-danger', verificationBackground: '--hologram-warning', verificationText: '--hologram-on-warning' };
+const BADGE = { background: '--dot-danger', text: '--dot-on-danger', verificationBackground: '--dot-warning', verificationText: '--dot-on-warning' };
 
 // 許可リスト。拡張機能がアプリから受け取るものはすべてここで名指しされるので、
 // globals.css へトークンを1つ足しても境界を越えるものが黙って広がることは
@@ -78,31 +78,31 @@ const FROM_APP: AppToken[] = [
   // --- ページ上の UI を構成する浮遊面 ----------------------------------------
   // card ではなく popover: これは拡張機能が他人のページの上に一時的に持ち上げる
   // レイヤーであり、それはまさに shadcn で --popover が名指すもの。
-  { out: '--hologram-surface', from: '--popover', why: 'on-page status banner fill' },
+  { out: '--dot-surface', from: '--popover', why: 'on-page status banner fill' },
   // 写真の上に半透明で重なる操作の文字・アイコン。アプリの popover 本文色は
   // 補助的な濃さまで下げられるため、ここでは両テーマで十分なコントラストを
   // 保つ主文字色を使う。
-  { out: '--hologram-ink', from: '--primary', why: 'label + glyph ink on that fill' },
-  { out: '--hologram-ink-muted', from: '--ui-muted-foreground', why: 'secondary explanatory text' },
+  { out: '--dot-ink', from: '--primary', why: 'label + glyph ink on that fill' },
+  { out: '--dot-ink-muted', from: '--ui-muted-foreground', why: 'secondary explanatory text' },
   // --- 拡張機能自身のページ（popup.html / diag.html） ----------------------
-  { out: '--hologram-page-bg', from: '--background', why: 'extension page background' },
-  { out: '--hologram-page-surface', from: '--card', why: 'raised block on an extension page' },
-  { out: '--hologram-ink-strong', from: '--foreground', why: 'headings' },
-  { out: '--hologram-border', from: '--ui-border', why: 'structural hairline INSIDE an extension page' },
-  { out: '--hologram-border-strong', from: '--input', why: 'the same, one step heavier' },
-  { out: '--hologram-hover', from: '--ui-accent', why: 'generic hover surface (menu/list rows)' },
-  { out: '--hologram-active', from: '--secondary', why: 'pressed/active surface' },
-  { out: '--hologram-focus-ring', from: '--ui-ring', why: 'keyboard focus ring' },
+  { out: '--dot-page-bg', from: '--background', why: 'extension page background' },
+  { out: '--dot-page-surface', from: '--card', why: 'raised block on an extension page' },
+  { out: '--dot-ink-strong', from: '--foreground', why: 'headings' },
+  { out: '--dot-border', from: '--ui-border', why: 'structural hairline INSIDE an extension page' },
+  { out: '--dot-border-strong', from: '--input', why: 'the same, one step heavier' },
+  { out: '--dot-hover', from: '--ui-accent', why: 'generic hover surface (menu/list rows)' },
+  { out: '--dot-active', from: '--secondary', why: 'pressed/active surface' },
+  { out: '--dot-focus-ring', from: '--ui-ring', why: 'keyboard focus ring' },
   // --- 状態 -----------------------------------------------------------------
   // 保存中のバッジと、ホバー保存ボタンのフォーカス表示に使う。
-  { out: '--hologram-accent', from: '--ui-selected', why: 'saving and focused controls' },
-  { out: '--hologram-danger', from: '--destructive', why: 'save failed' },
+  { out: '--dot-accent', from: '--ui-selected', why: 'saving and focused controls' },
+  { out: '--dot-danger', from: '--destructive', why: 'save failed' },
   // --- 色ではないもの --------------------------------------------------------
-  { out: '--hologram-radius', from: '--radius', why: 'corner radius' },
-  { out: '--hologram-duration-base', from: '--motion-duration-base', why: 'enter / state change' },
-  { out: '--hologram-duration-fast', from: '--motion-duration-fast', why: 'exit / micro-feedback' },
-  { out: '--hologram-ease-out', from: '--motion-ease-out', why: 'enter curve' },
-  { out: '--hologram-ease-in', from: '--motion-ease-in', why: 'exit curve' },
+  { out: '--dot-radius', from: '--radius', why: 'corner radius' },
+  { out: '--dot-duration-base', from: '--motion-duration-base', why: 'enter / state change' },
+  { out: '--dot-duration-fast', from: '--motion-duration-fast', why: 'exit / micro-feedback' },
+  { out: '--dot-ease-out', from: '--motion-ease-out', why: 'enter curve' },
+  { out: '--dot-ease-in', from: '--motion-ease-in', why: 'exit curve' },
 ];
 
 // あえてアプリから取らないもの:
@@ -284,9 +284,9 @@ function build(): { tokens: GeneratedToken[]; css: string; ts: string } {
   }
 
   // 拡張機能所有のトークンは丸ごと取り込む: このソースファイルそのものが
-  // 許可リストであり、そこは --hologram-* という名前しか宣言しない。
+  // 許可リストであり、そこは --dot-* という名前しか宣言しない。
   for (const [name, value] of ext.light) {
-    if (!name.startsWith('--hologram-')) throw new Error(`${path.basename(EXT_CSS)} が ${name} を宣言している。拡張機能所有のトークンは --hologram-* でなければならない`);
+    if (!name.startsWith('--dot-')) throw new Error(`${path.basename(EXT_CSS)} が ${name} を宣言している。拡張機能所有のトークンは --dot-* でなければならない`);
     if (tokens.some((t) => t.name === name)) throw new Error(`${name} が ${path.basename(EXT_CSS)} とアプリの許可リストの両方で宣言されている`);
     tokens.push({
       name,
@@ -332,7 +332,7 @@ function build(): { tokens: GeneratedToken[]; css: string; ts: string } {
     '}',
   ].join('\n')}\n`;
 
-  const camel = (name: string) => name.replace('--hologram-', '').replace(/-(\w)/g, (_m, c: string) => c.toUpperCase());
+  const camel = (name: string) => name.replace('--dot-', '').replace(/-(\w)/g, (_m, c: string) => c.toUpperCase());
   const lightValue = (name: string) => {
     const t = tokens.find((x) => x.name === name);
     if (!t) throw new Error(`トークン ${name} は生成されていない`);

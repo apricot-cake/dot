@@ -22,7 +22,7 @@ import { mediaFilesOf, densityImage, percentileFn, makeGallery, loadUngrouped, l
 import { fileSrc } from './asset-src.ts';
 import { makeTags, bindTagGroupOf, bindPosterFilterVocab, getTagGroups, getTagLabels, getPosterTags, load as loadTags } from './tags.ts';
 import { makeTabLabels } from './tab-state.ts';
-import { hologramI18n } from './i18n.ts';
+import { dotI18n } from './i18n.ts';
 import * as folders from './folders.ts';
 import { open as compareOpen, type CompareItem } from './compare.ts';
 import { open as menuOpen } from './menu.ts';
@@ -30,7 +30,7 @@ import { shellReady } from './shell-ready.ts';
 import { scroller as contentScroller } from './content-area.ts';
 import { currentShape } from './display.ts';
 import * as selection from './selection.ts';
-import { hologramPostGridSource, hologramPosterGridSource, hologramTrashGridSource } from './grid.ts';
+import { dotPostGridSource, dotPosterGridSource, dotTrashGridSource } from './grid.ts';
 import { clickCard as trashClickCard, configure as configureTrashView, getFilteredRecords as getFilteredTrashRecords, getRecords as getTrashRecords, getVersion as getTrashVersion, refilter as refilterTrash, refresh as trashRefresh, retryPendingRefresh as retryPendingTrashRefresh } from './trash-view.ts';
 import { makePostQueryBuilder, makePosterQueryBuilder, POST_FACET_OPTS, POSTER_FACET_OPTS } from './query-builder.ts';
 import { makeTagGroupMenu } from './tag-group-menu-builder.ts';
@@ -39,18 +39,18 @@ import { registerSearchSuggestions } from './search-suggestions-builder.ts';
 import { initFullTextBridge } from './fulltext.ts';
 import { makePostGridBuilder, bindLoadPosts, bindConfirmClearAll, bindGetSkipDeleteConfirm, bindSetSkipDeleteConfirm } from './post-grid-builder.ts';
 import { makePosterGridBuilder } from './poster-grid-builder.ts';
-import { makeGridDensity, type HologramSizeTrack } from './grid-density-builder.ts';
+import { makeGridDensity, type DotSizeTrack } from './grid-density-builder.ts';
 import { makeInspector } from './inspector-builder.ts';
 import { makeSelectionBar } from './selection-builder.ts';
 import { makeSelectionMenu, selectionTextAt } from './selection-menu.ts';
 import { makeBulkTag } from './bulk-tag-builder.ts';
 import { makeTabsController } from './tabs-builder.ts';
 import { makeImageTabController } from './image-tab-builder.ts';
-import { hologramImageTabSource } from './image-tab.ts';
+import { dotImageTabSource } from './image-tab.ts';
 import { subscribe as subscribePostsData } from './posts-data.ts';
 import { store, subscribeKey } from './store.ts';
-import type { HologramBrowseMode } from './store.ts';
-import { hologramIpc } from './ipc.ts';
+import type { DotBrowseMode } from './store.ts';
+import { dotIpc } from './ipc.ts';
 import { recordPostView } from './posts.ts';
 import { findLinkedPost } from './post-link.ts';
 
@@ -91,10 +91,10 @@ export let switchTab: (id: string) => void;
 export let addTab: () => void;
 // #145: 履歴行のクリック＝現在のタブ（新規訪問として push）／中クリック（背面タブ、
 // nav スタックに種を入れた状態）。それぞれ tabs-builder.ts の doc コメントを参照。
-export let openHistoryEntry: (e: HologramNavEntry) => void;
-export let openHistoryEntryInBackgroundTab: (e: HologramNavEntry, title: string) => void;
+export let openHistoryEntry: (e: DotNavEntry) => void;
+export let openHistoryEntryInBackgroundTab: (e: DotNavEntry, title: string) => void;
 /** #145: 履歴パネルが image 種別の行のサムネイルを引くための関数。 */
-export let getPostById: (id: string) => HologramPost | undefined;
+export let getPostById: (id: string) => DotPost | undefined;
 export let closeTab: (id: string) => void;
 /** 中クリックで閉じる。最後に残った1枚では何もしない。 */
 export let closeTabByGesture: (id: string) => void;
@@ -123,15 +123,15 @@ export let posterClickBackground: () => void;
 // 表示ポップオーバー向けのサイズスライダーの束縛（P2②）。現在のビューのサイズトラック
 // （列数または px）を読み、スライダーの値を適用する。座標の計算は gridDensity が持つ。
 // ポップオーバーはこの live binding を import して、開いた時／ドラッグ中／確定時に呼ぶ。
-export let getPostSizeTrack: () => HologramSizeTrack | null;
+export let getPostSizeTrack: () => DotSizeTrack | null;
 export let applyPostSize: (value: number, min: number, max: number, commit: boolean) => void;
-export let getPosterSizeTrack: () => HologramSizeTrack | null;
+export let getPosterSizeTrack: () => DotSizeTrack | null;
 export let applyPosterSize: (value: number, min: number, max: number) => void;
 // シャッフル順を振り直す（#118）。'random' の並び順は種の純粋関数なので、新しい順序は
 // 新しい種を意味する＝ここで種を置き換えて描画し直す。表示ポップオーバーの
 // シャッフルし直すボタンが呼ぶ。'random' を選んだ時は自分で種を作る（setPostSort を参照）。
 export let rerollShuffle: () => void;
-// 投稿の並び順。表示ポップオーバーの Select がこれを呼び、読み戻す値は hologramStore の
+// 投稿の並び順。表示ポップオーバーの Select がこれを呼び、読み戻す値は dotStore の
 // 'sortPost'。（投稿者の並び順には専用の操作が無い＝'sortPoster' を書くことが全部で、
 // orchestrator がそのキーを購読している。）
 export let setPostSort: (value: string) => void;
@@ -143,7 +143,7 @@ export let openFolder: (id: string | null) => void;
 
 // --- 絞り込みバー（redesign §3-2 / P2③） ----------------------------------
 // 値フライアウトの1行（facets.ts の qfValues が作る）＝filterbar コンポーネントが
-// 描画する構造の形。HologramQfPopItem と同じく loose（[k]:any）にしてある。qfValues が
+// 描画する構造の形。DotQfPopItem と同じく loose（[k]:any）にしてある。qfValues が
 // カテゴリごとの追加項目（type/kind/sub/sn/facetDim/ghead/dotTitle）を足すため。
 export interface FilterRow {
   avatarFile?: string;
@@ -255,7 +255,7 @@ export function endFilterEditSession(): void {
   // --- i18n ---
   // メッセージは i18n.js にある（index.html 経由でこのスクリプトより先に読み込まれる）。
   // マニフェスト階層の文字列は Chrome 経由で _locales/*/messages.json から来る。
-  const { getMessage } = await hologramI18n;
+  const { getMessage } = await dotI18n;
   // シェルは今は React が持つ（AppShell.tsx）。下のシェル DOM の準備が走る前にその
   // マウントを待つ＝シェルが登録する要素（services/content-area.ts）と、まだ残っている
   // 少数の byId() の探索が解決するようにする。（viewerReady は今までどおりこの IIFE の
@@ -272,7 +272,7 @@ export function endFilterEditSession(): void {
   // ラベルを書き込んでいた。書き込む先はもう残っていない。どの画面もコンポーネントに
   // なり、自分の文字列を t() で解決する＝P3 #6。）
 
-  // 投稿の並び順の唯一の情報源は hologramStore の 'sortPost'＝投稿者側の並び順がずっと
+  // 投稿の並び順の唯一の情報源は dotStore の 'sortPost'＝投稿者側の並び順がずっと
   // 取ってきたのと同じ形。以前はシェルの中の隠し <select> で、表示ポップオーバーが合成した
   // 'change' イベントで駆動していた（#153 分類3）。今はポップオーバーが下の setPostSort()
   // を呼び、タブの復元はキーを直接書く（applyState）。これが、復元を利用者による並び順の
@@ -360,7 +360,7 @@ export function endFilterEditSession(): void {
     posterQHasTag: (tagId: number | null, name: string) => posterQB.qHasTag(tagId, name),
     allPosts: facetUniverse,
     hostOf: (u: string | null | undefined) => hostOf(u),
-    userKey: (p: HologramPost) => userKey(p),
+    userKey: (p: DotPost) => userKey(p),
     t: getMessage,
     PF_NAME,
     posterTagEntriesOf,
@@ -388,14 +388,14 @@ export function endFilterEditSession(): void {
   // （viewer.ts decomposition の一部）＝下の makeSearchBox() の呼び出しを参照。
 
   // --- サイドバーの絞り込みの操作 ---
-  // （#filterRows の行ラベルはサイドバーのコンポーネントが描き、hologramPostSidebarSource
+  // （#filterRows の行ラベルはサイドバーのコンポーネントが描き、dotPostSidebarSource
   // から自分で導く。ここには Platform / Post / Media / Date / Engagement の静的な setText は
   // 無い。）
 
   // （委譲していた #filterRows のリスナーがここにあった＝旧ファセット行の列の、最後の
   // 委譲リスナー。その入れ物はシェルの切り替えと一緒に、列そのものは P3 #6 と一緒に
   // 無くなったので、振り分けていた行はどれも絞り込みバーのもの（絞り込みの追加）か、
-  // 消えたかのどちらか。multiOnly はタブの状態としてだけ残る＝hologramStore のキーで、
+  // 消えたかのどちらか。multiOnly はタブの状態としてだけ残る＝dotStore のキーで、
   // tabs-builder 自身の状態復元が書く。）
 
   const _ic = (paths: string) => `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
@@ -436,7 +436,7 @@ export function endFilterEditSession(): void {
   // 移した（「allPosts の所有権の移譲」）＝postGrid は下、buildUsers/postQB がスコープに
   // 入った後で生成する。
   // コンテンツ領域が何を閲覧しているか（'posts' | 'posters' | 'trash'）と
-  // 「複数画像」の絞り込みは hologramStore のキー（'browseMode' / 'multiOnly'）であって、
+  // 「複数画像」の絞り込みは dotStore のキー（'browseMode' / 'multiOnly'）であって、
   // そこへ写した閉包の状態ではない。コンポーネントもビルダーも同じキーを読むので、
   // 値は1つ、書く場所も1か所。
   // SMOKE のキャプチャ。隠しスクリーンショット用のインスタンスには「画面に出ている」ものが
@@ -468,7 +468,7 @@ export function endFilterEditSession(): void {
   // グループ化の状態（manualGroups/ungrouped/stickyRecs。main 経由で
   // manual-groups.json / ungrouped.json に永続化する）は viewGroups と一緒に
   // post-grid-builder.ts へ移した＝下の postGrid を参照。
-  // インスペクタに出ているグループの postIdKey は hologramStore の 'inspectedKey'＝
+  // インスペクタに出ているグループの postIdKey は dotStore の 'inspectedKey'＝
   // グリッド／投稿者のセルは useSyncExternalStore 経由でそこから自分の '.inspected' の
   // 輪を導き、インスペクタを開閉するビルダー（inspector-builder / poster-grid-builder /
   // undo-builder）も同じキーを直接読み書きする。だからここに写すものは何も無い。
@@ -478,15 +478,15 @@ export function endFilterEditSession(): void {
   // postGrid/posterGrid 経由で後から宣言する）＝このファイルの他の service の結線が既に
   // そうしているのと同じ、TDZ に対して安全な遅延アロー関数。
   const gridDensity = makeGridDensity({
-    hologramIpc,
-    hologramPostGridSource,
-    hologramTrashGridSource,
+    dotIpc,
+    dotPostGridSource,
+    dotTrashGridSource,
     renderPosts: (inPlace) => renderPosts(inPlace),
     renderPosters: () => renderPosters(),
   });
   const { gridThumbW } = gridDensity;
   // 投稿グリッドの選択状態（Set と Shift 範囲の起点）は services/selection.ts にある＝
-  // hologramStore の 'selectedSet' キーがその状態そのもので、グリッドコンポーネントの
+  // dotStore の 'selectedSet' キーがその状態そのもので、グリッドコンポーネントの
   // セルがそれを反応的に読む。
   // --- クエリビルダー。真偽値の条件の木が唯一の情報源 ---
   // （改訂3: 条件は平たく並び、括弧の付いた群へドラッグして入れる。型による自動の
@@ -549,7 +549,7 @@ export function endFilterEditSession(): void {
     // してあるのは、searchEditing をこの閉包の後ろ（下の makeSearchBox() の
     // 呼び出し）で生成するため。postQB/posterQB が自分の宣言より前で定義された関数から
     // 参照されるのと同じ前方参照の形。
-    onLeafMutated: (node: HologramQueryLeaf) => searchEditing.onLeafMutated(node),
+    onLeafMutated: (node: DotQueryLeaf) => searchEditing.onLeafMutated(node),
   });
   const { qb: trashQB } = makePostQueryBuilder({
     storeKey: 'trashQueryTree',
@@ -567,10 +567,10 @@ export function endFilterEditSession(): void {
   function removeFilter(index: number) {
     (store.getState().browseMode === 'trash' ? trashQB : postQB).removeFilter(index);
   }
-  function _removeNode(node: HologramQueryLeaf) {
+  function _removeNode(node: DotQueryLeaf) {
     postQB.removeNode(node);
   }
-  function removeCondsMatching(pred: (c: HologramQueryLeaf) => boolean) {
+  function removeCondsMatching(pred: (c: DotQueryLeaf) => boolean) {
     return (store.getState().browseMode === 'trash' ? trashQB : postQB).removeCondsMatching(pred);
   }
   function qHasValue(type: string, value: string) {
@@ -696,14 +696,14 @@ export function endFilterEditSession(): void {
     activeFolderId: () => store.getState().activeFolderId,
     stickyRecs: postGrid.getStickyRecs(),
     sortValue,
-    // シャッフルの種（#118）＝hologramStore の 'shuffleSeed'。並び順のキー自体と同じく
+    // シャッフルの種（#118）＝dotStore の 'shuffleSeed'。並び順のキー自体と同じく
     // タブごとにスナップショットを取る。読むのは 'random' の並び順だけ。
     shuffleSeed: () => store.getState().shuffleSeed,
     searchQuery: () => searchQuery(),
     buildUsers,
     posterQBEval: (u) => posterQB.eval(u),
     posterQBTree: () => posterQB.getTree(),
-    // 投稿者の並び順の唯一の情報源は hologramStore の 'sortPoster'（表示ポップオーバーが
+    // 投稿者の並び順の唯一の情報源は dotStore の 'sortPoster'（表示ポップオーバーが
     // 書く）。未設定なら既定は 'count'（投稿者の並び順は永続化しないので、読み込み直すと
     // 戻る＝旧閉包の既定と同じ）。
     posterSort: () => store.getState().sortPoster,
@@ -712,20 +712,20 @@ export function endFilterEditSession(): void {
     // 呼ばれることはない。この getter は既定（名前順）でその約束を満たすだけ＝今の
     // ビルドでは実際には一度も呼ばれない。
     folderSort: () => 'name',
-    allFolders: () => (CF() ? CF().allFolders() : []) as HologramFolder[],
+    allFolders: () => (CF() ? CF().allFolders() : []) as DotFolder[],
     filterLabel,
   });
   // listing.ts の namedPosters の live binding に結び付ける＝services/sidebar.ts の投稿者の
   // source が、この orchestrator のインスタンスが使うのと同じ namedPosters() を読めるように
   // する（投稿者インスタンスの行の開閉のため）。再実装ではなく結び付けにしている理由は、
-  // 上の hologramTags.tagGroupOf の注記を参照。
+  // 上の dotTags.tagGroupOf の注記を参照。
   bindNamedPosters(namedPosters);
 
   // 描画の再利用の防ぎ（lastRenderedState/_lastRenderGen/_lastViewGroups/
   // _lastStickySize）は今は post-grid-builder.ts にある。下の
   // tabsCtl.syncTitleAndPersist() が postGrid.setLastRenderedState 経由で
   // lastRenderedState を書く。
-  // nav の履歴（ブラウザ風の戻る／進む）、hologramStore に載った tabs/activeTabId の
+  // nav の履歴（ブラウザ風の戻る／進む）、dotStore に載った tabs/activeTabId の
   // アクセサ、タブの CRUD の操作は、viewer.ts decomposition の中ですべて
   // tabs-builder.ts へ移した。
   // 画像タブは下の image-tab-builder.ts へ移し＝そのモジュールのスコープへ＝tabsCtl の
@@ -840,7 +840,7 @@ export function endFilterEditSession(): void {
   // すべて tabsCtl にある。ストリップが呼ぶものについては、上のその生成場所で
   // モジュールスコープの export への代入を済ませてある。
 
-  // keepCurrentVisible/imgAspect/cardModel/hologramPostGridSource.configure/
+  // keepCurrentVisible/imgAspect/cardModel/dotPostGridSource.configure/
   // renderPosts はすべて post-grid-builder.ts へ移した（上の postGrid）。
   const _prefersReducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -850,7 +850,7 @@ export function endFilterEditSession(): void {
   // configure() が一度だけ設定する。グリッドの source と同じ「変わらないコールバックを
   // 一度だけ設定する」形。onIndexChange/onCloseTab は、image-tab.ts が
   // 以前は旧共有ブリッジ経由で行っていた発火を置き換えた DI のコールバック。
-  hologramImageTabSource.configure({
+  dotImageTabSource.configure({
     gallery: { buildGroupGalleryItems },
     labels: {
       missing: getMessage('imgTabMissing'),
@@ -897,7 +897,7 @@ export function endFilterEditSession(): void {
   // モジュールスコープではなくここで結ぶのは、両方の半分（カードのモデルと、覗き見が読む
   // ギャラリー）を orchestrator が持っているから。ゴミ箱のビュー自体は asset:// の組み立てと
   // グループ化の規則から切り離しておく。
-  hologramTrashGridSource.configure({
+  dotTrashGridSource.configure({
     modelOf: (g, i) => postGrid.cardModel(g, i),
     keyOf: (g) => postIdKey(g.rep),
   });
@@ -925,13 +925,13 @@ export function endFilterEditSession(): void {
   // その操作がカードの画像の上に落ちたか（テキストやメタデータではなく）を判定する。
   // 下の2つの中クリックの挙動は、画像そのものについての話。
   const onMedia = (e: { target: EventTarget | null }) => e.target instanceof Element && !!e.target.closest('[data-slot="post-card-media"]');
-  const postCardActions: HologramCardActions = {
-    onClick: (g: HologramPostGroup, e) => {
+  const postCardActions: DotCardActions = {
+    onClick: (g: DotPostGroup, e) => {
       selectionCtl.clickSelect(g, e);
     },
     // メディアのない投稿では空の画像ビューを開かず、シングルクリックと同じ
     // インスペクタを表示する。
-    onDoubleClick: (g: HologramPostGroup) => {
+    onDoubleClick: (g: DotPostGroup) => {
       if (!buildGroupGalleryItems(g).length) {
         showDetail(g);
         return;
@@ -939,13 +939,13 @@ export function endFilterEditSession(): void {
       openImageEntry(g);
     },
     // メディアを中クリック → その投稿を背面の画像タブとして開く（ブラウザ風）。
-    onAuxClick: (g: HologramPostGroup, e) => {
+    onAuxClick: (g: DotPostGroup, e) => {
       if (e.button !== 1 || !onMedia(e)) return;
       e.preventDefault();
       addImageTab(g);
     },
     // メディアの上での中クリックによる自動スクロールを抑える。
-    onMouseDown: (_g: HologramPostGroup, e) => {
+    onMouseDown: (_g: DotPostGroup, e) => {
       if (e.button === 1 && onMedia(e)) e.preventDefault();
       if (e.button === 0 && e.shiftKey) {
         e.preventDefault();
@@ -954,7 +954,7 @@ export function endFilterEditSession(): void {
     },
     // foldMenuItems/onFoldMenuPick/showFoldMenu と cardMenuItems/onCardMenuPick/
     // showCardMenu は post-grid-builder.ts にある（上の postGrid）。
-    onContextMenu: (g: HologramPostGroup, e) => {
+    onContextMenu: (g: DotPostGroup, e) => {
       e.preventDefault();
       if (selection.size() > 1) {
         // 2〜4件を選んでいる時（#82）。比較に必要な一括の行はこれ1つで、フローティングの
@@ -973,12 +973,12 @@ export function endFilterEditSession(): void {
       showCardMenu(g, e.clientX, e.clientY, selectionTextAt(e.target));
     },
   };
-  hologramPostGridSource.configureActions(postCardActions);
+  dotPostGridSource.configureActions(postCardActions);
   // ゴミ箱は同じセルを描くが、答える操作はずっと少ない。クリックはゴミ箱自身の選択の
   // 中で選び、ダブルクリックは覗き見で、それ以外はすべて断る（理由は trash/TrashGrid.tsx を
   // 参照）。
-  hologramTrashGridSource.configureActions({
-    onClick: (g: HologramPostGroup, e) => {
+  dotTrashGridSource.configureActions({
+    onClick: (g: DotPostGroup, e) => {
       trashClickCard(postIdKey(g.rep), { ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey });
     },
   });
@@ -986,7 +986,7 @@ export function endFilterEditSession(): void {
   // サイドバーのフォルダチップ（共有の folders.json）＝件数と ★既定。タグのチップと同じく
   // 消灯→いずれか（OR）→すべて含む（AND）→消灯 と巡り、タグと同じ AND/OR の式に加わる。
   // postFolderChips は撤去した（集まりは集まりのビューへ移った）。「複数画像」の行の項目
-  // （選択状態）は、今は services/sidebar.ts の hologramPostSidebarSource が自分で導く＝
+  // （選択状態）は、今は services/sidebar.ts の dotPostSidebarSource が自分で導く＝
   // multi やフォルダを書き換えた後に、orchestrator 側から描画し直す呼び出しは要らない。
   // フォルダの管理は左サイドバーの木に統合した（ライブラリと投稿者の両方。#41、#6 の残り
   // 項目1）。旧 #postFolderManage ボタンと、フォルダ管理のモーダル（qf-pop のフッタの
@@ -1109,7 +1109,7 @@ export function endFilterEditSession(): void {
   // 描き、重いグリッドの描画は1回描いた後に回す（先に反応を返す UI）。clearTimeout が
   // 素早い連打を1回の描画にまとめる。
   let _browseRenderT: any = null;
-  // 密度は表示ポップオーバーのもの（hologramStore の 'view'）。それに対する反応
+  // 密度は表示ポップオーバーのもの（dotStore の 'view'）。それに対する反応
   // （currentView へ写す、永続化する、ビュー遷移付きで描画し直す）は今は
   // grid-density-builder.ts にある＝ここは React 側の subscribe の登録
   // （StoreSubscriptions、App.tsx）をそこへ橋渡しするだけ。
@@ -1122,9 +1122,9 @@ export function endFilterEditSession(): void {
   // グリッドに戻る。よってゴミ箱を離れるのは、常に別の行き先への素朴な移動（または履歴の
   // 一歩。そちらは下の setBrowseModeLite 経由で自分の種別を適用する）。
   // 閲覧モードへの書き込みがすべて通るゲート。認識できないものは 'posts' に着く。戻り値の型は
-  // HologramBrowseMode そのもの（ストア自身のユニオン）なので、ここを通っていないモードは
+  // DotBrowseMode そのもの（ストア自身のユニオン）なので、ここを通っていないモードは
   // 書き込めない。集まりは撤去済み（今はサイドバーのフォルダ一覧）。
-  const normalizeBrowseMode = (mode: string): HologramBrowseMode => (mode === 'posters' ? 'posters' : mode === 'trash' ? 'trash' : 'posts');
+  const normalizeBrowseMode = (mode: string): DotBrowseMode => (mode === 'posters' ? 'posters' : mode === 'trash' ? 'trash' : 'posts');
   // 描画せずにモードだけを書く。インスペクタもモード変更に追従する。
   // applyEntry（tabs-builder）がこれを使うので、履歴の復元はちょうど1回だけ描画する＝
   // その直後に走る、種別ごとの描画がそれ。
@@ -1179,7 +1179,7 @@ export function endFilterEditSession(): void {
     }
     if (hasFilters) reset();
     // setBrowseMode は必ず描画して記録するので、「もうそこにいる」場合はここで止める。
-    // 以前はこれを hologramStore への書き込みとして書き、subscribe のハンドラ経由で
+    // 以前はこれを dotStore への書き込みとして書き、subscribe のハンドラ経由で
     // 戻ってきていた＝同じモジュールが書いて読む1つの値なのに、その間に React の購読の
     // 登録を回り道として挟んでいた。
     if (store.getState().browseMode !== mode) setBrowseMode(mode);
@@ -1190,7 +1190,7 @@ export function endFilterEditSession(): void {
   // カードは投稿の投稿者の欄から導く（buildUsers＝取得はしない）。クリックでインスペクタ
   // （投稿者のプロフィール）、ダブルクリックでその投稿者の投稿へ飛ぶ。
   // posterList 自体は今は poster-grid-builder.ts の内部の状態（getPosterList 経由で出す）。
-  // posterSort（'count' | 'name' | 'date-desc' | 'date-asc'）は hologramStore の
+  // posterSort（'count' | 'name' | 'date-desc' | 'date-asc'）は dotStore の
   // 'sortPoster' にある（上の listing の依存の getter 経由で読む）。下の購読が、変化した
   // ときに描画し直す。
   // 投稿者グリッドの表示の軸（#630）は services/display.ts に、その副作用は上の投稿側と
@@ -1268,7 +1268,7 @@ export function endFilterEditSession(): void {
   // ロジックをそのまま写したもの）。filterbar コンポーネントは描画と振り分けだけをして、この
   // ロジックを組み直すことはない。開くたびに計算し直すので、件数・語彙・ラベルが新しいまま。
   filterCategories = function (): FilterCat[] {
-    const pick = (cat: string) => (it: FilterRow) => qfPop.pickValue(cat, it as HologramQfPopItem);
+    const pick = (cat: string) => (it: FilterRow) => qfPop.pickValue(cat, it as DotQfPopItem);
     const dot = (it: FilterRow) => (it.kind ? { ...it, dotTitle: tagGroupLabel(it.kind as string) } : it);
     const valuesCat = (cat: string, label: string, showFind: boolean, extra?: { manage?: () => void; manageLabel?: string; valuesFn?: () => FilterRow[]; only?: FilterCatValues['only'] }): FilterCatValues => {
       return {
@@ -1442,7 +1442,7 @@ export function endFilterEditSession(): void {
     const view = facetViewOf(qb.getTree(), opts);
     if (!view) return []; // ファセットでない形で保存された木 → チップは出さない（読み取り専用で代わりに出す案は試行のため落とした）
     const out: ActiveFilter[] = [];
-    const emit = (type: string, mode: FacetMode, leaves: HologramQueryLeaf[]) => {
+    const emit = (type: string, mode: FacetMode, leaves: DotQueryLeaf[]) => {
       const m = map[type];
       if (!m) return; // 対応表に無い型はチップを持たない
       out.push({ cat: m.cat, type, label: m.label, editor: m.editor, mode, values: leaves.map((l) => labelOf(l)), remove: () => qb.removeByType(type) });
@@ -1453,7 +1453,7 @@ export function endFilterEditSession(): void {
       if (l.type === 'text') continue;
       emit(l.type, 'or', [l]);
     }
-    const excl = new Map<string, HologramQueryLeaf[]>();
+    const excl = new Map<string, DotQueryLeaf[]>();
     for (const l of view.excl) {
       const arr = excl.get(l.type) ?? [];
       arr.push(l);
@@ -1463,7 +1463,7 @@ export function endFilterEditSession(): void {
     return out;
   };
 
-  // resetPosterFilters/renderPosters/hologramPosterGridSource.configure/
+  // resetPosterFilters/renderPosters/dotPosterGridSource.configure/
   // openPosterPosts/jumpToPoster/refreshPosterTagFields/refreshPosterFolderFields/
   // applyPosterTagChange/showPosterDetail は、すべて poster-grid-builder.ts へ移した。
   // resetPosterFilters はモジュールスコープの export 経由でしか読まれない
@@ -1486,18 +1486,18 @@ export function endFilterEditSession(): void {
   // 投稿者を返すので、DOM から `data-index` を読み取るものは無い。
   // posterMenuItems/onPosterMenuPick/showPosterMenu は poster-grid-builder.ts へ移した＝
   // 上で posterGrid から showPosterMenu を分割代入している。
-  hologramPosterGridSource.configureActions({
-    onClick: (u: HologramUserAgg) => showPosterDetail(u),
+  dotPosterGridSource.configureActions({
+    onClick: (u: DotUserAgg) => showPosterDetail(u),
     // 投稿者をダブルクリック → その投稿者の投稿へ掘り下げる（投稿モード＋user の
     // 絞り込み）。掘り下げは #143 が確定させたダブルクリックの割り当て（#24 の旧
     // 「単独＝切り替え」を上書きする）。
-    onDoubleClick: (u: HologramUserAgg) => openPosterPosts(u),
-    onContextMenu: (u: HologramUserAgg, e) => {
+    onDoubleClick: (u: DotUserAgg) => openPosterPosts(u),
+    onContextMenu: (u: DotUserAgg, e) => {
       e.preventDefault();
       showPosterMenu(u, e.clientX, e.clientY);
     },
   });
-  // 投稿者モードの並び順。唯一の情報源は hologramStore の 'sortPoster'（表示ポップオーバーの
+  // 投稿者モードの並び順。唯一の情報源は dotStore の 'sortPoster'（表示ポップオーバーの
   // Select が選択時に書く）。変化したら描画し直す＝きっかけは1つで、情報源が二重にならない。
   subscribeKey('sortPoster', () => {
     if (tabsCtl.isRestoring()) return; // ストアを書いたのは applyEntry/initTabs＝あちらが自分で描画を走らせる
@@ -1524,7 +1524,7 @@ export function endFilterEditSession(): void {
   // 渡していた。今はそれらが上の live binding を直接 import する。
 
   // 保存した表示の形と skipDeleteConfirm を読み込む
-  hologramIpc.getPrefs().then((prefs) => {
+  dotIpc.getPrefs().then((prefs) => {
     gridDensity.restorePrefs(prefs);
     postGrid.restoreSkipDeleteConfirm(!!prefs.skipDeleteConfirm);
     // 保存した表示を適用した後に1回だけ描画し直す。並び順はここでは読まない＝そちらは
@@ -1533,7 +1533,7 @@ export function endFilterEditSession(): void {
   });
 
   // --- 検索の値の供給元 --------------------------------------------------------
-  // hologramStore の 'searchQuery' が検索の値そのもので、searchbox コンポーネントが
+  // dotStore の 'searchQuery' が検索の値そのもので、searchbox コンポーネントが
   // Base UI の Autocomplete の制御された入力として描く。クエリの木のテキストの葉の状態機械
   // （search-editing.ts）、候補の選択を searchbox コンポーネントへつなぐブリッジ
   // （searchbox.ts）、その周りのストアの配線とデバウンスした描画のやり直しは、今は
@@ -1643,7 +1643,7 @@ export function endFilterEditSession(): void {
   handleFolderChange = function (kind?: string) {
     // 今絞り込みに使っているフォルダが削除されたら、その絞り込みを外す（一覧が理由も
     // 分からず空になるのを防ぐ）。
-    const dangling = (c: HologramQueryLeaf) => c.type === 'folder' && !CF().byId(c.value);
+    const dangling = (c: DotQueryLeaf) => c.type === 'folder' && !CF().byId(c.value);
     // 描き直しは syncShadow が全部やる。刈り込んだ木をストアへ押し込み、チップと
     // サイドバーの印はそれを読む。
     if (postQB.removeCondsMatching(dangling)) postQB.syncShadow();
@@ -1654,7 +1654,7 @@ export function endFilterEditSession(): void {
       let swept = false;
       for (const t of tabsCtl.getTabs()) {
         if (t.id === activeId) continue; // 上の生きている木が、このタブの状態そのもの
-        const st = t.state as { tree?: HologramQueryGroup; f?: HologramQueryLeaf[] } | undefined;
+        const st = t.state as { tree?: DotQueryGroup; f?: DotQueryLeaf[] } | undefined;
         if (!st) continue;
         if (st.tree && removeCondsMatchingIn(st.tree, dangling)) swept = true;
         // タイトルの影は葉の別の複製なので、放っておくとタブは、もう無いフォルダから
@@ -1667,7 +1667,7 @@ export function endFilterEditSession(): void {
       if (swept) tabsCtl.persistTabsNow();
     }
     // サイドバーの集まりの状態（件数と選択状態）は、services/sidebar.ts の
-    // hologramFolders.onChange の購読から自分で導く。
+    // dotFolders.onChange の購読から自分で導く。
     if (kind === 'list') renderPosts(true); // フォルダの作成・削除＝アニメーション無しで更新する
   };
   // 取込キューが変わった時の背面での更新。登録は React 側にあり（StoreSubscriptions、
@@ -1740,7 +1740,7 @@ export function endFilterEditSession(): void {
     // 書くので、荷物はレンダラーが畳まれる前に IPC のキューへ届きさえすればよい。
     window.addEventListener('pagehide', tabsCtl.persistTabsNow);
     const openLinkedPost = async () => {
-      const target = await hologramIpc.takePostLink();
+      const target = await dotIpc.takePostLink();
       if (!target) return;
       await loadPosts(true);
       const post = findLinkedPost(postGrid.getAllPosts(), target);
@@ -1758,7 +1758,7 @@ export function endFilterEditSession(): void {
         showDetail(group, { openPanel: true });
       }
     };
-    const stopPostLinks = hologramIpc.onPostLink(() => void openLinkedPost());
+    const stopPostLinks = dotIpc.onPostLink(() => void openLinkedPost());
     window.addEventListener('pagehide', stopPostLinks, { once: true });
     await openLinkedPost();
   };

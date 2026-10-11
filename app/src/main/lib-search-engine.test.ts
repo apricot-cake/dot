@@ -16,7 +16,7 @@ afterEach(async () => {
   }
 });
 test('公式エンジンで誤字・更新・削除・ライブラリ分離を確認する', async () => {
-  directory = await mkdtemp(path.join(os.tmpdir(), 'hologram-meili-'));
+  directory = await mkdtemp(path.join(os.tmpdir(), 'dot-meili-'));
   engine = new SearchEngine(binary, directory);
   const docs = [
     { id: 'a', fields: { text: 'beautiful illustration 猫のイラスト' } },
@@ -35,7 +35,7 @@ test('公式エンジンで誤字・更新・削除・ライブラリ分離を�
 }, 120000);
 
 test('全角・半角を照合し、合成・展開で長さが変わっても原文を強調する', async () => {
-  directory = await mkdtemp(path.join(os.tmpdir(), 'hologram-meili-'));
+  directory = await mkdtemp(path.join(os.tmpdir(), 'dot-meili-'));
   engine = new SearchEngine(binary, directory);
   for (const [query, original, selected] of [
     ['abc123', '😀 ＡＢＣ１２３ の記録', 'ＡＢＣ１２３'],
@@ -54,7 +54,7 @@ test('全角・半角を照合し、合成・展開で長さが変わっても�
 }, 120000);
 
 test('短い名前と数字を混同せず、ID以外の誤字補正と前方一致を保つ', async () => {
-  directory = await mkdtemp(path.join(os.tmpdir(), 'hologram-meili-'));
+  directory = await mkdtemp(path.join(os.tmpdir(), 'dot-meili-'));
   engine = new SearchEngine(binary, directory);
   const docs = [
     { id: 'miku', fields: searchFields({ text: 'ミクのイラスト' }) },
@@ -90,7 +90,7 @@ test('短い名前と数字を混同せず、ID以外の誤字補正と前方一
 }, 120000);
 
 test('単語の完全一致を優先し、同条件ではタグ・タイトルを本文・引用より上にする', async () => {
-  directory = await mkdtemp(path.join(os.tmpdir(), 'hologram-meili-'));
+  directory = await mkdtemp(path.join(os.tmpdir(), 'dot-meili-'));
   engine = new SearchEngine(binary, directory);
   const docs = [
     { id: 'prefix', fields: searchFields({ tags: ['caterpillar'] }) },

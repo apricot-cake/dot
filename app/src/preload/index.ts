@@ -3,7 +3,7 @@
 // 1ファイルだけはビルドする（electron-vite の preload ビルド → Vite の lib CJS、electron は
 // external）。実行時のモジュール形式が CJS なので .cts（native-host 層と同じ作法）。
 //
-// export している HologramPreload 型が、そのまま window.hologram の取り決め。レンダラーの
+// export している DotPreload 型が、そのまま window.dot の取り決め。レンダラーの
 // プログラムは types/globals.d.ts でこれに別名を付けている（electron-shim の paths の対応
 // による＝そのファイルを参照）ので、型がブリッジの実際の露出からずれることはあり得ない。
 // このファイル自身は、tsconfig.node.json によって本物の electron の型と突き合わせて検査
@@ -64,7 +64,7 @@ import type {
 // 周りのグローバルが、メインプロセス全体で @types/node のものを覆い隠してしまうため
 // （types/electron-shim.d.ts がレンダラー側で逆向きに避けているのと同じ種類の衝突）。ここでは
 // その1つの呼び出し（#234）を型検査に通すのに足りるだけの `File` を宣言する。
-// window.hologram.getPathForFile へ渡す本物の File を作るレンダラーのプログラムは、本物の
+// window.dot.getPathForFile へ渡す本物の File を作るレンダラーのプログラムは、本物の
 // DOM の lib を既に持っている（tsconfig.web.json）ので、これを必要とすることは無い。
 declare global {
   interface File {
@@ -229,8 +229,8 @@ const api = {
   },
 };
 
-// contextBridge が晒す IPC の面の全体（window.hologram）＝実装の typeof なので、ずれ得る
+// contextBridge が晒す IPC の面の全体（window.dot）＝実装の typeof なので、ずれ得る
 // 手書きの写しは存在しない。
-export type HologramPreload = typeof api;
+export type DotPreload = typeof api;
 
-contextBridge.exposeInMainWorld('hologram', api);
+contextBridge.exposeInMainWorld('dot', api);

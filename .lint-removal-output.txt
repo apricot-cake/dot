@@ -72,7 +72,7 @@ app\src\renderer\src\services\poster-grid-builder.ts:1:10 lint/correctness/noUnu
   
   > 1 │ import { treeLeaves, userKey } from './query.ts';
       │          ^^^^^^^^^^
-    2 │ import { hologramIpc } from './ipc.ts';
+    2 │ import { dotIpc } from './ipc.ts';
     3 │ import { posterProfileUrl } from './profile-url.ts';
   
   i Unused imports might be the result of an incomplete refactoring.
@@ -202,7 +202,7 @@ app\src\renderer\src\services\selection-menu.ts format ━━━━━━━━�
   × Formatter would have printed the following content:
   
      1    │ - 
-     2  1 │   import { hologramIpc } from './ipc.ts';
+     2  1 │   import { dotIpc } from './ipc.ts';
      3  2 │   import { open as menuOpen } from './menu.ts';
   
 
@@ -210,7 +210,7 @@ app\src\renderer\src\shell\LeftSidebar.tsx format ━━━━━━━━━━
 
   × Formatter would have printed the following content:
   
-    241 241 │     const folderMenu = (e: MouseEvent, f: HologramFolder) => {
+    241 241 │     const folderMenu = (e: MouseEvent, f: DotFolder) => {
     242 242 │       e.preventDefault();
     243     │ - ····const·items·=·[
     244     │ - ······{·label:·t('foldNewSub'),·act:·'new'·},

@@ -51,11 +51,11 @@ const posterActive = new Set([`tag#${PID.P趣味}`]);
 // 選ぶ）。
 const _KIND: Record<string, string> = { 作品A: 'work', キャラX: 'character', P作品: 'work' };
 const _KIND_BY_ID: Record<number, string> = { [PID.P作品]: 'work' };
-const entry = (id: number | null, name: string, label = name): HologramTagEntry => ({ id, name, label });
+const entry = (id: number | null, name: string, label = name): DotTagEntry => ({ id, name, label });
 
-// 投稿者の集計は13の欄（HologramUserAgg）をすべて要求する＝ここではファセットが読む部分だけ
+// 投稿者の集計は13の欄（DotUserAgg）をすべて要求する＝ここではファセットが読む部分だけ
 // を上書きし、残りは空の値で埋める。部分的なオブジェクトを直接置くと deps の取り決めに合わない。
-const userAgg = (u: Partial<HologramUserAgg>): HologramUserAgg => ({
+const userAgg = (u: Partial<DotUserAgg>): DotUserAgg => ({
   key: '',
   platform: '',
   screenName: '',
@@ -76,7 +76,7 @@ const userAgg = (u: Partial<HologramUserAgg>): HologramUserAgg => ({
 });
 
 const posters = [userAgg({ key: 'x:u1', platform: 'x', screenName: 'alice', displayName: 'アリス', count: 3 }), userAgg({ key: 'pixiv:u3', platform: 'pixiv', screenName: 'carol', count: 2 }), userAgg({ key: 'bluesky:u4', platform: 'bluesky', screenName: 'dan.bsky.social', count: 1 })];
-const posterTagEntries: Record<string, HologramTagEntry[]> = {
+const posterTagEntries: Record<string, DotTagEntry[]> = {
   'x:u1': [entry(PID.P趣味, 'P趣味'), entry(PID.P作品, 'P作品')],
   'pixiv:u3': [entry(PID.P趣味, 'P趣味')],
   'bluesky:u4': [],
@@ -113,7 +113,7 @@ const LABELS: Record<string, string> = {
 // 母集団は差し込めるようにしてある（既定は `filtered`）。基本のフィクスチャ集合に無い投稿
 // （下の #195 の bookmark 種別の件数）を、他の欄をすべて写した2つ目の deps を手で書かずに
 // 観察するため。
-let groupedEntries: HologramTagEntry[] = [];
+let groupedEntries: DotTagEntry[] = [];
 function makeFacetsWith(pop: any[]) {
   return makeFacets({
     tagGroupEntries: () => groupedEntries,

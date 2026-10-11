@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 const copy = vi.hoisted(() => vi.fn().mockResolvedValue(true));
-vi.mock('./ipc.ts', () => ({ hologramIpc: { copyImage: copy } }));
+vi.mock('./ipc.ts', () => ({ dotIpc: { copyImage: copy } }));
 vi.mock('./ui.ts', () => ({ notify: vi.fn() }));
 vi.mock('../_shared/i18n.ts', () => ({ t: (key: string) => key }));
 import { close, copyImage, get, requestImageCopy } from './image-copy.ts';
