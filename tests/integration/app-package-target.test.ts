@@ -110,6 +110,7 @@ describe('desktop package targets', () => {
     expect(path.basename(path.dirname(defaultLibraryDir()))).toBe('dot');
     expect(DEFAULT_HOST_NAME).toBe('com.dot.host');
     expect(POST_LINK_SCHEME).toBe('dot');
+    expect(appPackage.name).toBe('@apricot-cake/dot');
     expect(appPackage.repository).toBe('https://github.com/apricot-cake/dot');
     expect(forgeConfig.publishers[0].config.repository).toEqual({ owner: 'apricot-cake', name: 'dot' });
   });
