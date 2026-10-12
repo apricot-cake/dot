@@ -102,18 +102,10 @@ test('ヘッダーとバッジ、削除指定を反映する', async ({ page }) 
   await expect(page.locator('.local-section')).toContainText('アカウントを作らずに使えます');
   await expect(page.locator('.local-icon .lucide-lock')).toHaveCount(1);
   await expect(page.locator('h1')).toContainText('そのイラスト、');
-  await expect(page.locator('.store-button img')).toHaveCount(4);
-  await expect(page.getByRole('button', { name: 'Microsoft Store', exact: true })).toHaveCount(2);
-  for (const button of await page.locator('.store-button').all()) await expect(button).toBeDisabled();
-  expect(
-    await page.locator('.store-button img').evaluateAll((images) =>
-      images.every((image) => {
-        const img = image as HTMLImageElement;
-        const rect = img.getBoundingClientRect();
-        return img.complete && img.naturalWidth > 0 && Math.abs(rect.width / rect.height - img.naturalWidth / img.naturalHeight) < 0.01 && getComputedStyle(img).filter === 'none';
-      }),
-    ),
-  ).toBe(true);
+  await expect(page.locator('.store-placeholder')).toHaveCount(4);
+  await expect(page.locator('.store-placeholder-name').filter({ hasText: 'Microsoft Store' })).toHaveCount(2);
+  await expect(page.locator('.store-placeholder img,.store-links button,.store-links a')).toHaveCount(0);
+  for (const placeholder of await page.locator('.store-placeholder').all()) await expect(placeholder).toContainText('公式バッジをここに配置');
 });
 
 test('説明図を実アプリの構成に合わせ、投稿者とインポートを紹介する', async ({ page }) => {
