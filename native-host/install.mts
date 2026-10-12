@@ -112,13 +112,14 @@ interface PreserveSharedRegistrationArgs {
   exe: string;
   runAsNode: boolean;
   configDirOverride?: string;
+  hostName?: string;
 }
 
-// 開発用の worktree は、意図して使い捨てにしてある。その Electron のパスをユーザーの
-// 本物のランチャーに残すと、その worktree を消した途端にブラウザからの保存がすべて失敗
-// する。設定の明示的な上書きは隔離されたテスト環境なので、そこでの登録は許したままにする。
-export function shouldPreserveSharedRegistration({ exe, runAsNode, configDirOverride = process.env.DOT_CONFIG_DIR }: PreserveSharedRegistrationArgs): boolean {
-  return runAsNode && !configDirOverride && isLinkedWorktreeRuntime(exe);
+// 設定を隔離しても HKCU の Native Messaging 登録は共有される。使い捨ての設定や
+// worktree を標準ホストへ登録すると、削除後に通常の保存が失敗する。隔離環境の登録は
+// DOT_NATIVE_HOST_NAME で別の名前を明示した場合だけ許す。
+export function shouldPreserveSharedRegistration({ exe, runAsNode, configDirOverride = process.env.DOT_CONFIG_DIR, hostName = HOST_NAME }: PreserveSharedRegistrationArgs): boolean {
+  return hostName === DEFAULT_HOST_NAME && (Boolean(configDirOverride) || (runAsNode && isLinkedWorktreeRuntime(exe)));
 }
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: \x00-\x7F is the deliberate full-ASCII range check
@@ -251,7 +252,7 @@ export function install({ exe = process.execPath, runAsNode = false, extensionId
   if (shouldPreserveSharedRegistration({ exe, runAsNode })) {
     const launcher = launcherPath();
     const manifest = manifestPath();
-    if (!fs.existsSync(launcher) || !fs.existsSync(manifest)) {
+    if (!process.env.DOT_CONFIG_DIR && (!fs.existsSync(launcher) || !fs.existsSync(manifest))) {
       throw new Error('Refusing to register the real native messaging host with a disposable Git worktree runtime. Run "node native-host/install.mts" from the main working tree first.');
     }
     return { launcher, manifest, configDir: configDir(), extensionId: readExtensionId(), preserved: true };
@@ -275,6 +276,9 @@ export function install({ exe = process.execPath, runAsNode = false, extensionId
 // ランチャーを、非 ASCII の exe のパスを指すもので上書きすることが決してないように）。
 // マニフェストがまだ無ければ、代わりにインストール一式を走らせる。
 export function updateAllowedOrigin(extensionId: unknown) {
+  if (shouldPreserveSharedRegistration({ exe: process.execPath, runAsNode: false })) {
+    return { manifest: manifestPath(), extensionId: readExtensionId(), preserved: true };
+  }
   const extId = sanitizeExtensionId(extensionId);
   const mp = manifestPath();
   let manifest: any;
@@ -290,6 +294,7 @@ export function updateAllowedOrigin(extensionId: unknown) {
 
 export function uninstall(): void {
   if (process.platform !== 'win32') throw new Error(`Unsupported platform: ${process.platform}`);
+  if (shouldPreserveSharedRegistration({ exe: process.execPath, runAsNode: false })) return;
   for (const key of windowsRegistryKeys()) {
     try {
       execFileSync('reg', ['delete', key, '/f'], { stdio: 'ignore' });
