@@ -52,3 +52,6 @@ recordings/
 
 app/vendor/meilisearch/
 app/vendor/avif/
+
+# 検証ログとコンパイルキャッシュ
+.tmp/
