@@ -37,6 +37,7 @@ afterAll(() => {
 afterEach(() => {
   Object.defineProperty(process, 'platform', platformDescriptor);
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
 });
 
@@ -110,15 +111,26 @@ describe('隔離した設定からの共有登録保護', () => {
     vi.stubEnv('DOT_NATIVE_HOST_NAME', 'com.dot.dev');
     vi.resetModules();
     const custom = await import('../../native-host/install.mts');
+    // バンドルの内容はこの登録契約の対象外。生成済みの配布物に依存せず、
+    // 一時フィクスチャを実際の配置先へコピーして登録・削除を検証する。
+    const bridgeFixture = path.join(root, 'bridge-fixture.js');
+    const bridgeSource = '// isolated native messaging bridge fixture\n';
+    fs.writeFileSync(bridgeFixture, bridgeSource);
+    const existsSync = fs.existsSync.bind(fs);
+    const copyFileSync = fs.copyFileSync.bind(fs);
+    vi.spyOn(fs, 'existsSync').mockImplementation((file) => (file === custom.BRIDGE_PATH ? true : existsSync(file)));
+    vi.spyOn(fs, 'copyFileSync').mockImplementation((source, destination, mode) => copyFileSync(source === custom.BRIDGE_PATH ? bridgeFixture : source, destination, mode));
     const registration = custom.install({ exe: process.execPath, extensionId: 'a'.repeat(32) });
     const key = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.dot.dev';
     expect(registration.manifest).toBe(path.join(sandbox, 'com.dot.dev.json'));
     expect(JSON.parse(fs.readFileSync(registration.manifest, 'utf8')).name).toBe('com.dot.dev');
+    expect(fs.readFileSync(path.join(sandbox, 'bridge.js'), 'utf8')).toBe(bridgeSource);
     expect(fs.readFileSync(registration.launcher, 'utf8')).toContain(`set "DOT_CONFIG_DIR=${sandbox}"`);
     expect(execFileSync).toHaveBeenCalledWith('reg', ['add', key, '/ve', '/t', 'REG_SZ', '/d', registration.manifest, '/f'], { stdio: 'ignore' });
     custom.uninstall();
     expect(execFileSync).toHaveBeenCalledWith('reg', ['delete', key, '/f'], { stdio: 'ignore' });
     expect(fs.existsSync(registration.manifest)).toBe(false);
+    expect(fs.existsSync(path.join(sandbox, 'bridge.js'))).toBe(false);
     vi.resetModules();
   });
 });
