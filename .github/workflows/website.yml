@@ -41,7 +41,11 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: docs/site/package-lock.json
+          cache-dependency-path: |
+            docs/site/package-lock.json
+            extension/package-lock.json
+      - name: 共有モジュールの生成済み型設定を準備
+        run: npm ci --prefix ../../extension
       - run: npm ci
       - run: npm run check
       - run: npm run build

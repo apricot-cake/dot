@@ -7,9 +7,12 @@ Astro の静的ページに、React の操作再生デモを埋め込みます�
 リポジトリのルートで実行します。
 
 ```powershell
+npm ci --prefix extension
 npm ci --prefix docs/site
 npm run site:dev
 ```
+
+拡張機能のインストール時に、共有するソースのビルドに必要なWXTの型設定も生成します。
 
 公開用ビルドと操作の検証は次のコマンドで行います。
 
