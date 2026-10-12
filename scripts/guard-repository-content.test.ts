@@ -16,12 +16,18 @@ describe('公開リポジトリへ追加するファイルの検査', () => {
 
   test('許可された製品素材と visual baseline は通す', () => {
     expect(violationFor('app/assets/icon.png')).toBeNull();
+    expect(violationFor('docs/site/public/icon.png')).toBeNull();
+    expect(violationFor('docs/site/public/og.png')).toBeNull();
+    expect(violationFor('docs/site/public/brand/chrome-web-store.png')).toBeNull();
+    expect(violationFor('docs/site/public/demo/nanoka-bookoff.png')).toBeNull();
     expect(violationFor('extension/public/icons/icon128.png')).toBeNull();
     expect(violationFor('e2e/visual/surfaces.spec.ts-snapshots/inspector-post-light-visual-win32.png')).toBeNull();
   });
 
   test('許可リスト外のメディアは拒否する', () => {
     expect(violationFor('docs/example.jpg')).toBeTruthy();
+    expect(violationFor('docs/site/public/demo/private-capture.webp')).toBeTruthy();
+    expect(violationFor('docs/site/public/verification/app.jpg')).toBeTruthy();
     expect(violationFor('fixtures/movie.mp4')).toBeTruthy();
   });
 

@@ -48,3 +48,15 @@ updates:
         applies-to: version-updates
         patterns:
           - "*"
+  - package-ecosystem: "npm"
+    directory: "/docs/site"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "依存更新"
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"

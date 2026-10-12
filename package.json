@@ -95,6 +95,10 @@
     "diag:capture": "node scripts/summarize-capture-timings.cts",
     "diag:extension": "node scripts/read-extension-diagnostics.cts",
     "diag:api:collect": "node scripts/collect-api-responses.cts",
-    "diag:api:replay": "node scripts/replay-api-responses.cts"
+    "diag:api:replay": "node scripts/replay-api-responses.cts",
+    "site:dev": "npm run dev --prefix docs/site",
+    "site:check": "npm run check --prefix docs/site",
+    "site:build": "npm run build --prefix docs/site",
+    "site:test": "npm test --prefix docs/site"
   }
 }

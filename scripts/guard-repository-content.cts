@@ -2,13 +2,15 @@
 
 // 実ライブラリや UI 検証の成果物は、公開リポジトリに入れてはいけない。
 // ローカルの pre-commit と CI の両方から呼び、追加された危険なパスとメディアを
-// 拒否する。製品アイコンとコミット済みの visual baseline だけは明示的に許可する。
+// 拒否する。製品アイコン、公開ページ用の作品素材、コミット済みの visual baseline は明示的に許可する。
 
 const cp = require('node:child_process');
 
 const MEDIA = /\.(?:png|jpe?g|gif|webp|avif|heic|mp4|m4v|webm|mov|mkv|avi|mp3|wav|flac|ogg|opus|zip|7z|rar|tar|gz|sqlite|db)$/i;
 const FORBIDDEN_PATH = /(?:^|\/)(?:tmp|verification|captures?|screenshots?|recordings?|artifacts?|playwright-report|test-results|\.sandbox|\.local-app|\.probe66)(?:\/|$)|(?:^|\/)[^/]+\.library(?:\/|$)|(?:^|\/)(?:dot\.db(?:-(?:wal|shm))?|capture\.log)$/i;
 const ALLOWED_MEDIA = [/^app\/assets\/icon\.png$/, /^assets\/icon(?:-master)?\.png$/, /^extension\/public\/icons\/icon(?:16|32|48|128)\.png$/, /^e2e\/visual\/[^/]+\.spec\.ts-snapshots\/[^/]+\.png$/];
+
+const PAGE_MEDIA = new Set(['docs/site/public/icon.png', 'docs/site/public/og.png', 'docs/site/public/brand/chrome-web-store.png', 'docs/site/public/demo/qingque.webp', 'docs/site/public/demo/nanoka-bookoff.png', 'docs/site/public/demo/herta.png']);
 
 function normalize(file: string): string {
   return file.replaceAll('\\', '/');
@@ -17,7 +19,7 @@ function normalize(file: string): string {
 function violationFor(file: string): string | null {
   const normalized = normalize(file);
   if (FORBIDDEN_PATH.test(normalized)) return '検証成果物またはライブラリのパスです';
-  if (MEDIA.test(normalized) && !ALLOWED_MEDIA.some((pattern) => pattern.test(normalized))) return '許可されていないメディアまたはライブラリ形式です';
+  if (MEDIA.test(normalized) && !ALLOWED_MEDIA.some((pattern) => pattern.test(normalized)) && !PAGE_MEDIA.has(normalized)) return '許可されていないメディアまたはライブラリ形式です';
   return null;
 }
 

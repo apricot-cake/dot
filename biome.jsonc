@@ -26,6 +26,16 @@
   "assist": { "actions": { "source": { "organizeImports": "off" } } },
   "overrides": [
     {
+      // 公式配布SVGは改変せず、画像要素のaltで代替テキストを提供する。
+      "includes": ["docs/site/public/brand/microsoft-store-ja.svg"],
+      "linter": { "rules": { "a11y": { "noSvgWithoutTitle": "off" } } }
+    },
+    {
+      // Astro のテンプレート内参照は astro check で検査する。
+      "includes": ["docs/site/**/*.astro"],
+      "linter": { "rules": { "correctness": { "noUnusedImports": "off", "noUnusedVariables": "off" } } }
+    },
+    {
       // tsconfig.json は Biome が既知名として JSONC 扱いするが、プロジェクト分割の
       // tsconfig.*.json（main プロセス用等）は名前で認識されない＝コメント可を明示。
       "includes": ["**/tsconfig.*.json"],

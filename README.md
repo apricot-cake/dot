@@ -2,6 +2,10 @@
 
 ## 公式サイト
 
+[dot の公式サイト](https://apricot-cake.com/dot/)
+
+[ページの開発と検証](docs/site/README.md)
+
 ## 紹介動画
 
 ## 使い方

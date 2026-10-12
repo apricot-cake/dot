@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "../../../../app/src/renderer/design-tokens.css";
+@source "../../../../app/src/renderer/src/components/ui/button.tsx";
+@source "../../../../app/src/renderer/src/_shared/PostCard.tsx";
+@custom-variant dark (&:is([data-theme=dark] *));
+
+/* アプリと共有する表示部品の shadcn/ui トークンを、製品の意味トークンへ接続する。 */
+:root {
+  --selection-outline: #1a73e8;
+  --background: var(--surface);
+  --foreground: var(--text-strong);
+  --primary: var(--text-strong);
+  --primary-foreground: var(--surface);
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--text-strong);
+  --input: var(--border-soft);
+  --ring: var(--accent);
+  --radius: 0.625rem;
+}
+@theme inline {
+  --font-sans: var(--page-font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-border: var(--border-soft);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-muted: var(--surface-3);
+  --color-muted-foreground: var(--text-muted);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+}
+
