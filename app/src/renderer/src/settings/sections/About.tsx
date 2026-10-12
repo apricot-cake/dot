@@ -48,7 +48,7 @@ export function About() {
             through fallback CONTENT (interactive children), and this one has none — it
             is a decorative animated logo. The rule's fix (drop aria-hidden) would make a
             screen reader announce an unlabeled canvas, i.e. strictly worse. */}
-        <canvas ref={canvasRef} width={352} height={352} className="size-32" aria-hidden="true" />
+        <canvas ref={canvasRef} width={352} height={352} className="size-32 rounded-full" aria-hidden="true" />
       </div>
       <div className="text-2xl font-semibold tracking-tight">dot</div>
       <div className="text-muted-foreground text-sm">{info ? t('aboutVersion', { version: info.version || '' }) : ''}</div>

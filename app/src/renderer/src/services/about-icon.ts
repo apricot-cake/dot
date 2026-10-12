@@ -1,4 +1,4 @@
-// 「このアプリについて」のパネル用の、動くホログラフィックなアプリアイコンのシェーダ。
+// 「このアプリについて」のパネル用の、動くグラデーションリングのシェーダ。
 //
 // 静的なアプリアイコン（assets/icon.png）の WebGL フラグメントシェーダを移植したもの。これで「このアプリについて」の面が、アイコンを
 // 生きた状態で出せる。自己完結していて依存が無く、CSP にも適合する（script-src 'self' の下の
@@ -9,70 +9,28 @@
 // prefers-reduced-motion では動かさずに静止した1フレームだけを描く＝どちらも DESIGN.md に
 // 従っている（GPU の節約と、動きの拒否）。
 
-// 設計から焼き込んだ調整の既定値（色相 36° / 彩度 0.85 / パステル 0.2 / 粒度 1.2 / にじみ 0）。
-const P = { hue: 36 / 360, sat: 0.85, pastel: 0.2, grain: 1.2, disp: 0 };
-// 動きを抑える時に出すフレーム＝平坦な t=0 ではなく、渦が育った状態。
-const STATIC_T = 6.0;
-const MAX_DPR = 2; // 高解像度の負荷を頭打ちにする。アイコンは小さい
+// 動きを抑える場合は、静的アイコンと同じ横方向のグラデーションにする。
+const STATIC_T = 0.0;
+const MAX_DPR = 2;
 
 const VS = 'attribute vec2 p; void main(){ gl_Position = vec4(p,0.0,1.0); }';
 const FS = [
   'precision highp float;',
   'uniform vec2 u_res;',
   'uniform float u_time;',
-  'uniform float u_hue, u_sat, u_pastel, u_grain, u_disp;',
-  'vec2 hash22(vec2 p){',
-  '  p = vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)));',
-  '  return fract(sin(p)*43758.5453)*2.0-1.0;',
-  '}',
-  'float noise(vec2 p){',
-  '  vec2 i=floor(p), f=fract(p);',
-  '  vec2 u=f*f*(3.0-2.0*f);',
-  '  float a=dot(hash22(i), f);',
-  '  float b=dot(hash22(i+vec2(1.0,0.0)), f-vec2(1.0,0.0));',
-  '  float c=dot(hash22(i+vec2(0.0,1.0)), f-vec2(0.0,1.0));',
-  '  float d=dot(hash22(i+vec2(1.0,1.0)), f-vec2(1.0,1.0));',
-  '  return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);',
-  '}',
-  'float fbm(vec2 p){',
-  '  float v=0.0, a=0.5;',
-  '  for(int i=0;i<4;i++){ v+=a*noise(p); p=p*2.02; a*=0.5; }',
-  '  return v;',
-  '}',
-  // 選び抜いたホログラフィックな色の節を通る、玉虫色のパレット（ミント→青→ラベンダー→ピンク→ピーチ）
-  'vec3 pal(float t){',
-  '  t = fract(t);',
-  '  vec3 c0 = vec3(0.52,0.92,0.84);',
-  '  vec3 c1 = vec3(0.54,0.78,1.00);',
-  '  vec3 c2 = vec3(0.76,0.64,1.00);',
-  '  vec3 c3 = vec3(1.00,0.70,0.92);',
-  '  vec3 c4 = vec3(1.00,0.85,0.80);',
-  '  float s = t*5.0; vec3 c;',
-  '  if(s<1.0) c=mix(c0,c1,s);',
-  '  else if(s<2.0) c=mix(c1,c2,s-1.0);',
-  '  else if(s<3.0) c=mix(c2,c3,s-2.0);',
-  '  else if(s<4.0) c=mix(c3,c4,s-3.0);',
-  '  else c=mix(c4,c0,s-4.0);',
-  '  return mix(c, vec3(1.0), u_pastel);',
-  '}',
   'void main(){',
-  '  vec2 uv = gl_FragCoord.xy/u_res;',
-  '  vec2 p = uv*u_grain;',
-  '  float t = u_time*0.04;',
-  '  vec2 q = vec2(fbm(p + vec2(0.0,t)), fbm(p + vec2(5.2,1.3) - t));',
-  '  vec2 r = vec2(fbm(p + 3.5*q + vec2(1.7,9.2)), fbm(p + 3.5*q + vec2(8.3,2.8)));',
-  '  float f = fbm(p + 3.5*r);',
-  '  float hue = f*1.9 + length(r)*0.9 + u_hue;',
-  '  float d = (0.06 + 0.05*length(r)) * u_disp;',
-  '  vec3 col;',
-  '  col.r = pal(hue + d).r;',
-  '  col.g = pal(hue).g;',
-  '  col.b = pal(hue - d).b;',
-  '  float lum = dot(col, vec3(0.299,0.587,0.114));',
-  '  col = mix(vec3(lum), col, u_sat);',
-  '  float crest = smoothstep(0.55, 0.98, f + 0.5);',
-  '  col += vec3(1.0,0.98,1.0) * pow(crest, 3.0) * 0.4;',
-  '  gl_FragColor = vec4(col, 1.0);',
+  '  vec2 uv = gl_FragCoord.xy / u_res;',
+  // 色の方向を維持したまま、境界をゆっくり往復させる。
+  '  float x = clamp((uv.x - 0.09375) / 0.8125 + 0.035 * sin(u_time * 0.6), 0.0, 1.0);',
+  '  vec3 cyan = vec3(135.0, 228.0, 251.0) / 255.0;',
+  '  vec3 lavender = vec3(196.0, 195.0, 239.0) / 255.0;',
+  '  vec3 pink = vec3(242.0, 181.0, 213.0) / 255.0;',
+  '  vec3 col = x < 0.5 ? mix(cyan, lavender, x * 2.0) : mix(lavender, pink, (x - 0.5) * 2.0);',
+  // 外径81.25%、内径は外径の半分。静的アイコンと同じ余白と厚み。
+  '  float radius = length(uv - vec2(0.5));',
+  '  float edge = 1.0 / u_res.x;',
+  '  float alpha = smoothstep(0.203125 - edge, 0.203125 + edge, radius) * (1.0 - smoothstep(0.40625 - edge, 0.40625 + edge, radius));',
+  '  gl_FragColor = vec4(col, alpha);',
   '}',
 ].join('\n');
 
@@ -125,19 +83,7 @@ export function mount(canvas: HTMLCanvasElement | null): { destroy(): void } {
     uniforms = {
       res: gl.getUniformLocation(prog, 'u_res'),
       time: gl.getUniformLocation(prog, 'u_time'),
-      hue: gl.getUniformLocation(prog, 'u_hue'),
-      sat: gl.getUniformLocation(prog, 'u_sat'),
-      pastel: gl.getUniformLocation(prog, 'u_pastel'),
-      grain: gl.getUniformLocation(prog, 'u_grain'),
-      disp: gl.getUniformLocation(prog, 'u_disp'),
     };
-    // biome-ignore lint/correctness/useHookAtTopLevel: gl.useProgram は WebGL の API のメソッドで React のフックではない＝名前がたまたま似ているだけ
-    gl.useProgram(prog);
-    gl.uniform1f(uniforms.hue, P.hue);
-    gl.uniform1f(uniforms.sat, P.sat);
-    gl.uniform1f(uniforms.pastel, P.pastel);
-    gl.uniform1f(uniforms.grain, P.grain);
-    gl.uniform1f(uniforms.disp, P.disp);
     sized = false;
     return true;
   }
