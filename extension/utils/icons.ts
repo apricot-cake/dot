@@ -1,4 +1,4 @@
-import { Check, Download, LoaderCircle, TriangleAlert, X, createElement, type IconNode } from 'lucide';
+import { Check, CircleAlert, Download, LoaderCircle, TriangleAlert, X, createElement, type IconNode } from 'lucide';
 
 export type { IconNode } from 'lucide';
 
@@ -21,4 +21,5 @@ export const ICONS = {
   check: Check,
   cross: X,
   warn: TriangleAlert,
+  error: CircleAlert,
 };

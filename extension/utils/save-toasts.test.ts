@@ -2,26 +2,24 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { SaveToasts } from './save-toasts.ts';
 import { createI18n } from './i18n.ts';
-import { Check, LoaderCircle, X, createElement } from 'lucide';
+import { Check, CircleAlert, LoaderCircle, X, createElement } from 'lucide';
 vi.mock('./ui-root.ts', () => ({ ensureUiRoot: () => document.body }));
 vi.mock('./tokens.ts', () => ({ prefersReducedMotion: () => true, motion: {}, token: () => '' }));
 vi.mock('./user-gesture.ts', () => ({ userOnly: (handler: unknown) => handler }));
 let toasts: SaveToasts;
 
-test('詳細を開いた後の非同期通知はページの入力フォーカスを奪わない', () => {
+test('非同期のエラー通知はページの入力フォーカスを奪わない', () => {
   toasts.notice('a', '', '保存できませんでした', vi.fn());
-  document.querySelector<HTMLButtonElement>('.toast-details-toggle')!.click();
   const input = document.createElement('input');
   document.body.append(input);
   input.focus();
   toasts.notice('b', '', '接続できません', vi.fn());
   expect(document.activeElement).toBe(input);
-  expect(document.querySelector<HTMLElement>('[data-dot-toast-details]')?.hidden).toBe(false);
+  expect(document.querySelector<HTMLElement>('[data-dot-save-banner]')?.hidden).toBe(false);
 });
 
 test('通知内で操作中の投稿は更新後も同じ操作にフォーカスを保つ', () => {
   toasts.notice('a', '', '保存できませんでした', vi.fn());
-  document.querySelector<HTMLButtonElement>('.toast-details-toggle')!.click();
   document.querySelector<HTMLButtonElement>('[data-toast-focus="retry:a"]')!.focus();
   toasts.notice('b', '', '接続できません', vi.fn());
   expect((document.activeElement as HTMLElement).dataset.toastFocus).toBe('retry:a');
@@ -62,36 +60,31 @@ test('失敗は成功と分離し、時間が経っても残り、該当分だ�
   vi.advanceTimersByTime(10000);
   expect(document.querySelectorAll('[data-dot-save-banner]')).toHaveLength(1);
   expect(document.querySelector('[data-dot-save-banner] .label')?.textContent).toBe('2件保存できませんでした');
-  expect(document.querySelector<HTMLElement>('[data-dot-toast-details]')?.hidden).toBe(true);
-  (document.querySelector('.toast-details-toggle') as HTMLButtonElement).click();
-  expect(document.querySelector<HTMLElement>('[data-dot-toast-details]')?.hidden).toBe(false);
+  expect(document.querySelector<HTMLElement>('[data-dot-save-banner]')?.hidden).toBe(false);
   const retry = document.querySelector('.toast-failure button') as HTMLButtonElement;
   retry.click();
   retry.click();
   expect(retryA).toHaveBeenCalledTimes(1);
   expect(retryB).not.toHaveBeenCalled();
   expect(document.body.textContent).toContain('アプリに接続できません');
-  expect(document.querySelector<HTMLElement>('[data-dot-toast-details]')?.hidden).toBe(false);
+  expect(document.querySelector<HTMLElement>('[data-dot-save-banner]')?.hidden).toBe(false);
 });
 
-test('詳細は通知を置き換え、閉じると通知全体が消える', () => {
+test('部分保存の理由と内訳と操作を直接表示し、閉じると通知全体が消える', () => {
   toasts.notice('a', '投稿A', '動画を保存できませんでした', undefined, 'partial', { url: 'https://example.com/post/1', savedSummary: '本文は保存済み' });
-  const toggle = document.querySelector<HTMLButtonElement>('.toast-details-toggle')!;
-  const panel = document.querySelector<HTMLElement>('[data-dot-toast-details]')!;
-  toggle.click();
-  expect(panel.hidden).toBe(false);
-  expect(toggle.getAttribute('aria-expanded')).toBe('true');
-  expect(document.querySelector<HTMLElement>('[data-dot-save-banner]')?.hidden).toBe(true);
-  expect(panel.textContent).toContain('本文は保存済み');
-  expect(panel.textContent).not.toContain('投稿A');
-  expect(panel.querySelector('a')?.href).toBe('https://example.com/post/1');
-  panel.querySelector<HTMLButtonElement>('.toast-close')!.click();
-  expect(document.querySelector('[data-dot-toast-details]')).toBeNull();
+  vi.advanceTimersByTime(50);
+  const notice = document.querySelector<HTMLElement>('[data-dot-save-banner]')!;
+  expect(notice.hidden).toBe(false);
+  expect(document.querySelector('[data-dot-toast-details], .toast-details-toggle')).toBeNull();
+  expect(notice.textContent).toContain('動画を保存できませんでした');
+  expect(notice.textContent).toContain('本文は保存済み');
+  expect(notice.textContent).not.toContain('投稿A');
+  expect(notice.querySelector('a')?.href).toBe('https://example.com/post/1');
+  notice.querySelector<HTMLButtonElement>('.toast-close')!.click();
   expect(document.querySelector('[data-dot-save-banner]')).toBeNull();
 });
 test('複数の失敗でリンクと再試行を各投稿の操作行にまとめる', () => {
   for (const id of ['a', 'b']) toasts.notice(id, '', '保存できませんでした', vi.fn(), 'error', { url: `https://example.com/${id}` });
-  document.querySelector<HTMLButtonElement>('.toast-details-toggle')!.click();
   const rows = document.querySelectorAll('.toast-failure');
   expect(rows).toHaveLength(2);
   for (const row of rows) {
@@ -112,15 +105,15 @@ test('自動再試行待ちはエラーにせず、手動再試行を出さな�
   expect(document.querySelector('[data-dot-save-banner]')).toBeNull();
 });
 
-test('一部保存は登録後に読み上げ、詳細へフォーカスを移す', () => {
+test('一部保存は登録後に読み上げ、操作を最初から表示する', () => {
   toasts.notice('partial', '', '動画を保存できませんでした', undefined, 'partial', { url: 'https://example.com/post' });
   const surface = document.querySelector<HTMLElement>('[data-dot-save-banner]')!;
   expect(surface.getAttribute('role')).toBe('status');
   expect(surface.querySelector('.label')?.textContent).toBe('');
   vi.advanceTimersByTime(50);
   expect(surface.querySelector('.label')?.textContent).toBe('動画を保存できませんでした');
-  surface.querySelector<HTMLButtonElement>('.toast-details-toggle')!.click();
-  expect(document.activeElement).toBe(document.querySelector('[data-dot-toast-details] .toast-close'));
+  expect(surface.querySelector('a')?.textContent).toBe('元の投稿を開く');
+  expect(document.activeElement).toBe(document.body);
 });
 
 test('更新案内は保存失敗の件数に混ぜず、操作案内を直接表示する', () => {
@@ -165,5 +158,5 @@ test('保存中・成功・失敗・閉じるに Lucide を表示する', () => 
   expect(document.querySelector('[data-dot-save-progress] .badge svg')?.innerHTML).toBe(createElement(Check).innerHTML);
   toasts.notice('failure', '', '保存できませんでした');
   expect(document.querySelector('[data-dot-save-banner] .toast-close svg')?.innerHTML).toBe(createElement(X).innerHTML);
-  expect(document.querySelector('[data-dot-save-banner] .badge svg')?.innerHTML).toBe(createElement(X).innerHTML);
+  expect(document.querySelector('[data-dot-save-banner] .badge svg')?.innerHTML).toBe(createElement(CircleAlert).innerHTML);
 });

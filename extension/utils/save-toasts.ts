@@ -18,9 +18,6 @@ export class SaveToasts {
   private progress: StatusSurface | null = null;
   private failures = new Map<string, { target: string; text: string; retry?: () => void; severity: 'error' | 'partial' | 'idle'; details?: SaveNoticeDetails }>();
   private failure: StatusSurface | null = null;
-  private failureDetails: HTMLElement | null = null;
-  private failureGroup: HTMLElement | null = null;
-  private detailsOpen = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   constructor(private t: DotI18nApi['getMessage']) {}
 
@@ -136,20 +133,12 @@ export class SaveToasts {
   }
 
   private renderFailures() {
-    const root = this.failureGroup?.getRootNode();
+    const root = this.failure?.el.getRootNode();
     const focused = root instanceof ShadowRoot ? root.activeElement : document.activeElement;
-    const focusKey = focused instanceof HTMLElement && this.failureGroup?.contains(focused) ? focused.dataset.toastFocus : undefined;
-    const previousWidth = this.detailsOpen ? this.failureGroup?.style.width : '';
+    const focusKey = focused instanceof HTMLElement && this.failure?.el.contains(focused) ? focused.dataset.toastFocus : undefined;
     this.failure?.remove();
-    this.failureGroup?.remove();
-    this.failureGroup = null;
-    this.failureDetails?.remove();
-    this.failureDetails = null;
     this.failure = null;
-    if (!this.failures.size) {
-      this.detailsOpen = false;
-      return;
-    }
+    if (!this.failures.size) return;
     const severity = [...this.failures.values()].some((x) => x.severity === 'error') ? 'error' : ([...this.failures.values()][0]?.severity ?? 'idle');
     const surface = new StatusSurface({ resting: ICONS.warn, variant: 'toast', role: severity === 'error' ? 'alert' : 'status' });
     this.failure = surface;
@@ -157,51 +146,8 @@ export class SaveToasts {
     const entries = [...this.failures.values()];
     const text = entries.length === 1 && entries[0] ? entries[0].text : this.t('toastFailed', [entries.length]);
     surface.setState(severity, severity === 'error' ? text : undefined);
-    const panel = document.createElement('div');
-    panel.className = 'surface';
-    panel.dataset.variant = 'toast';
-    panel.dataset.dotToastDetails = '';
-    panel.id = `dot-toast-details-${crypto.randomUUID()}`;
-    panel.setAttribute('role', 'region');
-    panel.setAttribute('aria-label', this.t('toastFailureDetails'));
-    this.failureDetails = panel;
-    const toggle = this.button(
-      this.t('toastDetails'),
-      () => {
-        this.detailsOpen = !this.detailsOpen;
-        updateDetails();
-        if (this.detailsOpen) panel.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
-      },
-      false,
-    );
-    toggle.classList.add('toast-details-toggle');
-    toggle.dataset.toastFocus = 'details';
-    toggle.setAttribute('aria-controls', panel.id);
-    const updateDetails = () => {
-      if (this.detailsOpen && this.failureGroup && !surface.el.hidden && !this.failureGroup.style.width) {
-        this.failureGroup.style.width = `${surface.el.getBoundingClientRect().width}px`;
-      }
-      panel.hidden = !this.detailsOpen;
-      surface.el.hidden = this.detailsOpen;
-      toggle.setAttribute('aria-expanded', String(this.detailsOpen));
-    };
-    const heading = document.createElement('div');
-    heading.className = 'toast-details-heading';
-    const dismissDetails = this.button(
-      this.t('toastClose'),
-      () => {
-        this.failures.clear();
-        this.renderFailures();
-      },
-      false,
-    );
-    dismissDetails.classList.add('toast-close');
-    dismissDetails.dataset.toastFocus = 'dismiss-details';
-    dismissDetails.setAttribute('aria-label', this.t('toastClose'));
-    dismissDetails.replaceChildren(makeIcon(ICONS.cross, 14));
-    heading.append(dismissDetails);
-    panel.appendChild(heading);
-    panel.addEventListener('keydown', (event) => {
+    surface.el.dataset.dotSaveFailures = '';
+    surface.el.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
       event.stopPropagation();
       this.failures.clear();
@@ -212,9 +158,11 @@ export class SaveToasts {
     for (const [id, entry] of this.failures) {
       const row = document.createElement('div');
       row.className = 'toast-failure';
-      const reason = document.createElement('div');
-      reason.textContent = entry.text;
-      row.appendChild(reason);
+      if (entries.length > 1) {
+        const reason = document.createElement('div');
+        reason.textContent = entry.text;
+        row.appendChild(reason);
+      }
       if (entry.details?.savedSummary && entry.details.savedSummary !== entry.text) {
         const summary = document.createElement('div');
         summary.className = 'toast-target';
@@ -239,34 +187,26 @@ export class SaveToasts {
           entry.retry?.();
         });
         retry.dataset.toastFocus = `retry:${id}`;
-        rowActions.appendChild(retry);
+        rowActions.prepend(retry);
       }
       if (rowActions.childElementCount) row.appendChild(rowActions);
       list.appendChild(row);
     }
-    panel.appendChild(list);
     const close = this.close(surface, () => {
       this.failures.clear();
       this.renderFailures();
     });
     close.dataset.toastFocus = 'dismiss';
-    const actions = document.createElement('div');
-    actions.className = 'toast-actions';
-    actions.append(toggle);
-    surface.slot(actions);
-    actions.append(close);
+    const content = document.createElement('div');
+    content.className = 'toast-failure-content';
+    content.append(list);
+    surface.slot(content);
+    content.prepend(close);
     surface.mount();
-    const group = document.createElement('div');
-    group.className = 'toast-failure-group';
-    if (previousWidth) group.style.width = previousWidth;
-    surface.el.before(group);
-    group.append(panel, surface.el);
-    this.failureGroup = group;
-    updateDetails();
     if (focusKey) {
-      const controls = [...group.querySelectorAll<HTMLElement>('[data-toast-focus]')];
+      const controls = [...surface.el.querySelectorAll<HTMLElement>('[data-toast-focus]')];
       const replacement = controls.find((control) => control.dataset.toastFocus === focusKey);
-      (replacement ?? (this.detailsOpen ? dismissDetails : toggle)).focus({ preventScroll: true });
+      (replacement ?? close).focus({ preventScroll: true });
     }
     if (severity !== 'error') surface.announce(text);
     surface.enter();

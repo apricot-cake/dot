@@ -101,7 +101,8 @@ export class StatusSurface {
       this.badge.appendChild(makeSpinner(15));
       return;
     }
-    this.badge.appendChild(makeIcon(GLYPH[state] || this.resting, 15));
+    const icon = state === 'error' && this.el.dataset.variant === 'toast' ? ICONS.error : GLYPH[state] || this.resting;
+    this.badge.appendChild(makeIcon(icon, 15));
   }
 
   // 選択肢の行、停止ボタンなど、1つの状態が追加する何か。呼び出し元では

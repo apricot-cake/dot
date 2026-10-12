@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-import { Check, Download, LoaderCircle, TriangleAlert, X, createElement } from 'lucide';
+import { Check, CircleAlert, Download, LoaderCircle, TriangleAlert, X, createElement } from 'lucide';
 import { expect, test, vi } from 'vitest';
 import { ICONS, makeIcon, makeSpinner } from './icons.ts';
 
 test('共有アイコンは Lucide の定義をそのまま使う', () => {
-  expect(ICONS).toEqual({ drop: Download, check: Check, cross: X, warn: TriangleAlert });
+  expect(ICONS).toEqual({ drop: Download, check: Check, cross: X, warn: TriangleAlert, error: CircleAlert });
   for (const icon of Object.values(ICONS)) {
     const svg = makeIcon(icon, 15);
     expect(svg.innerHTML).toBe(createElement(icon).innerHTML);

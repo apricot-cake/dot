@@ -765,8 +765,8 @@ describe('保存に失敗したとき', () => {
     expect(banners[0].getAttribute('role')).toBe('alert');
     expect(banners[0].textContent).toContain("Can't connect to the app");
     expect(banners[0].dataset.variant).toBe('toast');
-    expect(banners[0].textContent).toContain('Details');
-    expect(banners[0].parentElement.querySelector('[data-dot-toast-details]')?.textContent).toContain('Retry');
+    expect(banners[0].textContent).not.toContain('Details');
+    expect(banners[0].textContent).toContain('Retry');
     expect(banners[0].textContent).not.toContain('Error when communicating');
   });
 
@@ -1165,7 +1165,7 @@ describe('投稿情報が取れなかった保存（#310・#367）', () => {
     const banner: any = saveBanners().at(-1);
 
     expect(banner.dataset.state).toBe('partial');
-    expect(banner.querySelector('.label').textContent).toBe('Could not save post information');
+    expect(banner.querySelector('.label').textContent).toBe('Could not retrieve post information');
   });
 
   // #367 の二段の緊急度。但し書きは「保存自体はできた」という種類の知らせなので、読み上げに

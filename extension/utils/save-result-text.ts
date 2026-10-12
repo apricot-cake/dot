@@ -10,6 +10,7 @@ export function saveResultText(result: Extract<SaveResponse, { ok: true }>, t: D
   if (result.savedContent?.text) saved.push(t('savePartText'));
   if (result.savedContent?.profile) saved.push(t('savePartProfile'));
   if (result.savedContent?.media) saved.push(t('savePartMediaCount', [result.savedContent.media]));
+  if (!saved.length && result.savedContent?.url) saved.push(t('savePartUrl'));
   return {
     failure: failed.length ? t('savePartsFailed', [failed.join(t('savePartSeparator'))]) : t('toastFailedSingle'),
     // 応答が保存内容を報告しない場合、何も保存されていないとは断定しない。
