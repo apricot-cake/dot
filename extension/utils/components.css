@@ -250,7 +250,7 @@
 .surface[data-variant='toast'] .action:hover { background: var(--dot-hover); }
 .surface[data-variant='toast'] .toast-close { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--dot-ink-muted); flex-shrink: 0; }
 .surface[data-variant='toast'] .toast-close:hover { background: var(--dot-hover); }
-.surface[data-dot-save-failures] { display: grid; grid-template-columns: 16px minmax(0, 1fr) 24px; align-items: start; width: 320px; padding: 14px; gap: 6px 10px; }
+.surface[data-dot-save-failures] { display: grid; grid-template-columns: 16px minmax(0, 1fr) 24px; align-items: start; width: max-content; padding: 14px; gap: 6px 10px; }
 .surface[data-dot-save-failures] .label { font-weight: 500; }
 .toast-failure-content { grid-column: 2 / 4; min-width: 0; }
 .toast-failure-content > .toast-close { position: absolute; top: 7px; right: 7px; }
