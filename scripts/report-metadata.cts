@@ -62,9 +62,9 @@ try {
 } finally {
   db.close();
 }
-const quote = (value) => '"' + String(value ?? '').replaceAll('"', '""') + '"';
-const csv = [['状態', 'サイト', '投稿者', 'URL', '不足・要確認', '理由', '画像ID', '再試行可能時刻'], ...rows.map((row) => [row.status, row.platform, row.author, row.url, row.missing, row.reason, row.ids, row.retryAt])].map((row) => row.map(quote).join(',')).join('\r\n');
-fs.writeFileSync(path.join(root, '要確認.csv'), '\uFEFF' + csv);
+const { reportCsv } = require('./lib-report-csv.cts');
+const csv = reportCsv([['状態', 'サイト', '投稿者', 'URL', '不足・要確認', '理由', '画像ID', '再試行可能時刻'], ...rows.map((row) => [row.status, row.platform, row.author, row.url, row.missing, row.reason, row.ids, row.retryAt])]);
+fs.writeFileSync(path.join(root, '要確認.csv'), csv);
 const summary = { updatedAt: new Date().toISOString(), total: state.entries.length, counts, appliedRecords, reviewRows: rows.length, unsupported: state.unsupported.length, sites: state.sites };
 fs.writeFileSync(path.join(root, 'summary.json'), JSON.stringify(summary, null, 2));
 fs.writeFileSync(
