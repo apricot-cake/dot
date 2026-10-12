@@ -44,6 +44,9 @@ jobs:
           cache-dependency-path: |
             docs/site/package-lock.json
             extension/package-lock.json
+            package-lock.json
+      - name: 共有モジュールの実行時依存を準備
+        run: npm ci --prefix ../.. --omit=dev --workspaces=false --ignore-scripts --legacy-peer-deps
       - name: 共有モジュールの生成済み型設定を準備
         run: npm ci --prefix ../../extension
       - run: npm ci
