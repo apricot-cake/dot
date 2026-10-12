@@ -3,21 +3,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync, backup } = require('node:sqlite');
-const { chromium } = require('playwright');
 const { configDir } = require('../native-host/paths.mts');
 const { downloadAvatar, pixivRefererFor } = require('../native-host/media-download.mts');
 
-async function main() {
+async function run(session: any, args: string[] = []) {
   const folder = JSON.parse(fs.readFileSync(path.join(configDir(), 'config.json'), 'utf8')).saveFolder;
   const root = path.join(folder, '.dot-metadata-backfill');
   const state = JSON.parse(fs.readFileSync(path.join(root, 'progress.json'), 'utf8'));
   if (state.folder !== folder) throw Error('対象ライブラリが違います');
-  const browser = await chromium.connectOverCDP('http://127.0.0.1:9222');
-  try {
-    const page = browser
-      .contexts()[0]
-      .pages()
-      .find((page) => page.url().includes('index.html'));
+  {
+    const page = session.page;
     if (!page) throw Error('アプリ画面がありません');
     const live = await page.evaluate(async () => {
       const api = (window as any).dot;
@@ -31,7 +26,7 @@ async function main() {
         await backup(db, backupFile + '.tmp');
         fs.renameSync(backupFile + '.tmp', backupFile);
       }
-      const limitArg = process.argv.find((value) => value.startsWith('--limit='));
+      const limitArg = args.find((value) => value.startsWith('--limit='));
       const limit = limitArg ? Number(limitArg.split('=')[1]) : Infinity;
       let applied = 0;
       for (const entry of state.entries) {
@@ -64,11 +59,13 @@ async function main() {
     } finally {
       db.close();
     }
-  } finally {
-    await browser.close();
   }
 }
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+module.exports = { run };
+if (require.main === module)
+  require('./local-app.cts')
+    .verify(['run', __filename, ...process.argv.slice(2)])
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });

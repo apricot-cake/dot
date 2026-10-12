@@ -1,16 +1,5 @@
-﻿# Restart the dot viewer (Electron) so every launch is identical and carries the CDP
-# port that the real-machine verify workflow connects to (docs/開発ガイド.md). The visible
-# app itself is started through electron-vite so renderer HMR and main/preload hot reload
-# stay enabled after this script returns.
-#
-# Launch: right-click this file -> "Run with PowerShell" (a window shows and closes on
-# success; on a manual launch it stays open on failure). Automation also runs it headlessly.
-#
-# --remote-debugging-port=9222 makes the resident instance CDP-debuggable, without anyone
-# remembering a flag. It is ONLY that now: it used to double as the marker the stop half
-# below picked the real instance by, which is why an instance started from the Start Menu
-# shortcut (no arguments) could not be stopped (#1004). The stop half no longer looks at
-# arguments, or at processes at all — see below.
+﻿# dot の個人ライブラリを使う HMR 開発版を再起動する。
+# 検証は npm run app:debug の所有 pipe セッションで行う。
 #
 # STOPPING: the app is asked to quit; nothing is hunted down and killed.
 #
@@ -67,7 +56,6 @@
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $app      = Join-Path $repoRoot 'app'
 $logFile  = Join-Path $HOME '.dot\restart-app.log'
-$port     = 9222
 
 # electron lives under app/node_modules or the repo root, depending on how npm
 # felt like hoisting: app/ is a workspace, so npm lifts its dependencies to the
@@ -125,6 +113,9 @@ if (-not (Test-Path $appEntry)) {
 # aim the "please quit" at whatever sandbox that variable names instead of at the real app.
 Get-ChildItem Env: | Where-Object { $_.Name -like 'DOT_*' } | ForEach-Object { Remove-Item "Env:$($_.Name)" -ErrorAction SilentlyContinue }
 Remove-Item Env:ELECTRON_RENDERER_URL -ErrorAction SilentlyContinue
+foreach ($debugKey in @('REMOTE_DEBUGGING_PORT', 'ELECTRON_RUN_AS_NODE', 'NODE_OPTIONS', 'ELECTRON_CLI_ARGS', 'V8_INSPECTOR_PORT', 'V8_INSPECTOR_BRK_PORT')) {
+  Remove-Item ('Env:' + $debugKey) -ErrorAction SilentlyContinue
+}
 $env:APPDATA = [Environment]::GetFolderPath('ApplicationData')
 
 $configDir = Join-Path $env:APPDATA 'dot'
@@ -145,7 +136,7 @@ $signalled = $false
 $deadline  = (Get-Date).AddSeconds(20)
 do {
   try {
-    $probe = Start-Process -FilePath $electron -ArgumentList "`"$app`" --dot-quit" -WorkingDirectory $repoRoot -Wait -PassThru -ErrorAction Stop
+    $probe = Start-Process -FilePath $electron -ArgumentList "`"$app`" --dot-quit" -WorkingDirectory $repoRoot -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
   } catch {
     Stop-WithError("終了の合図を送れませんでした: $($_.Exception.Message)")
   }
@@ -169,42 +160,11 @@ if (-not $stopped) {
   Start-Sleep -Milliseconds 500
 }
 
-# Post-condition for the launch below: Chromium writes DevToolsActivePort into userData when
-# the debug port opens, with a per-process UUID on the second line, and it is the config dir
-# that makes an instance the real one. So "this file's content changed" means the new
-# instance is up AND its CDP port is actually open — a stronger check than the old "some
-# electron.exe exists", and one that needs no process matching. Read after the stop so a
-# file the outgoing instance removed on its way out counts as a change too.
-$activePortFile = Join-Path $configDir 'DevToolsActivePort'
-$portMarkerBefore = Get-Content $activePortFile -Raw -ErrorAction SilentlyContinue
-
-# Surface failure LOUDLY: the old instance is already gone, so a swallowed failure would
-# leave NO app and NO error. -WorkingDirectory pins the cwd: this script is run from
-# wherever the caller happened to be.
 $npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
-if (-not $npm) { $npm = (Get-Command npm -ErrorAction SilentlyContinue).Source }
 if (-not $npm) { Stop-WithError('npm が見つかりません。npm run setup を実行した環境で起動してください') }
-$env:REMOTE_DEBUGGING_PORT = "$port"
-Write-Host 'dot（HMR 開発版）を起動しています...' -ForegroundColor Cyan
 try {
-  Start-Process -FilePath $npm -ArgumentList 'run dev --workspace=app' -WorkingDirectory $repoRoot -ErrorAction Stop
-} catch {
-  Stop-WithError("dot の起動に失敗しました: $($_.Exception.Message)")
-}
-
-$up = $false
-for ($i = 0; $i -lt 80; $i++) {
-  $now = Get-Content $activePortFile -Raw -ErrorAction SilentlyContinue
-  if ($now -and $now -ne $portMarkerBefore) { $up = $true; break }
-  Start-Sleep -Milliseconds 250
-}
-if (-not $up) {
-  Stop-WithError("起動したはずの dot が CDP を開きませんでした（$activePortFile が20秒経っても更新されませんでした）")
-}
-
-if ($signalled) {
-  Write-Host "完了（動いていた dot を終了させ、HMR 開発版を起動し直しました。CDP: 127.0.0.1:$port）。" -ForegroundColor Green
-} else {
-  Write-Host "完了（HMR 開発版の dot を起動しました。CDP: 127.0.0.1:$port）。" -ForegroundColor Green
-}
-Start-Sleep -Milliseconds 800
+  Start-Process -FilePath $npm -ArgumentList 'run app:dev' -WorkingDirectory $repoRoot -WindowStyle Hidden -ErrorAction Stop
+} catch { Stop-WithError("dot の起動に失敗しました: $($_.Exception.Message)") }
+# 非同期の HMR ランチャーの開始と、アプリの準備完了は区別する。
+# 同じバイナリのサンドボックスを準備完了と誤認しない。
+Write-Host 'HMR 開発版の起動処理を背面で開始しました。アプリの準備完了は未確認です。' -ForegroundColor Cyan

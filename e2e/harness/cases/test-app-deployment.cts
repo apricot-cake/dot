@@ -1,110 +1,165 @@
 'use strict';
 
-// 実ライブラリと配備通知を共有しない複製で、通常起動からの自己再起動を確認する。
+// 実ライブラリと配備通知を共有しない複製で、背面起動からの自己再起動を確認する。
+// 再起動で捨てるデバッグ接続には依存せず、複製内の観測用入口から初期化を確認する。
+const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const net = require('node:net');
 const { spawn } = require('node:child_process');
-const { chromium } = require('playwright');
 const { waitFor } = require('../../../scripts/lib-wait.cts');
+const { cleanDebugEnvironment } = require('../../../scripts/lib-app-session.cts');
 const { electronPath: resolveElectron } = require('../../../scripts/lib-electron-path.cts');
 const root = path.resolve(__dirname, '../../..');
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-deploy-test-'));
+const tempRoot = path.resolve(os.tmpdir());
+const tmp = fs.mkdtempSync(path.join(tempRoot, 'dot-deploy-test-'));
 const appDir = path.join(tmp, 'app');
 const config = path.join(tmp, 'config');
+const library = path.join(tmp, 'library');
+const observations = path.join(tmp, 'observations');
 const electron = resolveElectron();
-fs.mkdirSync(appDir);
-fs.mkdirSync(config);
+
+// 複製の package.json だけがこの入口を使う。本番のアプリやビルド出力は変更しない。
+function observeDeployment() {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { app } = require('electron');
+  const folder = process.env.DOT_DEPLOYMENT_OBSERVATIONS;
+  const write = (name, data) => {
+    const file = path.join(folder, `${process.pid}-${name}.json`);
+    fs.writeFileSync(`${file}.tmp`, JSON.stringify(data));
+    fs.renameSync(`${file}.tmp`, file);
+  };
+  write('started', { pid: process.pid, argv: process.argv });
+  app.on('browser-window-created', (_event, win) => {
+    win.on('show', () => write('visible', { pid: process.pid }));
+    win.on('focus', () => write('focused', { pid: process.pid }));
+    win.webContents.once('did-finish-load', async () => {
+      if (!win.webContents.getURL().startsWith('app://bundle/')) return;
+      try {
+        const result = await win.webContents.executeJavaScript('window.dot.listPosts().then(result => ({ saveFolder: result.saveFolder, postsLoaded: Array.isArray(result.posts) }))');
+        write('ready', { pid: process.pid, argv: process.argv, ...result, visible: win.isVisible(), focused: win.isFocused() });
+      } catch (error) {
+        write('error', { pid: process.pid, error: String(error) });
+      }
+    });
+  });
+  require('./index.js');
+}
+
+for (const folder of [appDir, config, library, observations]) fs.mkdirSync(folder);
 fs.cpSync(path.join(root, 'app', 'out'), path.join(appDir, 'out'), { recursive: true });
-fs.copyFileSync(path.join(root, 'app', 'package.json'), path.join(appDir, 'package.json'));
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'app', 'package.json'), 'utf8'));
+fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ ...pkg, main: './out/main/deployment-observer.cjs' }));
+fs.writeFileSync(path.join(appDir, 'out/main/deployment-observer.cjs'), `(${observeDeployment.toString()})();`);
+fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ saveFolder: library }));
 fs.symlinkSync(path.join(root, 'node_modules'), path.join(tmp, 'node_modules'), 'junction');
 fs.symlinkSync(path.join(root, 'native-host'), path.join(tmp, 'native-host'), 'junction');
-const env: NodeJS.ProcessEnv = { ...process.env, DOT_CONFIG_DIR: config, DOT_SANDBOX: '1', DOT_START_MINIMIZED: '1' };
+const env: NodeJS.ProcessEnv = { ...cleanDebugEnvironment(), DOT_CONFIG_DIR: config, DOT_SANDBOX: '1', DOT_DEPLOYMENT_OBSERVATIONS: observations };
 delete env.DOT_SMOKE;
+delete env.DOT_SMOKE_EVAL;
 delete env.ELECTRON_RENDERER_URL;
-const launch = (args: string[]) => spawn(electron, [appDir, ...args], { env, windowsHide: true, stdio: ['ignore', 'ignore', 'inherit'] });
-const signalQuit = () => new Promise((resolve) => launch(['--dot-quit']).once('close', resolve));
+const launch = (args: string[]) => spawn(electron, [appDir, '--dot-background', ...args], { env, windowsHide: true, stdio: ['ignore', 'ignore', 'inherit'] });
+const signalQuit = () =>
+  new Promise<number>((resolve, reject) => {
+    const child = spawn(electron, [appDir, '--dot-background', '--dot-quit'], { env, windowsHide: true, stdio: 'ignore', timeout: 15000 });
+    child.once('error', reject);
+    child.once('close', (code: number | null, signal: string | null) => {
+      if (signal || code === null) reject(new Error(`検証アプリの終了要求が中断されました (${signal})`));
+      else resolve(code);
+    });
+  });
+
+function observed(name: string) {
+  return fs
+    .readdirSync(observations)
+    .filter((file: string) => file.endsWith(`-${name}.json`))
+    .map((file: string) => JSON.parse(fs.readFileSync(path.join(observations, file), 'utf8')));
+}
+
+function isAlive(pid: number) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false;
+    throw error;
+  }
+}
+
+function assertReady(record: any) {
+  assert.equal(record.postsLoaded, true);
+  assert.equal(path.resolve(record.saveFolder), library);
+  assert.equal(record.visible, false);
+  assert.equal(record.focused, false);
+  assert.ok(record.argv.includes('--dot-background'));
+  assert.ok(!record.argv.some((arg: string) => /^--(?:remote-debugging-(?:port|address|pipe)|inspect(?:-brk)?)(?:=|$)/.test(arg)));
+  assert.ok(isAlive(record.pid));
+}
 
 (async () => {
   let started = false;
-  let restartedProcesses: number[] = [];
+  let failure: unknown;
   try {
-    const port = await new Promise<number>((resolve) => {
-      const server = net.createServer();
-      server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port;
-        server.close(() => resolve(port));
-      });
-    });
-    const endpoint = async () => {
-      try {
-        const res = await fetch(`http://127.0.0.1:${port}/json/version`);
-        return ((await res.json()) as { webSocketDebuggerUrl: string }).webSocketDebuggerUrl;
-      } catch {
-        return '';
-      }
-    };
     let exited: number | null = null;
-    launch([`--remote-debugging-port=${port}`]).once('close', (code: number) => {
+    let spawnError: Error | undefined;
+    const initial = launch([]);
+    initial.once('error', (error: Error) => {
+      spawnError = error;
+    });
+    initial.once('close', (code: number) => {
       exited = code;
     });
     started = true;
-    let first = '';
-    await waitFor('initial app', async () => Boolean((first = await endpoint())), { timeoutMs: 30000 });
-    // CDP は app.whenReady より先に応答する。監視を登録した後に作られる
-    // アプリ画面の読み込みを待ち、通知が初期マーカーとして扱われる競合を避ける。
-    const initialBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-    try {
-      const context = initialBrowser.contexts()[0];
-      const page = context.pages()[0] || (await context.waitForEvent('page'));
-      await page.waitForURL((url: URL) => url.protocol === 'app:' && url.hostname === 'bundle');
-      await page.waitForLoadState('domcontentloaded');
-    } finally {
-      await initialBrowser.close();
-    }
-    const marker = path.join(appDir, '.deployed-build.json');
-    fs.writeFileSync(`${marker}.tmp`, JSON.stringify({ build: 'test-update' }));
-    fs.renameSync(`${marker}.tmp`, marker);
-    await waitFor('old app to exit cleanly', () => exited === 0, { timeoutMs: 30000 });
     await waitFor(
-      'new app to answer with a new process',
-      async () => {
-        const next = await endpoint();
-        return Boolean(next && next !== first);
+      '初回起動の画面とライブラリの初期化',
+      () => {
+        if (spawnError) throw spawnError;
+        if (exited !== null) throw new Error(`初回起動が終了しました (${exited})`);
+        return observed('ready').some((record: any) => record.pid === initial.pid);
       },
       { timeoutMs: 30000 },
     );
-    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-    const cdp = await browser.newBrowserCDPSession();
-    const { processInfo } = await cdp.send('SystemInfo.getProcessInfo');
-    restartedProcesses = processInfo.map((info: { id: number }) => info.id);
-    await cdp.detach();
+    const first = observed('ready').find((record: any) => record.pid === initial.pid);
+    assertReady(first);
+    const marker = path.join(appDir, '.deployed-build.json');
+    fs.writeFileSync(`${marker}.tmp`, JSON.stringify({ build: 'test-update' }));
+    fs.renameSync(`${marker}.tmp`, marker);
+    await waitFor('配備通知を受けた旧プロセスの正常終了', () => exited === 0, { timeoutMs: 30000 });
+    await waitFor('再起動した別プロセスの画面とライブラリの初期化', () => observed('ready').some((record: any) => record.pid !== first.pid), { timeoutMs: 30000 });
+    const restarted = observed('ready').filter((record: any) => record.pid !== first.pid);
+    assert.equal(restarted.length, 1);
+    assertReady(restarted[0]);
+    assert.deepEqual(observed('visible'), []);
+    assert.deepEqual(observed('focused'), []);
+    assert.equal(await signalQuit(), 3);
     console.log('APP_DEPLOYMENT_TEST_PASS');
+  } catch (error) {
+    failure = error;
   } finally {
-    if (started) {
-      await signalQuit();
-      await waitFor('test app to release its lock', async () => (await signalQuit()) === 0, { timeoutMs: 15000 });
-      await waitFor(
-        'restarted app processes to exit',
-        () =>
-          restartedProcesses.every((pid) => {
-            try {
-              process.kill(pid, 0);
-              return false;
-            } catch (error) {
-              if ((error as NodeJS.ErrnoException).code === 'ESRCH') return true;
-              throw error;
-            }
-          }),
-        { timeoutMs: 15000 },
-      );
+    try {
+      if (started) {
+        await waitFor('検証アプリのロック解放', async () => (await signalQuit()) === 0, { timeoutMs: 15000 });
+        await waitFor('観測したアプリのメインプロセスの終了', () => observed('started').every((record: any) => !isAlive(record.pid)), { timeoutMs: 15000 });
+        assert.deepEqual(observed('visible'), []);
+        assert.deepEqual(observed('focused'), []);
+      }
+    } catch (error) {
+      failure = failure ? new AggregateError([failure, error], '再起動検証と後片付けに失敗しました') : error;
     }
-    // tmp はこの実行が作ったディレクトリ。junction は先に外し、参照先を残す。
-    fs.unlinkSync(path.join(tmp, 'node_modules'));
-    fs.unlinkSync(path.join(tmp, 'native-host'));
-    fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    // この実行で作った OS 一時領域だけを撤去する。参照先は junction を先に外して残す。
+    try {
+      const resolved = path.resolve(tmp);
+      assert.ok(path.dirname(resolved) === tempRoot && path.basename(resolved).startsWith('dot-deploy-test-'), '一時領域の撤去先が一致しません');
+      if (!failure || observed('started').every((record: any) => !isAlive(record.pid))) {
+        for (const name of ['node_modules', 'native-host']) fs.unlinkSync(path.join(resolved, name));
+        fs.rmSync(resolved, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      }
+    } catch (error) {
+      failure = failure ? new AggregateError([failure, error], '再起動検証と一時領域の撤去に失敗しました') : error;
+    }
   }
+  if (failure) throw failure;
 })().catch((error) => {
   console.error(error);
   process.exitCode = 1;

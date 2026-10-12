@@ -47,7 +47,6 @@ import { createLibrarySafety, latestRestorableSnapshot, readIntegrityStatus, val
 import { classifyLibraryFolder } from './lib-library-folder.ts';
 import { APP_ICON, DEV_ORIGIN, DEV_SERVER_URL, RELOAD_AFTER_LIBRARY_SWAP_MS, createWindow, devServer, getWin, getWindows, installNavigationGuards, isPrimaryWindowSender, sendToOtherWins, sendToWin, sendWindowToBack } from './lib-window.ts';
 import { installDevRendererCsp, registerAppProtocol } from './app-protocol.ts';
-import { shouldWarnMissingDebugPort } from './startup-debug-port.ts';
 import { EXIT_NO_INSTANCE, EXIT_SIGNALLED, hasQuitSignal } from './restart-signal.ts';
 import { BACKGROUND_LAUNCH_FLAG, backgroundRelaunchArgs, hideBackgroundWindows, isBackgroundLaunch } from './background-launch.ts';
 // このファイルから切り出した IPC ハンドラのモジュール（機械的な移動＝ロジックは変えていない）。
@@ -1181,15 +1180,18 @@ if (!gotSingleInstanceLock) {
       }
       // 検証の接続要求では、既存ウィンドウの表示状態とフォーカスを変えない。
       if (argv.includes(BACKGROUND_LAUNCH_FLAG) || (typeof additionalData === 'object' && additionalData !== null && 'backgroundLaunch' in additionalData && additionalData.backgroundLaunch === true)) return;
-      // Command Palette からの起動は、既に開いているライブラリへ新しいウィンドウを
-      // 足すのではなく、同じウィンドウを復元して前面へ出す。
-      if (hasActivateExistingSignal(argv)) {
-        const w = getWin();
-        if (w) {
-          if (w.isMinimized()) w.restore();
-          w.show();
-          w.focus();
-        }
+      // 既存ウィンドウへの起動要求、または背景起動後の最初の通常起動は、
+      // 隠れたウィンドウを復元して前面へ出す。
+      const w = getWin();
+      if (hasActivateExistingSignal(argv) || (w && !w.isVisible())) {
+        // 準備前の起動通知も、主ウィンドウの生成後に反映する。
+        void app.whenReady().then(() => {
+          const existingWindow = getWin();
+          if (!existingWindow) return;
+          if (existingWindow.isMinimized()) existingWindow.restore();
+          existingWindow.show();
+          existingWindow.focus();
+        });
         return;
       }
       if (receivePostLink(argv, getWin())) return;
@@ -1208,7 +1210,11 @@ if (!gotSingleInstanceLock) {
         }
         return;
       }
-      runWhenLibraryAdmissionOpen(() => createWindow(true, { secondary: true }));
+      runWhenLibraryAdmissionOpen(() => {
+        const w = createWindow(true, { secondary: true });
+        // 通常の起動要求は、配備時の背景起動フラグが残っていても表示する。
+        w.show();
+      });
     });
   }
 
@@ -1238,11 +1244,6 @@ if (!gotSingleInstanceLock) {
     }
     log.eventLogger.startLogging();
     log.info('Starting dot', { packaged: app.isPackaged, version: app.getVersion() });
-    // #1004: これがなぜ効くのか、どんな起動を捕まえられるのか（Issue を立てるに至った件では、
-    // 古い引数の付いたスタートメニューのショートカット）は startup-debug-port.ts を参照。
-    if (shouldWarnMissingDebugPort(process.argv, app.isPackaged)) {
-      log.warn('Launched without --remote-debugging-port: CDP verification cannot attach to this process (#1004). Stopping it still works — restart-app.ps1 asks the app to quit over the single-instance lock, not by matching this flag.');
-    }
     // 冗長化した保存先フォルダのポインタの回復・更新を最初にやる。起動の残り（監視、listPosts、
     // native host）が、設定が切り詰められていたときに空の既定ではなくポインタから直した設定を
     // 見るように。（2026-06-23 の事故。）

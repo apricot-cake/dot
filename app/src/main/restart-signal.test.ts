@@ -78,10 +78,18 @@ describe('scripts/restart-app.ps1 との取り決め', () => {
     expect(source).toMatch(new RegExp(`ExitCode -ne ${EXIT_SIGNALLED}\\b`));
   });
 
-  // docs/開発ガイド.md の「デスクトップアプリを起動する」節が、実機の :9222 を使う経路を定めている。
-  // scripts/cdp-verify.cts の既定値もそれ。このポートを開けるのはこのスクリプトだけ。
-  test('実機の HMR 起動へ CDP ポート 9222 を渡す', () => {
-    expect(source).toMatch(/\$port\s*=\s*9222/);
-    expect(source).toContain('$env:REMOTE_DEBUGGING_PORT = "$port"');
+  test('実機の HMR 起動に TCP デバッグ設定を渡さない', () => {
+    expect(source).not.toMatch(/\$env:REMOTE_DEBUGGING_PORT\s*=/);
+    expect(source).toContain("'REMOTE_DEBUGGING_PORT'");
+    expect(source).toContain("'ELECTRON_CLI_ARGS'");
+    expect(source).toContain("'V8_INSPECTOR_PORT'");
+    expect(source).toContain("'V8_INSPECTOR_BRK_PORT'");
+    expect(source).toContain("-ArgumentList 'run app:dev'");
+  });
+
+  test('別ライブラリのプロセスを起動成功の根拠にしない', () => {
+    const launch = source.slice(source.indexOf('$npm ='));
+    expect(launch).not.toContain('Get-DotProcs');
+    expect(launch).toContain('準備完了は未確認');
   });
 });

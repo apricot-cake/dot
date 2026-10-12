@@ -55,11 +55,7 @@ child.on('close', (code) => {
     if (code !== 0) throw new Error(`Electronが終了しました ${code}\n${output}`);
     if (!log.includes('Starting dot')) throw new Error(`mainの起動ログがありません\n${log}`);
     if (!log.includes('renderer-log-smoke')) throw new Error(`レンダラーのエラーログがありません\n${log}`);
-    // #1004: このspawnは（迷ったスタートメニューのショートカット起動と
-    // 同じく）--remote-debugging-portを持たないので、startup-debug-port.tsの
-    // 開発専用警告がここに出るはず＝実際の、パッケージ化されていないインスタンス
-    // でその検査が発火することの証拠。
-    if (!log.includes('Launched without --remote-debugging-port')) throw new Error(`missing-markerの警告がありません（#1004）\n${log}`);
+    if (log.includes('Launched without --remote-debugging-port')) throw new Error('通常起動を debug port 不足として警告しています');
     console.log(`PASS app logging: ${logPath}`);
   } catch (error) {
     console.error(error.stack || error);

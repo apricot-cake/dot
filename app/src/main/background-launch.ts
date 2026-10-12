@@ -9,5 +9,14 @@ export function isBackgroundLaunch(argv: readonly string[], env: NodeJS.ProcessE
 }
 
 export function backgroundRelaunchArgs(argv: readonly string[]): string[] {
-  return [...argv.filter((arg) => arg !== BACKGROUND_LAUNCH_FLAG), BACKGROUND_LAUNCH_FLAG];
+  const args: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (/^--(?:remote-debugging-(?:port|address|pipe)|inspect(?:-brk)?)(?:=|$)/.test(arg)) {
+      if (!arg.includes('=') && arg !== '--remote-debugging-pipe' && argv[i + 1] && !argv[i + 1].startsWith('--')) i++;
+      continue;
+    }
+    if (arg !== BACKGROUND_LAUNCH_FLAG) args.push(arg);
+  }
+  return [...args, BACKGROUND_LAUNCH_FLAG];
 }

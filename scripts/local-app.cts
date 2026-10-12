@@ -1,14 +1,15 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { waitFor } = require('./lib-wait.cts');
+const { cleanDebugEnvironment, stopPersonalApp, withAppSession } = require('./lib-app-session.cts');
 
 const root = path.resolve(__dirname, '..');
 
 function personalEnv() {
-  const env = { ...process.env };
+  const env = cleanDebugEnvironment();
   for (const key of Object.keys(env)) {
-    if (key.startsWith('DOT_') || key === 'ELECTRON_RUN_AS_NODE' || key === 'ELECTRON_RENDERER_URL' || key === 'ELECTRON_ENTRY' || key === 'NODE_OPTIONS') delete env[key];
+    const name = key.toUpperCase();
+    if (name.startsWith('DOT_') || name === 'ELECTRON_RENDERER_URL' || name === 'ELECTRON_ENTRY') delete env[key];
   }
   return env;
 }
@@ -23,41 +24,21 @@ function startRuntime(runtime, args) {
   return child;
 }
 
-async function isDevelopmentAppRunning() {
-  try {
-    return (await fetch('http://127.0.0.1:9222/json/version', { signal: AbortSignal.timeout(1000) })).ok;
-  } catch {
-    return false;
-  }
-}
-
 async function launch({ background = false } = {}) {
   const runtime = developmentRuntime();
   if (!fs.existsSync(runtime.exe) || !fs.existsSync(path.join(runtime.app, 'out/main/index.js'))) throw new Error('起動に必要なファイルがありません');
-  // 既に起動中ならもう一つ作らず、single-instance の保持者へ表示要求だけを送る。
-  // Command Palette の起動は「新しいウィンドウ」ではなく「既存のアプリを開く」操作として扱う。
-  if (await isDevelopmentAppRunning()) {
-    if (!background) startRuntime(runtime, ['--dot-activate-existing']);
-    return;
-  }
-  const child = startRuntime(runtime, ['--remote-debugging-port=9222', ...(background ? ['--dot-background'] : [])]);
-  let failure: Error | undefined;
-  child.on('error', (error) => {
-    failure = error;
+  // 既存インスタンスへの表示要求はアプリの single-instance lock が処理する。
+  const child = startRuntime(runtime, background ? ['--dot-background'] : ['--dot-activate-existing']);
+  await new Promise<void>((resolve, reject) => {
+    child.once('spawn', resolve);
+    child.once('error', reject);
   });
-  await waitFor(
-    'アプリの起動',
-    async () => {
-      if (failure) throw failure;
-      return isDevelopmentAppRunning();
-    },
-    { timeoutMs: 30_000, pollMs: 250 },
-  );
 }
 
-async function verify() {
-  await launch({ background: true });
-  console.log('普段のライブラリを使う開発版です。CDP: http://127.0.0.1:9222');
+async function verify(args = process.argv.slice(3)) {
+  const env = personalEnv();
+  await stopPersonalApp(env);
+  return withAppSession({ env, hmr: true, launchTimeoutMs: 120_000 }, (session) => require('./cdp-verify.cts').run(session, args));
 }
 
 async function main(action: string) {
@@ -67,7 +48,7 @@ async function main(action: string) {
   else throw new Error('使い方: local-app.cts launch | verify');
 }
 
-module.exports = { personalEnv, developmentRuntime, main };
+module.exports = { personalEnv, developmentRuntime, main, verify };
 if (require.main === module)
   main(process.argv[2]).catch((error) => {
     console.error(error.message);
