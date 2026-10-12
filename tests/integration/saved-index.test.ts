@@ -97,17 +97,14 @@ describe('スナップショットの形', () => {
   });
 
   test('鍵は postKey＝URL の表記ゆれを畳んだもの', () => {
-    expect(Object.keys(index.entries).sort()).toEqual([postKeyOf(MULTI), postKeyOf('https://x.com/erin/status/555'), postKeyOf('https://x.com/hana/status/888'), postKeyOf('https://x.com/iris/status/9099')].sort());
+    expect(Object.keys(index.entries).sort()).toEqual([postKeyOf(MULTI), postKeyOf('https://x.com/erin/status/555'), postKeyOf('https://x.com/hana/status/888'), postKeyOf('https://x.com/gina/status/777'), postKeyOf('https://x.com/iris/status/9099')].sort());
   });
 });
 
-// #492: 印は「もう試さなくていい」と読まれる＝中身を何も持たない投稿でこれが点くと、以降の
-// 取り込みはすべてその投稿を飛ばし、やり直す機会が永久に失われる。判定の規則は
-// native-host/post-record.mts の recordHoldsContent と同じもの（あちらはレコードの上、
-// こちらは SQL の上で動く）で、両者がずれると、この取り決めが壊れる。
+// URL の所有 ID は保持し、取得完了フラグを false にして再取得を許可する。
 describe('中身を持たない投稿は「保存済み」と答えない', () => {
-  test('殻レコードは載らない', () => {
-    expect(index.entries[postKeyOf('https://x.com/gina/status/777') as string]).toBeUndefined();
+  test('URL だけの保存は未取得として載る', () => {
+    expect(index.entries[postKeyOf('https://x.com/gina/status/777') as string]).toEqual({ post: false, individualMedia: [], id: 'cap-e', media: [], owners: [], total: null });
   });
 
   test('テキストのみ投稿は載る（本文がライブラリに在る＝殻ではない）', () => {

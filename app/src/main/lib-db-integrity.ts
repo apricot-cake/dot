@@ -29,6 +29,7 @@ import path from 'node:path';
 import type Database from 'better-sqlite3';
 import type { PostRecordShape } from '../../../native-host/post-record.mts';
 import { normalizePostRecord, recordHoldsContent } from '../../../native-host/post-record.mts';
+import { z } from 'zod';
 import { missingMediaReason } from './lib-db-inbox.ts';
 import { resolveInSaveFolder } from './lib-save-folder-path.ts';
 import { fillCardDims } from './lib-card-dims.ts';
@@ -134,12 +135,8 @@ function primaryArtifactOf(record: PostRecordShape): string | null {
   return null;
 }
 
-// <saveFolder>/<captureId>.json を投稿レコードとして読む。無い・解析できない・投稿の
-// 中身を1つも持たない・ディスクに無いファイルを記述している、のいずれかなら null。
-// 後ろ2つのゲートは、取込キューの消費側がエンベロープに当てているのと同じ規則
-// (#492 の recordHoldsContent、lib-db-inbox.ts の missingMediaReason)。言い直さずに
-// import しているのは、エンベロープなら断られる条件でサイドカーが採られることが決して
-// ないようにするため。
+// URL だけの旧サイドカーも取得不足として回復する。参照するメディアがある場合は
+// 取込キューと同じ存在確認を行う。
 //
 // captureId は孤児自身の基部で上書きする。これらのファイルを結び付けている事実は
 // ファイル名であって、手で編集されたかもしれない・どこかから写されたかもしれない
@@ -157,7 +154,10 @@ function readSidecarRecord(saveFolder: string, captureId: string): PostRecordSha
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const record = normalizePostRecord({ ...(parsed as Record<string, unknown>), captureId, trashedAt: null });
-  if (!recordHoldsContent(record)) return null;
+  if (!recordHoldsContent(record)) {
+    if (!z.url({ protocol: /^https?$/ }).safeParse(record.url).success) return null;
+    record.saveIncomplete = true;
+  }
   if (missingMediaReason(saveFolder, record)) return null;
   return record;
 }
@@ -207,7 +207,7 @@ function findOrphanMedia(saveFolder: string, sqlite: Database.Database, knownFil
     // 読まなければそのキャプチャは孤児として一切報告されない。そして、そもそも
     // ユーザーを回収へ導くのはこの報告。
     const record = readSidecarRecord(saveFolder, captureId);
-    const file = record && primaryArtifactOf(record);
+    const file = record && (primaryArtifactOf(record) || `${captureId}.json`);
     if (file) out.push({ captureId, file });
   }
   return out;
@@ -286,7 +286,7 @@ function recoverOrphanRecords(saveFolder: string, sqlite: Database.Database): Re
         .filter((file) => /-media-\d+\.[^.]+$/i.test(path.basename(file)) && IMPORTABLE_MEDIA.includes(path.extname(file).slice(1).toLowerCase()))
         .sort((a, b) => Number(/-media-(\d+)/i.exec(a)?.[1] || 0) - Number(/-media-(\d+)/i.exec(b)?.[1] || 0))
         .map((file) => ({ file, url: '' }));
-      if (exact && !isMedia && !media.length) continue;
+      if (!adopted && exact && !isMedia && !media.length) continue;
       const record =
         adopted ||
         normalizePostRecord({

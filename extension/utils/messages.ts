@@ -89,7 +89,7 @@ type SaveResponse =
       individualMedia?: string[];
       domFilled?: string[];
       acquisitionIssues?: PostRecord['acquisitionIssues'];
-      savedContent?: { text: boolean; profile: boolean; media: number };
+      savedContent?: { url?: boolean; text: boolean; profile: boolean; media: number };
     })
   | ErrorResponse;
 

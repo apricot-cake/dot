@@ -368,8 +368,7 @@ export const userKey = (p: DotPost): string => {
   if (!p.platform) return 'web:' + hostOf(p.url) + ':' + id;
   return p.platform + ':' + id;
 };
-// 'post' と 'image' は出典 URL の有無で分ける。URL だけのブックマークは新規に
-// 作らないため、独立した種別を持たない。
+// 'post' と 'image' は出典 URL の有無で分ける。URL だけ保存できた投稿も 'post' に含む。
 export const kindOf = (p: DotPost): 'post' | 'image' => (p.url ? 'post' : 'image');
 // #365: このレコードが視覚的な media を何か持っているか＝自身の image、video
 // フィールド、または media[] のエントリのいずれか。あえて `p.mediaType == null`

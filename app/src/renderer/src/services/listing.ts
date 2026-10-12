@@ -113,13 +113,12 @@ export function sortPosts(posts: DotPost[], options: Pick<ListingDeps, 'sortValu
 export function makeListing(deps: ListingDeps) {
   const { allPosts, postsById, mediaFilesOf, densityImage, percentileFn, evalNode, treeLeaves, postPredOf, currentTree, activeFolderId, stickyRecs, sortValue, shuffleSeed, searchQuery, buildUsers, posterQBEval, posterQBTree, posterSort, folderSort, allFolders } = deps;
 
-  // 投稿グリッドと動的なフォルダが共有する内容のゲート。見せるものを持つレコード
-  // （画像／メディア／本文／タイトル）だけが一覧に入る。
-  const hasContent = (p: DotPost) => !!(p.image || mediaFilesOf(p).length || p.text || p.title);
+  // URL だけ保存できた投稿も一覧に残し、出典を開いて再取得できるようにする。
+  const hasContent = (p: DotPost) => !!(p.url || p.image || mediaFilesOf(p).length || p.text || p.title);
 
   function getFilteredPosts(excludeTypes: string[] = []) {
     // 統合したビュー。どの項目（SNS の投稿とライブラリの画像）も対象に入る。外れるのは
-    // 内容（画像も本文も）を持たないレコードだけ。SNS の投稿だけ／画像だけへ絞るのは
+    // URL も内容（画像も本文も）も持たないレコードだけ。SNS の投稿だけ／画像だけへ絞るのは
     // 「種別」の絞り込み（kind）でやる。
     let posts = allPosts().filter(hasContent);
     // サイドバーの静的フォルダは現在地であり、フィルタのクエリには混ぜない。表示範囲だけは

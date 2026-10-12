@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { fetchXTweet } from './x.ts';
+import { MAX_TAG_NAME_COMBINING_MARK_RUN } from '../../../native-host/tag-normalize.mts';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -89,13 +90,66 @@ test.each([
   expect(record.acquisitionIssues).toContainEqual({ scope: 'media', reason: 'unavailable' });
 });
 
-test.each(['id_str', 'text', 'created_at', 'user'])('必須項目 %s の欠落は本文成功として扱わない', async (field) => {
+test.each(['id_str', 'text', 'created_at', 'user', 'lang'])('項目 %s の欠落でも独立した本文・媒体を保持する', async (field) => {
   const input: Record<string, unknown> = post();
   delete input[field];
   const { record } = await capture(input);
+  expect(record.text).toBe(field === 'text' ? null : '保存する本文 #tag https://example.com/article');
+  expect(record.media).toHaveLength(1);
+  expect(record.url).toBe('https://x.com/author/status/20');
+  expect(record.acquisitionIssues).toContainEqual({ scope: 'post', reason: 'invalidResponse' });
+});
+
+test('不正な寸法と件数だけを除外し、同じ媒体URLと正常な件数を残す', async () => {
+  const input = post();
+  const { record } = await capture({ ...input, favorite_count: -1, mediaDetails: [{ ...input.mediaDetails[0], original_info: { width: -10, height: 20 } }] });
+  expect(record.text).toContain('保存する本文');
+  expect(record.likes).toBeNull();
+  expect(record.replies).toBe(1);
+  expect(record.media[0]).toEqual(expect.objectContaining({ url: 'https://pbs.twimg.com/media/image.jpg?name=orig', width: null, height: 20 }));
+});
+
+test('本文も媒体も取得できない応答でもURLと再取得の診断を残す', async () => {
+  const { record } = await capture({ text: 42 });
+  expect(record.url).toBe('https://x.com/author/status/20');
   expect(record.text).toBeNull();
   expect(record.media).toEqual([]);
   expect(record.acquisitionIssues).toContainEqual({ scope: 'post', reason: 'invalidResponse' });
+});
+
+test.each([42, { id: '19' }, ['19']])('返信IDの不正値 %j で本文と媒体を失わない', async (replyId) => {
+  const { record } = await capture({ ...post(), in_reply_to_screen_name: 'other', in_reply_to_status_id_str: replyId });
+  expect(record.replyToId).toBeNull();
+  expect(record.text).toContain('保存する本文');
+  expect(record.media).toHaveLength(1);
+  expect(record.acquisitionIssues).toContainEqual({ scope: 'post', reason: 'invalidResponse' });
+});
+
+test('長すぎる投票選択肢で投稿本文と媒体を失わない', async () => {
+  const { record } = await capture({
+    ...post(),
+    card: {
+      name: 'poll2choice_text_only',
+      binding_values: {
+        choice1_label: { string_value: 'a'.repeat(1001) },
+        choice1_count: { string_value: '1' },
+        choice2_label: { string_value: '正常' },
+        choice2_count: { string_value: '2' },
+      },
+    },
+  });
+  expect(record.text).toContain('保存する本文');
+  expect(record.media).toHaveLength(1);
+  expect(record.poll).toBeNull();
+  expect(record.acquisitionIssues).toContainEqual({ scope: 'post', reason: 'invalidResponse' });
+});
+
+test('安全に正規化できないタグを除き、本文・媒体・正常なタグを保持する', async () => {
+  const unsafeTag = `a${'\u0301'.repeat(MAX_TAG_NAME_COMBINING_MARK_RUN + 1)}`;
+  const { record } = await capture({ ...post(), entities: { hashtags: [{ text: unsafeTag }, { text: '正常' }] } });
+  expect(record.text).toContain('保存する本文');
+  expect(record.media).toHaveLength(1);
+  expect(record.hashtags).toEqual(['正常']);
 });
 
 test('未知の追加項目と正常な任意項目の省略は拒否しない', async () => {

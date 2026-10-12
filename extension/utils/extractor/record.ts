@@ -1,4 +1,5 @@
 import { ExtractedPostSchema } from '../../../native-host/protocol.mts';
+import { TagNameInputSchema } from '../../../native-host/post-schemas.mts';
 // 複数の extractor が共有する API 相の補助関数。どの fetchPost() も埋める正規化済み
 // レコードと、レスポンスを読む周りの配管。
 //
@@ -44,7 +45,7 @@ function normalizeHashtags(values: unknown[]): string[] {
       .trim()
       .replace(/^[#＃]+/, '')
       .trim();
-    if (!tag || seen.has(tag)) continue;
+    if (!tag || seen.has(tag) || !TagNameInputSchema.safeParse(tag).success) continue;
     seen.add(tag);
     out.push(tag);
   }

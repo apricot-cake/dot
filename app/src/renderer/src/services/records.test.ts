@@ -804,6 +804,12 @@ describe('makeCardModel（カード1枚のビューモデル）', () => {
     expect(model({ ...p, text: 'Alice' }).text).toBe('');
   });
 
+  test('URL だけ保存した投稿はカードに出典 URL を表示する', () => {
+    const partial = { ...p, image: null, video: null, media: [], text: null, title: null, displayName: null, screenName: null, url: 'https://x.com/alice/status/1', saveIncomplete: true };
+    expect(model(partial, []).text).toBe(partial.url);
+    expect(partial.text).toBeNull();
+  });
+
   test('GIF は原寸のまま（w=0）でアニメーションを保つ', () => {
     expect(model({ ...p, image: 'anim.gif' }, ['anim.gif']).imgSrc).toBe('anim.gif@0');
   });

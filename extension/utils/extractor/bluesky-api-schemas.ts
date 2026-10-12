@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CountSchema } from '../../../native-host/post-schemas.mts';
+import { partialFields, partialItems } from './partial-api.ts';
 
 // AppView の利用する項目だけを検証する。追加項目と open union の未知の型は保持し、
 // 既知の型に読み替えない。根拠: atproto Lexicon、app.bsky.{feed,actor,embed} の公式定義。
@@ -71,3 +72,25 @@ export const BlueskyThreadResponseSchema = z.object({
     .looseObject({ $type: z.string().optional(), uri: z.string().optional(), post: BlueskyPostSchema.optional() })
     .refine((thread) => thread.post !== undefined || (['app.bsky.feed.defs#notFoundPost', 'app.bsky.feed.defs#blockedPost'].includes(thread.$type ?? '') && !!thread.uri), { message: 'Missing thread post' }),
 });
+export const PartialBlueskyImagesSchema = partialItems(BlueskyImagesSchema.element.extend({ alt: z.string().optional().catch(undefined), aspectRatio: partialFields(dimensions.shape).optional().catch(undefined) }));
+export const PartialBlueskyVideoSchema = partialFields({ ...BlueskyVideoSchema.shape, aspectRatio: partialFields(dimensions.shape) });
+export const PartialBlueskyExternalSchema = partialFields(BlueskyExternalSchema.shape);
+const partialAuthor = partialFields(author.shape);
+export const PartialBlueskyProfileSchema = partialFields(BlueskyProfileSchema.shape);
+export const PartialBlueskyFeedRecordSchema = partialFields({
+  ...feedRecord.shape,
+  tags: partialItems(z.string()),
+  langs: partialItems(z.string()),
+  facets: partialItems(z.looseObject({ features: partialItems(z.looseObject({ $type: z.string(), tag: z.string().optional().catch(undefined) })) })),
+});
+const partialMediaView = z.discriminatedUnion('$type', [
+  z.looseObject({ $type: z.literal('app.bsky.embed.images#view'), images: PartialBlueskyImagesSchema }),
+  z.looseObject({ ...PartialBlueskyVideoSchema.shape, $type: z.literal('app.bsky.embed.video#view') }),
+  z.looseObject({ $type: z.literal('app.bsky.embed.external#view'), external: PartialBlueskyExternalSchema }),
+]);
+const partialUnknownView = unknownView(BLUESKY_EMBED_VIEW_TYPES);
+const partialMedia = z.union([partialMediaView, partialUnknownView]);
+export const PartialBlueskyQuotedSchema = partialFields({ ...quotedRecord.shape, author: partialAuthor, embeds: partialItems(partialMedia) });
+const partialRecordView = z.looseObject({ $type: z.literal('app.bsky.embed.record#view'), record: partialFields({ ...PartialBlueskyQuotedSchema.shape, record: PartialBlueskyQuotedSchema }) });
+const partialEmbed = z.union([partialMediaView, partialRecordView, z.looseObject({ $type: z.literal('app.bsky.embed.recordWithMedia#view'), media: partialMedia.optional().catch(undefined), record: partialRecordView.optional().catch(undefined) }), partialUnknownView]);
+export const PartialBlueskyPostSchema = partialFields({ ...BlueskyPostSchema.shape, author: partialAuthor, record: PartialBlueskyFeedRecordSchema, embed: partialEmbed });

@@ -144,12 +144,12 @@ describe('動画', () => {
 });
 
 describe('失敗時', () => {
-  test('未対応の content-type は throw し、孤児 inbox エンベロープを残さない', async () => {
+  test('未対応の content-type は URL を取得不足として保存する', async () => {
     vi.stubGlobal('fetch', async () => new Response(Buffer.from('x'), { status: 200, headers: { 'content-type': 'text/html' } }));
 
-    await expect(handleSaveMedia({ captureId: '1717500000001-ab02', mediaUrl: 'https://x/y', metadata: {} })).rejects.toThrow();
+    expect(await handleSaveMedia({ captureId: '1717500000001-ab02', mediaUrl: 'https://x/y', metadata: { url: 'https://x.com/u/status/12' } })).toMatchObject({ ok: true, saveIncomplete: true, media: [] });
     expect(fs.existsSync(path.join(saveFolder, '1717500000001-ab02.json'))).toBe(false);
-    expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000001-ab02.json'))).toBe(false);
+    expect(fs.existsSync(path.join(saveFolder, '.dot-inbox', 'new', '1717500000001-ab02.json'))).toBe(true);
     // 一時ファイルも残らない（この経路は本文を1バイトも書く前に失敗する）
     expect(fs.readdirSync(saveFolder).filter((f) => f.endsWith('.tmp'))).toEqual([]);
   });

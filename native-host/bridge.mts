@@ -593,10 +593,12 @@ let savedIndexCache: SavedIndex | null = null;
 // 保存する、既に平らにした一覧でもよい。
 function mediaUrlsOf(source: any): Array<string | null> {
   const media = source && Array.isArray(source.media) ? source.media : [];
-  return media.map((m: any) => {
-    if (typeof m === 'string') return m || null;
-    return m && typeof m.url === 'string' && m.url ? m.url : null;
-  });
+  return media
+    .filter((m: any) => !m || typeof m !== 'object' || !('file' in m) || !!m.file)
+    .map((m: any) => {
+      if (typeof m === 'string') return m || null;
+      return m && typeof m.url === 'string' && m.url ? m.url : null;
+    });
 }
 
 // レコード1つの画像を、その postKey のエントリへ畳み込む。同じ投稿の2つのレコード
@@ -740,10 +742,7 @@ function scanRecentInbox(folder: string, sinceMs: number, keys: Map<string, Inde
       const raw = fs.readFileSync(path.join(inboxNewDir(folder), f), 'utf8');
       const parsed = parseInboxEnvelope(raw);
       if (!parsed.ok) continue; // 壊れている・書きかけ・未知のバージョン＝飛ばす。問い合わせを落とさない
-      // 書き手が今当てているのと同じ規則（#492）。その投稿について何も持っていない
-      // エンベロープが「保存済み」と答えてはいけない。handleSavePost はこれを書くのを
-      // やめたが、より古いブリッジが残したエンベロープはまだディスクに在る。
-      if (!recordHoldsContent(parsed.envelope.record)) continue;
+      // URL だけの保存も所有 ID を返す。post:false が再取得を妨げない。
       const key = postKeyOf(parsed.envelope.record.url);
       if (key)
         mergeSavedEntry(
@@ -753,7 +752,7 @@ function scanRecentInbox(folder: string, sinceMs: number, keys: Map<string, Inde
           mediaUrlsOf(parsed.envelope.record),
           undefined,
           parsed.envelope.record.imageCount || null,
-          !parsed.envelope.record.saveIncomplete && parsed.envelope.record.saveScope === 'post' && parsed.envelope.record.media.length >= (parsed.envelope.record.imageCount || 0),
+          recordHoldsContent(parsed.envelope.record) && !parsed.envelope.record.saveIncomplete && parsed.envelope.record.saveScope === 'post' && parsed.envelope.record.media.length >= (parsed.envelope.record.imageCount || 0),
           parsed.envelope.record.saveScope === 'media' ? mediaUrlsOf(parsed.envelope.record).filter((url): url is string => !!url) : [],
         );
     } catch {
@@ -890,24 +889,7 @@ async function downloadSavedLinkCard(linkCard: any, itemDir: string, base: strin
   return { url: linkCard.url, title: linkCard.title || null, description: linkCard.description || null, thumbnailFile };
 }
 
-// 一括取り込みの保存（#362）。media[] は投稿が持つすべての原本を順番どおりに保持する。
-// image はローカル画像など単一ファイルの入口が使う欄なので、投稿保存では null のままにする。
-//
-// メディアがまったく無い投稿でも、その投稿について何かが届いていれば（最低でもテキスト）、
-// 取込のエンベロープは書かれる。画像の無いレコードに #365 が居場所を与えるまでは表示できない
-// が、その間もレコードは取込キューと DB に座っていて、#365 が入ればそのまま現れる。書くのを
-// 拒めば、代わりに投稿を永久に失う。X にはブックマークの書き出しが無いので、取り込みのとき
-// に取らなかったブックマークは、そのアカウントが消えた後は取り戻せない。今は残し、表示は
-// 後で。
-//
-// 何も届かなかった投稿はその逆の場合で、拒む（#492）。プラットフォームが投稿の情報を
-// まったく出さないとき（削除、凍結、非公開、年齢制限、取得の失敗）、レコードは URL 自身が
-// 既に言っていること（プラットフォーム、screenName、id から解ける日付）しか持たない。それを
-// 書くのは無害に見えて、無害ではなかった。noteSaved がその投稿の印を点け、以降の取り込みは
-// どれもその印を読んでその投稿を飛ばす。そしてまだ救えたはずの唯一のこと＝やり直すことを、
-// その抜け殻のレコードが恒久的に妨げる。ここで失敗すればやり直し1回で済み、ここで成功すれば
-// 投稿を失う。recordHoldsContent が共有の規則で（post-record.mts）、印の索引も同じ規則を
-// 当てるので、この修正より前に書かれた抜け殻は答えなくなる。
+// 取得できた項目を保存する。URL だけでも取得不足として残し、再取得できるようにする。
 function receiptDir(folder: string, requestId: string): string {
   return path.join(inboxNewDir(folder), '..', 'requests', requestId);
 }
@@ -931,13 +913,12 @@ function receiptFromCommittedOutput(folder: string, requestId: string, identity?
     if (!parsed.ok) return null;
     const record = parsed.envelope.record;
     const media = mediaUrlsOf(record);
-    const file = record.image || record.video || record.media?.find((item) => item?.file)?.file;
-    if (typeof file !== 'string' || !file) return null;
+    const file = record.image || record.video || record.media?.find((item) => item?.file)?.file || record.captureId;
     return {
       state: 'completed',
       completedAt: Date.now(),
       ...identity,
-      ack: { ok: true, captureId: record.retryOf || record.captureId || requestId, file, saveFolder: folder, media, mediaCount: media.length },
+      ack: { ok: true, captureId: record.retryOf || record.captureId || requestId, file, saveFolder: folder, media, mediaCount: media.length, saveIncomplete: record.saveIncomplete },
     };
   } catch {
     return null;
@@ -1241,10 +1222,51 @@ async function guardSave<T extends SavePostAck | SaveMediaAck>(folder: string, r
     const owner = scope === 'media' ? known.owners[known.media.indexOf(urls[0])] || known.id : known.id;
     return { ok: true, captureId: owner, file: owner, saveFolder: folder, mediaCount: media.length, media } as T;
   }
+  const retryTarget = known && !known.post && !req.metadata.replaces && !req.metadata.retryOf ? readRetryTarget(folder, known.id) : null;
+  const emptyMediaRetry = !!retryTarget && retryTarget.incomplete && !retryTarget.hasLocalMedia && retryTarget.media.length === 0;
+  const sameMedia = scope === 'post' || emptyMediaRetry || (!!retryTarget && urls.length > 0 && urls.length === retryTarget.media.length && urls.every((url) => !!url && retryTarget.media.includes(url)));
+  if (known && retryTarget?.scope === scope && sameMedia) {
+    // 別接続やブラウザ再起動後も、未取得の URL を新規投稿として複製しない。
+    // DB 取込側が投稿の同一性・投稿者・保存範囲を検査して既存値へ合流する。
+    req.metadata = { ...req.metadata, retryOf: known.id };
+  }
   return save();
 }
 
+function readRetryTarget(folder: string, id: string): { scope: 'post' | 'media'; media: string[]; incomplete: boolean; hasLocalMedia: boolean } | null {
+  if (!isCaptureId(id)) return null;
+  // 取込済みなら再取得後の最新状態を読む。元の Inbox は取得前の状態のまま残る。
+  let db: DatabaseSync | undefined;
+  try {
+    const dbFile = path.join(folder, 'dot.db');
+    if (fs.existsSync(dbFile)) {
+      db = new DatabaseSync(dbFile, { readOnly: true, timeout: 0 });
+      const row = db.prepare('SELECT saveScope, saveIncomplete, image, video FROM posts WHERE captureId = ? AND trashedAt IS NULL').get(id);
+      if (row?.saveScope === 'post' || row?.saveScope === 'media') {
+        const items = db.prepare('SELECT url, file FROM media WHERE postId = ? ORDER BY seq').all(id);
+        const media = items.map((item) => item.url).filter((url): url is string => typeof url === 'string' && !!url);
+        return { scope: row.saveScope, media, incomplete: !!row.saveIncomplete, hasLocalMedia: !!(row.image || row.video || items.some((item) => !!item.file)) };
+      }
+    }
+  } catch {
+    // DB 未作成・未取込なら元の Inbox を読む。
+  } finally {
+    db?.close();
+  }
+  try {
+    const pending = parseInboxEnvelope(fs.readFileSync(path.join(inboxNewDir(folder), `${id}.json`), 'utf8'));
+    if (pending.ok) {
+      const record = pending.envelope.record;
+      return { scope: record.saveScope, media: record.media.map((item) => item.url).filter(Boolean), incomplete: record.saveIncomplete, hasLocalMedia: !!(record.image || record.video || record.media.some((item) => !!item.file)) };
+    }
+  } catch {
+    // 読めない保存範囲を推測して再取得を合流しない。
+  }
+  return null;
+}
+
 export async function handleSavePost(req: SavePostRequest): Promise<SavePostAck> {
+  req = { ...req, metadata: { ...req.metadata } };
   return withRequestReceipt(req, (context) => guardSave(context.folder, req, () => savePost(req, context)));
 }
 
@@ -1292,7 +1314,7 @@ async function savePost(req: SavePostRequest, context: ReceiptContext): Promise<
 
     const record = normalizePostRecord({
       ...meta, // 下で上書きする＝handleSave を参照
-      saveIncomplete: !!meta.saveIncomplete || savedMedia.length < announced || !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) || !!(meta.linkCard?.thumbnail && !linkCard?.thumbnailFile) || quotedIncomplete,
+      saveIncomplete: req.metaOk === false || !!meta.saveIncomplete || savedMedia.length < announced || !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) || !!(meta.linkCard?.thumbnail && !linkCard?.thumbnailFile) || quotedIncomplete,
       captureId: base,
       image: null,
       media: savedMedia,
@@ -1301,10 +1323,7 @@ async function savePost(req: SavePostRequest, context: ReceiptContext): Promise<
       bannerFile,
       linkCard,
     });
-    // その投稿について何も届かなかった＝この関数のコメントを参照。エンベロープを書く前、
-    // かつ noteSaved の前に投げるので、投稿は未保存で印も付かないまま残る。次の取り込みの
-    // 実行は、それを飛ばさずもう一度差し出す。
-    if (!recordHoldsContent(record)) throw new Error(`Post unavailable: nothing was obtained for it (${req.metaReason || 'no post info'}, no media)`);
+    record.saveIncomplete ||= !recordHoldsContent(record);
     const savedId = record.retryOf || base;
     const ack: SavePostAck = { ok: true, captureId: savedId, file: savedMedia.length ? savedMedia[0].file : base, saveFolder, mediaCount: savedMedia.length, media: mediaUrlsOf(record), saveIncomplete: record.saveIncomplete, profileMissing: !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) };
     await commitSavedOutput(context, record, ack);
@@ -1323,6 +1342,7 @@ async function savePost(req: SavePostRequest, context: ReceiptContext): Promise<
 // かった。これは、取り込んだライブラリの項目が作るのと同じ「イラストのレコード」の形だ。
 // captureId はふつうの epochMillis-hex の形なので、SAFE_ID を通る。
 export async function handleSaveMedia(req: SaveMediaRequest): Promise<SaveMediaAck> {
+  req = { ...req, metadata: { ...req.metadata } };
   return withRequestReceipt(req, (context) => guardSave(context.folder, req, () => saveMedia(req, context)));
 }
 
@@ -1338,8 +1358,7 @@ async function saveMedia(req: SaveMediaRequest, context: ReceiptContext): Promis
     const budget = createByteBudget(); // handleSave を参照。保存の操作1回につき1つ
     const mediaType = req.mediaType === 'video' ? 'video' : 'image';
     const got = mediaType === 'video' ? await downloadOneMedia({ url: req.mediaUrl, referer: req.mediaReferer || undefined, type: 'video' }, itemDir, base, 0, budget) : await saveStillImage(req.mediaUrl, req.mediaReferer, itemDir, base, budget);
-    if (!got) throw new Error('Media download failed (unsupported type, too large, or network error)');
-    const mediaFile = itemFileRelative(base, got.file);
+    const mediaFile = got ? itemFileRelative(base, got.file) : null;
 
     const meta = { ...req.metadata, saveScope: 'media' as const };
     let avatarFile: string | null = null;
@@ -1363,17 +1382,19 @@ async function saveMedia(req: SaveMediaRequest, context: ReceiptContext): Promis
     const quotedPost = await downloadQuotedPost(meta.quotedPost, saveFolder, budget);
     const quotedIncomplete = !!meta.quotedPost && ((quotedPost?.media.length || 0) < (meta.quotedPost.media?.length || 0) || !!quotedPost?.media.some((item) => !item.file));
     // source:'web' は、対応サイトかどうかにかかわらずウェブページ上で選ばれた原本画像を示す。
-    const media = [
-      {
-        url: req.mediaUrl,
-        alt: req.mediaAlt || null,
-        file: mediaFile,
-        ...(mediaType === 'video' ? { type: 'video' as const } : {}),
-      },
-    ];
+    const media = mediaFile
+      ? [
+          {
+            url: req.mediaUrl,
+            alt: req.mediaAlt || null,
+            file: mediaFile,
+            ...(mediaType === 'video' ? { type: 'video' as const } : {}),
+          },
+        ]
+      : [{ url: req.mediaUrl, alt: req.mediaAlt || null, file: '', ...(mediaType === 'video' ? { type: 'video' as const } : {}) }];
     const record = normalizePostRecord({
       ...meta,
-      saveIncomplete: !!meta.saveIncomplete || !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) || !!(meta.linkCard?.thumbnail && !linkCard?.thumbnailFile) || quotedIncomplete,
+      saveIncomplete: !got || !!meta.saveIncomplete || !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) || !!(meta.linkCard?.thumbnail && !linkCard?.thumbnailFile) || quotedIncomplete,
       captureId: base,
       image: mediaType === 'image' ? mediaFile : null,
       video: mediaType === 'video' ? mediaFile : null,
@@ -1385,7 +1406,7 @@ async function saveMedia(req: SaveMediaRequest, context: ReceiptContext): Promis
       bannerFile,
       linkCard,
     });
-    const ack: SaveMediaAck = { ok: true, captureId: record.retryOf || base, file: mediaFile, saveFolder, media: mediaUrlsOf(record), saveIncomplete: record.saveIncomplete, profileMissing: !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) };
+    const ack: SaveMediaAck = { ok: true, captureId: record.retryOf || base, file: mediaFile || base, saveFolder, media: mediaUrlsOf(record), saveIncomplete: record.saveIncomplete, profileMissing: !!(meta.avatar && !avatarFile) || !!(meta.banner && !bannerFile) };
     await commitSavedOutput(context, record, ack);
     return ack;
   });

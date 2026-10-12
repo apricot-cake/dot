@@ -306,6 +306,36 @@ describe('残した起動経路', () => {
     env = setupBackground();
   });
 
+  test('ログ中継の切断エラーを読み取り、未受理のログをlocalへ退避する', async () => {
+    const ports = env.connectAsControllablePort(null);
+    env.dispatch({ type: 'logCapture', entry: { stage: 'bulk', phase: 'begin', message: 'native host unavailable' } });
+    const port = await portThatSent(ports, 'log');
+    const events: string[] = [];
+    let lastError: { message: string } | undefined;
+    Object.defineProperty(chrome.runtime, 'lastError', {
+      configurable: true,
+      get() {
+        if (lastError) events.push('lastError');
+        return lastError;
+      },
+      set(value) {
+        lastError = value;
+      },
+    });
+    const set = chrome.storage.local.set.bind(chrome.storage.local);
+    const storageSet = vi.spyOn(chrome.storage.local, 'set').mockImplementation((items: Record<string, unknown>, callback?: () => void) => {
+      if (Object.keys(items).some((key) => key.startsWith('diaglog_'))) events.push('stash');
+      return set(items, callback!);
+    });
+    try {
+      port.emitDisconnect('Specified native messaging host not found.');
+      expect(events.slice(0, 2)).toEqual(['lastError', 'stash']);
+      expect([...env.localStore.entries()].filter(([key]) => key.startsWith('diaglog_')).map(([, entry]) => entry)).toEqual([expect.objectContaining({ stage: 'bulk', phase: 'begin', message: 'native host unavailable' })]);
+    } finally {
+      storageSet.mockRestore();
+    }
+  });
+
   test('先行診断がtimeout中でも注入を待たせずactivateとbulkのFIFO順を保つ', async () => {
     vi.useFakeTimers();
     try {
@@ -458,6 +488,15 @@ describe('投稿保存と保存済み照会', () => {
     const request = port.sent[0];
     port.emitMessage({ id: request.id, ok: true, results: { 'https://x.com/a/status/1': { id: 'one', media: [] } } });
     await expect(query.responseP).resolves.toEqual({ ok: true, results: { 'https://x.com/a/status/1': { id: 'one', media: [] } } });
+  });
+
+  test('個別画像を取得できなくても URL を取得不足として保存する', async () => {
+    const ports = env.connectAsControllablePort();
+    const save = env.dispatch({ type: 'savePost', platform: 'x', postUrl: POST_URL, mediaKeys: ['x:missing-image'] }, X_SENDER);
+    const port = await portThatSent(ports, 'savePost');
+    expect(port.sent[0]).toMatchObject({ type: 'savePost', metaOk: false, metadata: { url: POST_URL, saveIncomplete: true, saveScope: 'media', media: [] } });
+    port.emitMessage({ ok: true, captureId: 'saved-url', media: [] });
+    await expect(save.responseP).resolves.toMatchObject({ ok: true, captureId: 'saved-url', mediaMissing: 1, savedContent: { url: true, text: false, profile: false, media: 0 }, acquisitionIssues: expect.arrayContaining([{ scope: 'media', reason: 'unavailable' }]) });
   });
 });
 

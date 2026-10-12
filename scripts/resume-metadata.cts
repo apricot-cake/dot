@@ -31,7 +31,7 @@ function retryAt(header, attempts, now = Date.now()) {
 }
 
 function apiSucceeded(result) {
-  return !!result && !result.metaError && (result.text != null || result.title != null || result.likes != null || result.media?.length > 0);
+  return !!result && (result.text != null || result.title != null || result.likes != null || result.media?.length > 0);
 }
 
 function summary(state) {

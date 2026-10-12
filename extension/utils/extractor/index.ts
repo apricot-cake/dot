@@ -17,6 +17,7 @@ import bluesky from './bluesky.ts';
 import { mediaSrcs } from './dom.ts';
 import pixiv from './pixiv.ts';
 import { acquisitionFailed, emptyRecord } from './record.ts';
+import { acquisitionFailureReason, createAcquisitionDiagnostic, diagnosticFailureReason } from './acquisition-diagnostic.ts';
 import type { ContentSite, Extractor, MediaIdentitySite, OverlaySite, ParsedPost, PostMediaElement, PostRecord } from './types.ts';
 import x from './x.ts';
 
@@ -86,7 +87,14 @@ async function fetchPostMetadata(url, opts): Promise<PostRecord> {
     return unavailable(parsed.platform);
   }
   // 各工程が同じ取得期限を共有し、期限切れも部分的な取得結果と一緒に返す。
-  return extractor.fetchPost(parsed, url, opts?.logDiagnostic);
+  try {
+    return await extractor.fetchPost(parsed, url, opts?.logDiagnostic);
+  } catch (error) {
+    const record = emptyRecord(url, parsed.platform);
+    acquisitionFailed(record, 'post', acquisitionFailureReason(error));
+    createAcquisitionDiagnostic(record, opts?.logDiagnostic)('extract-post', null, diagnosticFailureReason(error), error);
+    return record;
+  }
 }
 
 // === メディアの URL ===

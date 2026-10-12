@@ -240,14 +240,27 @@ describe('直下サイドカーの扱い（#511）', () => {
     expect(handle.sqlite.prepare('SELECT trashedAt FROM posts WHERE captureId = ?').get('1700000002004-bb05')).toMatchObject({ trashedAt: null });
   });
 
-  test('中身が空のサイドカー（投稿の中身が何も無い＝#492の殻）は採用せず合成に落ちる', () => {
+  test('URL だけのサイドカーも取得不足として回復する', () => {
     fs.writeFileSync(path.join(saveFolder, '1700000002005-bb06.jpg'), 'x');
     fs.writeFileSync(path.join(saveFolder, '1700000002005-bb06.json'), JSON.stringify({ captureId: '1700000002005-bb06', url: 'https://x.com/u/status/6' }));
 
     const recovered = recoverOrphanRecords(saveFolder, handle.sqlite);
 
-    expect(recovered.find((r) => r.captureId === '1700000002005-bb06')).toMatchObject({ via: 'synthesized' });
-    expect(handle.sqlite.prepare('SELECT url, source FROM posts WHERE captureId = ?').get('1700000002005-bb06')).toMatchObject({ url: null, source: 'orphan-recovery' });
+    expect(recovered.find((r) => r.captureId === '1700000002005-bb06')).toMatchObject({ via: 'sidecar' });
+    expect(handle.sqlite.prepare('SELECT url, saveIncomplete FROM posts WHERE captureId = ?').get('1700000002005-bb06')).toMatchObject({ url: 'https://x.com/u/status/6', saveIncomplete: 1 });
+  });
+
+  test('メディアを持たない URL だけのサイドカーも検出して回復する', () => {
+    const captureId = '1700000002030-bb30';
+    fs.writeFileSync(path.join(saveFolder, `${captureId}.json`), JSON.stringify({ captureId, url: 'https://x.com/u/status/30' }));
+    expect(recoverOrphanRecords(saveFolder, handle.sqlite)).toContainEqual(expect.objectContaining({ captureId, via: 'sidecar' }));
+    expect(handle.sqlite.prepare('SELECT url, saveIncomplete FROM posts WHERE captureId = ?').get(captureId)).toEqual({ url: 'https://x.com/u/status/30', saveIncomplete: 1 });
+  });
+
+  test('安全に開けない URL だけのサイドカーは採用しない', () => {
+    const captureId = '1700000002031-bb31';
+    fs.writeFileSync(path.join(saveFolder, `${captureId}.json`), JSON.stringify({ captureId, url: 'javascript:alert(1)' }));
+    expect(recoverOrphanRecords(saveFolder, handle.sqlite).some((item) => item.captureId === captureId)).toBe(false);
   });
 
   test('壊れたJSONのサイドカーは合成に落ちる（回復自体は止まらない）', () => {

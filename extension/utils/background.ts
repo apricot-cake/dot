@@ -20,6 +20,7 @@ import type { LocalBuildReloadState } from './local-build-reload.ts';
 import { buildWebMeta } from './extractor/web-meta.ts';
 import type { WebMetaResult } from './extractor/web-meta.ts';
 import { mergeDomMeta } from './extractor/dom-meta.ts';
+import { acquisitionFailed } from './extractor/record.ts';
 import { fetchPostMetadata, getHostname, isAllowedSender, RESIDENT_MATCHES } from './extractor/index.ts';
 import type { DomMeta, PostRecord } from './extractor/types.ts';
 import type { BridgeAck, CheckSavedResponse, ContentToBackgroundMessage, DumpLogsResponse, LogCaptureResponse, PageMetaExtractedMessage, QueueStatsResponse, ResendQueueResponse, SavedEntry, SavedUpdateMessage, SaveProgressMessage, SaveResponse } from './messages.ts';
@@ -677,7 +678,7 @@ export function startBackground(): void {
       metaReason: meta.metaError || null,
       acquisitionIssues: ack?.profileMissing && !meta.acquisitionIssues.some((issue) => issue.scope === 'profile') ? [...meta.acquisitionIssues, { scope: 'profile' as const, reason: 'fetchFailed' as const }] : meta.acquisitionIssues,
       mediaMissing: missingMediaCount(1, savedCount),
-      savedContent: { text: !!meta.text, profile: !!meta.displayName, media: savedCount },
+      savedContent: { url: !!record.url, text: !!meta.text, profile: !!meta.displayName, media: savedCount },
     };
   }
 
@@ -734,7 +735,6 @@ export function startBackground(): void {
 
     // API が扱わない項目と、埋め込み対象外の投稿を検証済みの DOM 情報で補う。
     const domFilled = mergeDomMeta(meta, domMeta);
-    const metaOk = acquisitionComplete(meta, domFilled);
 
     // メディアを持たない投稿もそれでも保存する＝host はそのサイド
     // カーを書き込み、ライブラリは #365 が乗った時点でそれを表示する
@@ -742,6 +742,8 @@ export function startBackground(): void {
     // かない: X にはブックマークのエクスポート機能がなく、後から戻っ
     // て取り直すことができない。
     const selectedMedia = selectPostMedia(meta.media || [], sendPlatform, mediaKeys);
+    if (mediaKeys !== undefined && !selectedMedia.length) acquisitionFailed(meta, 'media', 'unavailable');
+    const metaOk = acquisitionComplete(meta, domFilled);
     const record = buildRecord(meta, {
       captureId,
       capturedAt,
@@ -759,7 +761,7 @@ export function startBackground(): void {
     trace.passed('bridge');
     const imageCount = (meta.media || []).length || null;
     const savedCount = typeof ack?.mediaCount === 'number' ? ack.mediaCount : savedMediaUrls(ack).length;
-    const mediaMissing = missingMediaCount(selectedMedia.length, savedCount);
+    const mediaMissing = missingMediaCount(mediaKeys === undefined ? selectedMedia.length : 1, savedCount);
     const postComplete = mediaKeys === undefined && mediaMissing === 0 && metaOk && !ack?.saveIncomplete;
     if (!targetHost) markSaved([record.url, postUrl], ack?.captureId || captureId, savedMediaUrls(ack), tab.id, imageCount, postComplete, mediaKeys === undefined ? [] : savedMediaUrls(ack).filter((url): url is string => !!url));
     // ついで掃き出し (#203).
@@ -771,7 +773,7 @@ export function startBackground(): void {
       metaReason: meta.metaError || null,
       domFilled,
       acquisitionIssues: ack?.profileMissing && !meta.acquisitionIssues.some((issue) => issue.scope === 'profile') ? [...meta.acquisitionIssues, { scope: 'profile' as const, reason: 'fetchFailed' as const }] : meta.acquisitionIssues,
-      savedContent: { text: !!meta.text, profile: !!meta.displayName, media: savedCount },
+      savedContent: { url: !!record.url, text: !!meta.text, profile: !!meta.displayName, media: savedCount },
       hostSkew: await skewNoteForBanner(),
       mediaMissing,
       imageCount,
@@ -1413,7 +1415,10 @@ export function startBackground(): void {
       noteHostBuild(hostExtBuild(msg));
       if (acked >= batch.length) done();
     });
-    port.onDisconnect.addListener(done);
+    port.onDisconnect.addListener(() => {
+      void chrome.runtime.lastError;
+      done();
+    });
     try {
       // host は自分の stdin をループで読み、区切られたメッセージそれ
       // ぞれに答えるので、1つの接続でバッチ全体を運べる

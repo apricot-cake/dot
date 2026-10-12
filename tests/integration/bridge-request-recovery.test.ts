@@ -530,9 +530,9 @@ test.each(['downloading', 'publishing'])('%sの耐久記録に失敗したら媒
   expect(fs.existsSync(f.fetchLog)).toBe(phase === 'publishing');
 });
 
-test('通常の取得失敗でも削除不能なら終端失敗にせず、後で同じ要求を回収できる', async () => {
+test('保存準備の書込失敗でも削除不能なら終端失敗にせず、後で同じ要求を回収できる', async () => {
   const f = fixture();
-  expect(await startHost(f, request, { RECOVERY_FAIL_FETCH: '1', RECOVERY_FAIL_DELETE: '1' }).response()).toMatchObject({ ok: false, code: 'request-in-progress' });
+  expect(await startHost(f, request, { RECOVERY_FAIL_JOURNAL: 'publishing', RECOVERY_FAIL_DELETE: '1' }).response()).toMatchObject({ ok: false, code: 'request-in-progress' });
   expect(JSON.parse(fs.readFileSync(path.join(receiptDir(f), 'result.json'), 'utf8')).state).toBe('retryable');
   expect((await startHost(f).response()).ok).toBe(true);
   expect(items(f)).toEqual([id]);
@@ -665,3 +665,18 @@ test.each([false, true])(
   },
   20000,
 );
+
+test.each(['publish', 'commit'])('URL のみの保存も %s 中断後に取得不足と応答を回復する', async (stage) => {
+  const f = fixture();
+  const req = { type: 'savePost', captureId: id, requestNonce: nonce, metaOk: false, metadata: { url: 'https://x.com/u/status/2078680803660431845' } };
+  await stopHost(f, stage, req);
+  expect(await startHost(f, req).response()).toMatchObject({ ok: true, captureId: id, file: id, mediaCount: 0, saveIncomplete: true });
+  expect(fs.existsSync(f.fetchLog)).toBe(false);
+  const db = openDatabase(path.join(f.folder, 'dot.db'));
+  try {
+    expect(drainInbox(f.folder, db.sqlite).skipped).toEqual([]);
+    expect(db.sqlite.prepare('SELECT url, saveIncomplete FROM posts WHERE captureId = ?').get(id)).toEqual({ url: req.metadata.url, saveIncomplete: 1 });
+  } finally {
+    db.sqlite.close();
+  }
+});

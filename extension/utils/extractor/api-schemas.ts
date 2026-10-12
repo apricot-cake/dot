@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CountSchema, FramesSchema } from '../../../native-host/post-schemas.mts';
+import { partialFields, partialItems } from './partial-api.ts';
 
 const optionalText = z.string().nullable().optional();
 const dateText = z
@@ -97,6 +98,9 @@ export const XPostSchema = z.looseObject({
   conversation_count: CountSchema,
   // テキスト・引用・返信では実際の応答に存在しない。
   possibly_sensitive: z.boolean().optional(),
+  in_reply_to_screen_name: optionalText,
+  in_reply_to_status_id_str: optionalText,
+  in_reply_to_user_id_str: optionalText,
   entities,
   edit_control: z.looseObject({ edit_tweet_ids: z.array(z.string()) }).optional(),
 });
@@ -138,6 +142,37 @@ export const PixivSeriesSchema = PixivIllustSchema.shape.seriesNavData;
 export const PixivAvatarSchema = PixivProfileSchema.pick({ image: true, imageBig: true });
 export const PixivBioSchema = PixivProfileSchema.pick({ comment: true, commentHtml: true });
 export const PixivLinksSchema = PixivProfileSchema.pick({ webpage: true, social: true });
+const partialEntities = partialFields({
+  urls: partialItems(z.looseObject({ url: z.string(), expanded_url: z.string() })),
+  hashtags: partialItems(z.looseObject({ text: z.string() })),
+});
+const partialXProfile = partialFields({
+  ...xUser.shape,
+  entities: partialFields({ url: partialFields({ urls: partialItems(partialFields({ url: z.string(), expanded_url: z.string() })) }), description: partialEntities }),
+});
+export const PartialXMediaSchema = partialItems(
+  XMediaSchema.element.extend({
+    ext_alt_text: optionalText.catch(undefined),
+    original_info: partialFields(dimensions.shape).optional().catch(undefined),
+    video_info: partialFields({ variants: partialItems(partialFields({ content_type: z.string(), url: z.string().min(1), bitrate: CountSchema })) })
+      .optional()
+      .catch(undefined),
+  }),
+);
+const partialQuoted = partialFields({ ...XQuotedSchema.shape, user: partialXProfile, entities: partialEntities, mediaDetails: PartialXMediaSchema });
+export const PartialXPostSchema = partialFields({ ...XPostSchema.shape, user: partialXProfile, entities: partialEntities, mediaDetails: PartialXMediaSchema, quoted_tweet: partialQuoted, parent: partialQuoted });
+const partialPixivLinks = partialFields({
+  webpage: optionalText,
+  social: z.record(z.string(), partialFields({ url: z.string() }).catch({})).nullable(),
+});
+export const PartialPixivProfileSchema = partialFields({ ...PixivProfileSchema.shape, ...partialPixivLinks.shape });
+export const PartialPixivIllustSchema = partialFields({
+  ...PixivIllustSchema.shape,
+  urls: partialFields(pixivUrls.shape),
+  seriesNavData: partialFields(PixivIllustSchema.shape.seriesNavData.unwrap().unwrap().shape).nullable(),
+  tags: partialFields({ tags: partialItems(z.looseObject({ tag: z.string() })) }),
+});
+export const PartialPixivPagesSchema = partialItems(PixivPagesSchema.element.extend({ width: CountSchema.optional().catch(undefined), height: CountSchema.optional().catch(undefined) }));
 export function rethrowContractError(error: unknown): void {
   if (error instanceof z.ZodError || error instanceof SyntaxError) throw error;
 }

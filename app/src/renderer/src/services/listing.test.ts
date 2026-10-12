@@ -126,6 +126,18 @@ test('投稿者は集計済みの閲覧回数と最終閲覧日時で並ぶ', ()
 const onlyX = { kind: 'group', op: 'and', neg: false, children: [{ kind: 'cond', type: 'platform', value: 'x' }] };
 
 describe('getFilteredPosts: 中身ゲート', () => {
+  test('URL だけ保存できた投稿も一覧に残す', () => {
+    const partial = { captureId: 'url-only', platform: 'x', url: 'https://x.com/alice/status/1', saveIncomplete: true };
+    posts.push(partial as (typeof posts)[number]);
+    try {
+      expect(api.getFilteredPosts()).toContain(partial);
+      state.tree = onlyX;
+      expect(api.getFilteredPosts()).toContain(partial);
+    } finally {
+      posts.pop();
+    }
+  });
+
   test('中身の無いレコードだけ落ちる', () => {
     const out = api.getFilteredPosts();
     expect(out).toHaveLength(4);

@@ -1,7 +1,23 @@
 import { ExtractedPostSchema } from '../../../native-host/protocol.mts';
 import type { z } from 'zod';
 import type { SaveLogEntry } from '../capture-log.ts';
-import { PixivEnvelopeSchema, PixivIllustCoreSchema, PixivTextSchema, PixivCountsSchema, PixivTagsSchema, PixivSeriesSchema, PixivPagesSchema, PixivAvatarSchema, PixivBioSchema, PixivLinksSchema, PixivUgoiraSchema, rethrowContractError } from './api-schemas.ts';
+import {
+  PartialPixivIllustSchema,
+  PartialPixivProfileSchema,
+  PartialPixivPagesSchema,
+  PixivEnvelopeSchema,
+  PixivIllustCoreSchema,
+  PixivTextSchema,
+  PixivCountsSchema,
+  PixivTagsSchema,
+  PixivSeriesSchema,
+  PixivPagesSchema,
+  PixivAvatarSchema,
+  PixivBioSchema,
+  PixivLinksSchema,
+  PixivUgoiraSchema,
+  rethrowContractError,
+} from './api-schemas.ts';
 import { acquisitionFailureReason, createAcquisitionDiagnostic, diagnosticFailureReason } from './acquisition-diagnostic.ts';
 // pixiv。
 //
@@ -232,14 +248,14 @@ function pixivMedia(il) {
 // サービスごとに1エントリ＝twitter や pixiv-fanbox など。サービス名をキーにした素の
 // オブジェクト）。pixiv に確認の概念は無い。
 function pixivProfileLinks(input: unknown): { name: string; value: string }[] | null {
-  const body = PixivLinksSchema.parse(input);
+  const body = PartialPixivProfileSchema.parse(input ?? {});
   const out: { name: string; value: string }[] = [];
   if (body.webpage) out.push({ name: 'webpage', value: body.webpage });
   const social = body.social;
   if (social) {
     for (const [key, entry] of Object.entries(social)) {
       const socialUrl = entry.url;
-      if (socialUrl) out.push({ name: key, value: socialUrl });
+      if (key && socialUrl) out.push({ name: key, value: socialUrl });
     }
   }
   return out.length ? out : null;
@@ -250,11 +266,12 @@ async function fetchPixivIllust(parsed, url, logDiagnostic?: (entry: SaveLogEntr
   const rec = emptyRecord(url, 'pixiv');
   const report = createAcquisitionDiagnostic(rec, logDiagnostic);
   let postStatus: number | null = null;
-  function section<T>(schema: z.ZodType<T>, input: unknown, scope: 'post' | 'profile' | 'media', operation: string, status: number | null, apply: (value: T) => void): boolean {
+  function section<T>(schema: z.ZodType<T>, input: unknown, scope: 'post' | 'profile' | 'media', operation: string, status: number | null, apply: (value: T) => void, fallback?: unknown): boolean {
     const result = schema.safeParse(input);
     if (!result.success) {
       acquisitionFailed(rec, scope, 'invalidResponse');
       report(operation, status, 'contract', result.error);
+      if (fallback !== undefined) apply(fallback as T);
       return false;
     }
     apply(result.data);
@@ -278,39 +295,65 @@ async function fetchPixivIllust(parsed, url, logDiagnostic?: (entry: SaveLogEntr
       report('ajax-illust', postStatus, 'unavailable');
       return rec;
     }
-    const il = PixivIllustCoreSchema.parse(data.body);
+    const il = PartialPixivIllustSchema.parse(data.body ?? {});
+    section(PixivIllustCoreSchema, data.body, 'post', 'ajax-illust', postStatus, () => {});
     rec.title = il.illustTitle || null;
     // キャプション（HTML）をテキストにする。キャプションの語を表示側で検索できるように。
-    section(PixivTextSchema, il, 'post', 'pixiv-text', postStatus, (text) => {
-      rec.text = htmlToText(text.illustComment || text.description || '');
-    });
+    section(
+      PixivTextSchema,
+      data.body,
+      'post',
+      'pixiv-text',
+      postStatus,
+      (text) => {
+        rec.text = htmlToText(text.illustComment || text.description || '');
+      },
+      il,
+    );
     rec.displayName = il.userName || null;
     rec.screenName = il.userId || null; // pixiv に @ のハンドルは無く、安定した id は userId
     rec.userId = il.userId || null;
-    section(PixivCountsSchema, il, 'post', 'pixiv-counts', postStatus, (counts) => {
-      rec.likes = counts.likeCount;
-      rec.bookmarks = counts.bookmarkCount;
-      rec.views = counts.viewCount;
-      rec.replies = counts.commentCount;
-    });
+    section(
+      PixivCountsSchema,
+      data.body,
+      'post',
+      'pixiv-counts',
+      postStatus,
+      (counts) => {
+        rec.likes = counts.likeCount ?? null;
+        rec.bookmarks = counts.bookmarkCount ?? null;
+        rec.views = counts.viewCount ?? null;
+        rec.replies = counts.commentCount ?? null;
+      },
+      il,
+    );
     rec.date = toIso(il.createDate || il.uploadDate);
     // pixiv の tags.tags[].tag はもともと裸のタグ。共通の規則 (#177) は重複を除くだけで
     // 足り、それがどのプラットフォームでも綴りを揃えている。
     section(PixivTagsSchema, il.tags, 'post', 'pixiv-tags', postStatus, (tags) => {
-      rec.hashtags = normalizeHashtags(tags.tags.map((t) => t.tag));
+      rec.hashtags = normalizeHashtags((tags.tags ?? []).map((t) => t.tag));
     });
     // シリーズへの所属 (#188)。seriesNavData が在るのは、シリーズに属する作品のときだけ
     // （実物の保存で確認。単独の作品では null、シリーズ内の作品ではオブジェクトになっている）。
     // その直下の `order`
     // がこの作品自身の位置（1始まり）。next.order/prev.order は隣の作品を説明するもので
     // この作品のものではないので、ここでは使わない。
-    section(PixivSeriesSchema, il.seriesNavData, 'post', 'pixiv-series', postStatus, (series) => {
-      if (series) {
-        rec.seriesId = series.seriesId || null;
-        rec.seriesTitle = series.title || null;
-        rec.seriesOrder = series.order;
-      }
-    });
+    const originalSeries = data.body && typeof data.body === 'object' && 'seriesNavData' in data.body ? data.body.seriesNavData : undefined;
+    section(
+      PixivSeriesSchema,
+      originalSeries,
+      'post',
+      'pixiv-series',
+      postStatus,
+      (series) => {
+        if (series) {
+          rec.seriesId = series.seriesId || null;
+          rec.seriesTitle = series.title || null;
+          rec.seriesOrder = series.order ?? null;
+        }
+      },
+      il.seriesNavData,
+    );
     // うごイラは音の無い繰り返しのアニメーション。ライブラリを眺める人にとっては、X の
     // animated_gif と同じ類のもので、あちらはすでに 'gif' と名付けて
     // いる。mediaType は表示のための名前（それが何であるか）、media[].type は運び方
@@ -319,7 +362,7 @@ async function fetchPixivIllust(parsed, url, logDiagnostic?: (entry: SaveLogEntr
     const ugoira = il.illustType === 2 ? await pixivUgoiraMedia(rec, parsed.id, il, request, report) : [];
     rec.mediaType = il.illustType === 2 ? 'gif' : 'image';
     rec.media = il.illustType === 2 ? ugoira : pixivMedia(il);
-    if (![0, 1, 2].includes(il.illustType)) {
+    if (il.illustType !== undefined && ![0, 1, 2].includes(il.illustType)) {
       rec.media = [];
       rec.mediaType = null;
       acquisitionFailed(rec, 'media', 'unavailable');
@@ -327,7 +370,7 @@ async function fetchPixivIllust(parsed, url, logDiagnostic?: (entry: SaveLogEntr
     }
     // 複数ページの作品は、ページごとにファイル形式が混じりうる（p0=.jpg、p2=.png …）ので、
     // /pages の原本 URL を使う。失敗時は取得済みの先頭画像だけを残し、URL を推測しない。
-    if ([0, 1].includes(il.illustType) && (il.pageCount || 1) > 1) {
+    if ((il.illustType === undefined || [0, 1].includes(il.illustType)) && (il.pageCount || 1) > 1) {
       let pagesStatus: number | null = null;
       try {
         const pres = await request(`https://www.pixiv.net/ajax/illust/${encodeURIComponent(parsed.id)}/pages`, { credentials: 'include' }, (status) => {
@@ -336,7 +379,8 @@ async function fetchPixivIllust(parsed, url, logDiagnostic?: (entry: SaveLogEntr
         if (pres.ok) {
           const pdata = PixivEnvelopeSchema.parse(pres.data);
           if (!pdata.error) {
-            const pages = PixivPagesSchema.parse(pdata.body).map((p) => ({
+            section(PixivPagesSchema, pdata.body, 'media', 'ajax-illust-pages', pagesStatus, () => {});
+            const pages = PartialPixivPagesSchema.parse(pdata.body).map((p) => ({
               url: p.urls.original,
               alt: null,
               width: p.width || null,
@@ -375,20 +419,44 @@ async function fetchPixivIllust(parsed, url, logDiagnostic?: (entry: SaveLogEntr
         if (ures.ok) {
           const udata = PixivEnvelopeSchema.parse(ures.data);
           if (!udata.error) {
-            const avatarOk = section(PixivAvatarSchema, udata.body, 'profile', 'ajax-user-full', profileStatus, (profile) => {
-              rec.avatar = profile.imageBig || profile.image || null;
-            });
+            const avatarOk = section(
+              PixivAvatarSchema,
+              udata.body,
+              'profile',
+              'ajax-user-full',
+              profileStatus,
+              (profile) => {
+                rec.avatar = profile.imageBig || profile.image || null;
+              },
+              PartialPixivProfileSchema.parse(udata.body ?? {}),
+            );
             // i.pximg.net は pixiv の Referer が無いと 403 を返す＝ブリッジに付けて送るよう
             // 伝える。
             if (rec.avatar) rec.avatarReferer = PIXIV_REFERER;
             // #289: 自己紹介とリンクは、上と同じ user のレスポンスに相乗りする＝追加の要求
             // は無い。pixiv にバナーの概念は無い（rec.banner は null のまま）。
-            const bioOk = section(PixivBioSchema, udata.body, 'profile', 'ajax-user-full', profileStatus, (profile) => {
-              rec.bio = profile.commentHtml ? htmlToText(profile.commentHtml) : profile.comment || null;
-            });
-            const linksOk = section(PixivLinksSchema, udata.body, 'profile', 'ajax-user-full', profileStatus, (profile) => {
-              rec.profileLinks = pixivProfileLinks(profile);
-            });
+            const bioOk = section(
+              PixivBioSchema,
+              udata.body,
+              'profile',
+              'ajax-user-full',
+              profileStatus,
+              (profile) => {
+                rec.bio = profile.commentHtml ? htmlToText(profile.commentHtml) : profile.comment || null;
+              },
+              PartialPixivProfileSchema.parse(udata.body ?? {}),
+            );
+            const linksOk = section(
+              PixivLinksSchema,
+              udata.body,
+              'profile',
+              'ajax-user-full',
+              profileStatus,
+              (profile) => {
+                rec.profileLinks = pixivProfileLinks(profile);
+              },
+              PartialPixivProfileSchema.parse(udata.body ?? {}),
+            );
             if (avatarOk && bioOk && linksOk) reportProfile();
           } else {
             acquisitionFailed(rec, 'profile', 'unavailable');

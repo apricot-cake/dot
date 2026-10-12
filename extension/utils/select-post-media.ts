@@ -10,6 +10,6 @@ export function selectPostMedia(items: MediaItem[], platform: string, keys?: str
       return key !== null && keys.includes(key);
     }),
   );
-  if (selected.length !== 1) throw new Error('Selected media does not match exactly one post image');
-  return selected;
+  // 一致しない媒体を代わりに保存しない。URL の保存は続け、後で再取得する。
+  return selected.length === 1 ? selected : [];
 }

@@ -96,34 +96,25 @@ function buildSavedIndex(sqlite: Database.Database, trash: readonly TrashedInput
   // 出力の順序は entry.media に任せ、所属判定だけを Set で一定時間にする。
   const mediaUrlsByKey = new Map<string, Set<string>>();
   const individualMediaUrlsByKey = new Map<string, Set<string>>();
-  // ライブラリが「何も」保持していない投稿は何も答えない（#492）——そうしないと
-  // バッジは、permalink 自体が語ること以外何も持たないレコードについて利用者に
-  // 「保存済み」と伝えてしまい、それ以降のすべての取り込みがその言葉を信じて
-  // その投稿をスキップしてしまう——投稿をもう一度取り込めるように、バッジが
-  // 暗いままでなければならない唯一のケース。これは
-  // native-host/post-record.mts の recordHoldsContent を SQL で表現したもの
-  // （ブリッジが書き込み時に適用するのと同じ規則）で、両者が等価であることは
-  // saved-index.test.ts で検証している。投稿ごとのフィルタではなく1つのクエリに
-  // まとめてあるのは、大きなライブラリが後で捨てる行まで持ち歩かなくて済むよう
-  // にするため。
+  // URL だけの保存にも所有 ID を付ける。取得完了の判定には内容と取得不足を使う。
   const rows = sqlite
     .prepare(
-      `SELECT p.captureId, p.url, p.imageCount, p.saveScope, p.saveIncomplete FROM posts p
-        WHERE p.url IS NOT NULL AND p.trashedAt IS NULL AND p.isContext = 0
-          AND (IFNULL(p.image, '') <> ''
+      `SELECT p.captureId, p.url, p.imageCount, p.saveScope, p.saveIncomplete,
+          (IFNULL(p.image, '') <> ''
             OR IFNULL(p.video, '') <> ''
             OR IFNULL(p.text, '') <> ''
             OR IFNULL(p.title, '') <> ''
             OR IFNULL(p.displayName, '') <> ''
             OR IFNULL(p.linkCard, '') <> ''
-            OR EXISTS (SELECT 1 FROM media m WHERE m.postId = p.captureId))`,
+            OR EXISTS (SELECT 1 FROM media m WHERE m.postId = p.captureId)) AS holdsContent
+        FROM posts p WHERE p.url IS NOT NULL AND p.trashedAt IS NULL AND p.isContext = 0`,
     )
-    .all() as Array<{ captureId: string; url: string; imageCount: number | null; saveScope: string; saveIncomplete: number }>;
+    .all() as Array<{ captureId: string; url: string; imageCount: number | null; saveScope: string; saveIncomplete: number; holdsContent: number }>;
   // 生きているすべての投稿のメディアを1回で走査し、持ち主ごとにまとめる。
   // 投稿ごとのクエリ（ライブラリ全体分の準備済みステートメントの往復）より安く、
   // JOIN がゴミ箱行きの投稿を締め出す。
   const mediaByPost = new Map<string, Array<string | null>>();
-  const mediaRows = sqlite.prepare('SELECT m.postId, m.seq, m.url FROM media m JOIN posts p ON p.captureId = m.postId WHERE p.trashedAt IS NULL ORDER BY m.postId, m.seq').all() as Array<{
+  const mediaRows = sqlite.prepare("SELECT m.postId, m.seq, m.url FROM media m JOIN posts p ON p.captureId = m.postId WHERE p.trashedAt IS NULL AND IFNULL(m.file, '') <> '' ORDER BY m.postId, m.seq").all() as Array<{
     postId: string;
     seq: number;
     url: string | null;
@@ -142,7 +133,7 @@ function buildSavedIndex(sqlite: Database.Database, trash: readonly TrashedInput
     const entry = entries[key];
     if (!entry) {
       entries[key] = {
-        post: !row.saveIncomplete && row.saveScope === 'post' && media.length >= (row.imageCount || 0),
+        post: !!row.holdsContent && !row.saveIncomplete && row.saveScope === 'post' && media.length >= (row.imageCount || 0),
         individualMedia: row.saveScope === 'media' ? media.filter((url): url is string => !!url) : [],
         id: row.captureId,
         media: Array.from(media, (url) => url ?? null),
@@ -152,7 +143,7 @@ function buildSavedIndex(sqlite: Database.Database, trash: readonly TrashedInput
       mediaUrlsByKey.set(key, new Set(media.filter((url): url is string => !!url)));
       continue;
     }
-    entry.post ||= !row.saveIncomplete && row.saveScope === 'post' && media.length >= (row.imageCount || 0);
+    entry.post ||= !!row.holdsContent && !row.saveIncomplete && row.saveScope === 'post' && media.length >= (row.imageCount || 0);
     if (row.saveScope === 'media') {
       let individualMediaUrls = individualMediaUrlsByKey.get(key);
       if (!individualMediaUrls) {

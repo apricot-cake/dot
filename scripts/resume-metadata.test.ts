@@ -9,6 +9,7 @@ describe('補完APIの成功判定と再開時刻', () => {
     expect(apiSucceeded(null)).toBeFalsy();
     expect(apiSucceeded({ text: '', likes: 0 })).toBeTruthy();
     expect(apiSucceeded({ media: [{ url: 'https://example.com/a.jpg' }] })).toBeTruthy();
+    expect(apiSucceeded({ metaError: 'invalidResponse', text: '取得できた本文' })).toBeTruthy();
   });
   test('Retry-Afterの秒数とHTTP日付を尊重し、未指定なら冷却期間を延ばす', () => {
     const now = Date.parse('2026-01-01T00:00:00Z');

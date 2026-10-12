@@ -1,5 +1,6 @@
 import { ExtractedPostSchema } from '../../../native-host/protocol.mts';
-import { XProfileUrlsSchema, XPostCoreSchema, XUserCoreSchema, XAvatarSchema, XProfileSchema, XCountsSchema, XEntitiesSchema, XCardSchema, XEditSchema, XMediaSchema, XQuotedSchema, DecimalCountSchema, CardStringBindingSchema, CardImageBindingSchema, rethrowContractError } from './api-schemas.ts';
+import { PollSchema } from '../../../native-host/post-schemas.mts';
+import { PartialXPostSchema, PartialXMediaSchema, XPostCoreSchema, XUserCoreSchema, XAvatarSchema, XProfileSchema, XCountsSchema, XEntitiesSchema, XCardSchema, XEditSchema, XMediaSchema, XQuotedSchema, DecimalCountSchema, CardStringBindingSchema, CardImageBindingSchema, rethrowContractError } from './api-schemas.ts';
 // X（旧 Twitter）。
 //
 // API は cdn.syndication.twimg.com（非公式の埋め込み用 JSON。CORS が制限されているので
@@ -497,7 +498,7 @@ function xOrigUrl(url) {
 
 function xMedia(details) {
   const out: MediaItem[] = [];
-  for (const m of XMediaSchema.parse(details ?? [])) {
+  for (const m of PartialXMediaSchema.parse(details ?? [])) {
     const alt = m.ext_alt_text || null;
     const width = (m.original_info && m.original_info.width) || null;
     const height = (m.original_info && m.original_info.height) || null;
@@ -535,10 +536,9 @@ function xHashtags(j): string[] {
 function xProfileLinks(user): Array<{ name: string; value: string }> | null {
   const urls = user?.entities?.url?.urls;
   if (urls === undefined) return null;
-  const out = XProfileUrlsSchema.parse(urls)
-    .map((entry) => entry.expanded_url || entry.url)
-    .filter(Boolean);
-  return out.length ? [...new Set(out)].map((value) => ({ name: 'URL', value })) : null;
+  const out = PartialXPostSchema.parse({ user: { entities: { url: { urls } } } }).user?.entities?.url?.urls ?? [];
+  const links = out.map((entry) => entry.expanded_url || entry.url).filter((value): value is string => typeof value === 'string' && !!value);
+  return links.length ? [...new Set(links)].map((value) => ({ name: 'URL', value })) : null;
 }
 
 // #180/#806: 引用された tweet（quoted_tweet）と、返信先の親（parent。#806 で足した。両方を
@@ -547,7 +547,7 @@ function xProfileLinks(user): Array<{ name: string; value: string }> | null {
 // どちらについてもまったく同じ欄の読み方で組み立てられ、追加の要求も要らない。
 function xQuotedRef(t): QuotedPost | null {
   if (!t) return null;
-  XQuotedSchema.parse(t);
+
   // screen_name を守る。埋め込まれた tweet は screen_name を持たない user オブジェクトを
   // 持ちうるので、そのままだと .../undefined/status/<id> を組み立ててしまう。
   const url = t.user && t.user.screen_name && t.id_str ? `https://x.com/${t.user.screen_name}/status/${t.id_str}` : null;
@@ -584,7 +584,7 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
       rec.date = xSnowflakeDate(parsed.id);
       return rec;
     }
-    const j = res.data;
+    const j = res.data && typeof res.data === 'object' ? res.data : {};
     // 埋め込み対象外の応答は、画面の投稿を確認して補完する。
     // 空の tombstone の理由を年齢制限と断定しない。
     if (j && j.__typename === 'TweetTombstone') {
@@ -594,19 +594,39 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
       rec.date = xSnowflakeDate(parsed.id);
       return rec;
     }
-    const core = XPostCoreSchema.parse(j);
-    const user = XUserCoreSchema.parse(j.user);
+    const partial = PartialXPostSchema.parse(j ?? {});
     // 識別に必要な値を先に検証し、任意の情報は工程ごとに扱う。
-    function section<T>(operation: string, scope: 'post' | 'profile' | 'media', read: () => T): T | null {
+    function section<T>(operation: string, scope: 'post' | 'profile' | 'media', read: () => T, fallback?: () => unknown): T | null {
       try {
         return read();
       } catch (error) {
         acquisitionFailed(rec, scope, 'invalidResponse');
         report(operation, status, 'contract', error);
-        return null;
+        return (fallback?.() ?? null) as T | null;
       }
     }
-    const entities = section('x-entities', 'post', () => XEntitiesSchema.parse(j.entities));
+    const core =
+      section(
+        'x-post',
+        'post',
+        () => XPostCoreSchema.parse(j),
+        () => partial,
+      ) ?? partial;
+    const user =
+      section(
+        'x-user',
+        'post',
+        () => XUserCoreSchema.parse(j.user),
+        () => partial.user ?? {},
+      ) ??
+      partial.user ??
+      {};
+    const entities = section(
+      'x-entities',
+      'post',
+      () => XEntitiesSchema.parse(j.entities),
+      () => partial.entities,
+    );
     rec.text = core.text ? xExpandUrls(core.text, entities) : null;
     if (j.edit_control !== undefined)
       section('x-edit', 'post', () => {
@@ -619,19 +639,24 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
         const card = XCardSchema.parse(j.card);
         const poll = xPoll(card);
         const linkCard = xLinkCard(card, entities);
-        rec.poll = poll;
+        rec.poll = poll ? PollSchema.parse(poll) : null;
         rec.linkCard = linkCard;
       });
     rec.displayName = user.name || null;
-    rec.screenName = user.screen_name;
-    rec.userId = user.id_str;
-    rec.url = `https://x.com/${user.screen_name}/status/${parsed.id}`;
+    rec.screenName = user.screen_name || rec.screenName;
+    rec.userId = user.id_str || null;
+    if (user.screen_name) rec.url = `https://x.com/${user.screen_name}/status/${parsed.id}`;
     // 埋め込み用 API の 48px のアバターを 400px の変種へ組み直す。
     section('x-avatar', 'profile', () => {
       const avatar = XAvatarSchema.parse(j.user);
       rec.avatar = avatar.profile_image_url_https.replace(/_normal(\.[a-z]+)(?=$|\?)/i, '_400x400$1');
     });
-    const profile = section('x-profile', 'profile', () => XProfileSchema.parse(j.user));
+    const profile = section(
+      'x-profile',
+      'profile',
+      () => XProfileSchema.parse(j.user),
+      () => partial.user ?? {},
+    );
     if (profile) {
       // 公開プロフィールの追加情報は応答に含まれる場合だけ保存する。
       rec.bio = profile.description ? xExpandUrls(profile.description, profile.entities?.description) : null;
@@ -641,10 +666,15 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
       rec.following = profile.friends_count ?? null;
       rec.authorCreatedAt = toIso(profile.created_at);
     }
-    const counts = section('x-counts', 'post', () => XCountsSchema.parse(j));
+    const counts = section(
+      'x-counts',
+      'post',
+      () => XCountsSchema.parse(j),
+      () => partial,
+    );
     if (counts) {
-      rec.likes = counts.favorite_count;
-      rec.replies = counts.conversation_count;
+      rec.likes = counts.favorite_count ?? null;
+      rec.replies = counts.conversation_count ?? null;
     }
     rec.date = toIso(core.created_at);
     rec.lang = core.lang || null;
@@ -654,7 +684,12 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
       if (!Array.isArray(j.mediaDetails)) return XMediaSchema.parse(j.mediaDetails);
       const valid: ReturnType<typeof XMediaSchema.parse> = [];
       for (const item of j.mediaDetails) {
-        const entry = section('x-media', 'media', () => XMediaSchema.parse([item]));
+        const entry = section(
+          'x-media',
+          'media',
+          () => XMediaSchema.parse([item]),
+          () => PartialXMediaSchema.parse([item]),
+        );
         if (entry) valid.push(...entry);
       }
       return valid;
@@ -672,7 +707,14 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
       // screen_name を守る。quoted_tweet は screen_name を持たない user オブジェクトを
       // 持ちうるので、そのままだと .../undefined/status/<id> を組み立ててしまう。
       section('x-quote', 'post', () => {
-        const quoted = xQuotedRef(XQuotedSchema.parse(j.quoted_tweet));
+        const quoted = xQuotedRef(
+          section(
+            'x-quote',
+            'post',
+            () => XQuotedSchema.parse(j.quoted_tweet),
+            () => partial.quoted_tweet,
+          ),
+        );
         rec.quotedPost = quoted;
         rec.quotedUrl = quoted?.url ?? null;
         if (quoted && quoted.media.length < (j.quoted_tweet.mediaDetails?.length ?? 0)) {
@@ -681,12 +723,12 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
         }
       });
     }
-    if (j.in_reply_to_screen_name) {
+    if (partial.in_reply_to_screen_name) {
       rec.isReply = true;
-      rec.replyToId = j.in_reply_to_status_id_str || null;
+      rec.replyToId = partial.in_reply_to_status_id_str || null;
       // 自己返信（スレッド）＝スレッドへ格上げして isReply を消す。そうすることで4つの
       // プラットフォームの分類が互いに排他になる（自分で連ねたスレッドは返信ではない）。
-      if (j.in_reply_to_user_id_str && j.in_reply_to_user_id_str === user.id_str) {
+      if (partial.in_reply_to_user_id_str && partial.in_reply_to_user_id_str === user.id_str) {
         rec.isThread = true;
         rec.isReply = null;
       }
@@ -696,7 +738,14 @@ async function fetchXTweet(parsed, url, logDiagnostic?: (entry: SaveLogEntry) =>
       // xQuotedRef(undefined) がすでに null と答える。
       if (j.parent !== undefined)
         section('x-parent', 'post', () => {
-          const parent = xQuotedRef(XQuotedSchema.parse(j.parent));
+          const parent = xQuotedRef(
+            section(
+              'x-parent',
+              'post',
+              () => XQuotedSchema.parse(j.parent),
+              () => partial.parent,
+            ),
+          );
           rec.replyToPost = parent;
           if (parent && parent.media.length < (j.parent.mediaDetails?.length ?? 0)) {
             acquisitionFailed(rec, 'media', 'unavailable');

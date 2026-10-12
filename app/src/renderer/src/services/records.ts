@@ -547,7 +547,7 @@ export function makeCardModel(deps: {
     const handle = p.screenName ? `@${p.screenName}` : '';
     // ライブラリの画像はファイル名を title と text の両方に持つ＝投稿者行と
     // 一致するときは重複する本文を落とす。
-    const textRaw = displayPostText(p);
+    const textRaw = displayPostText(p) || (!hasVisualMedia(p) ? p.url || '' : '');
     const text = textRaw === userName ? '' : textRaw;
     const imgFile = densityImage(p); // artwork。capture はその代役でしかない
     // GIF とアニメーション WebP は、静止画へ変換されないよう元ファイルを使う。

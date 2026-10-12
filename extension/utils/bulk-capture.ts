@@ -345,8 +345,8 @@ export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
           failedCount++;
         }
       } else if (!complete(res)) {
-        entries.set(url, 'failed');
-        failedCount++;
+        entries.set(url, 'saved');
+        savedCount++;
         showFailure(url, res);
       } else {
         entries.set(url, 'saved');

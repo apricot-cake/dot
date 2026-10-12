@@ -38,7 +38,32 @@ describe('Bluesky の外部応答契約（不足項目の自動補完なし）',
     responses({ ...post(), likeCount: -1 });
     const result = await fetchBlueskyPost(parsed, url);
     expect(result.likes).toBeNull();
+    expect(result.text).toBe('本文');
     expect(result.acquisitionIssues).toContainEqual({ scope: 'post', reason: 'invalidResponse' });
+  });
+  test('不正な日付・プロフィール・画像寸法が本文と正常な画像を巻き添えにしない', async () => {
+    responses(
+      {
+        ...post(),
+        author: { did, handle: 'alice.bsky.social', avatar: 42 },
+        record: { ...post().record, createdAt: 'invalid' },
+        embed: {
+          $type: 'app.bsky.embed.images#view',
+          images: [
+            { fullsize: 'https://cdn.bsky.app/image.jpg', alt: 42, aspectRatio: { width: -1, height: 20 } },
+            { fullsize: 42, alt: '不正なURL' },
+            { fullsize: 'https://cdn.bsky.app/other.jpg', alt: '正常' },
+          ],
+        },
+      },
+      { did, handle: 'alice.bsky.social', followersCount: -1, description: '紹介' },
+    );
+    const result = await fetchBlueskyPost(parsed, url);
+    expect(result.text).toBe('本文');
+    expect(result.date).toBeNull();
+    expect(result.bio).toBe('紹介');
+    expect(result.media).toHaveLength(2);
+    expect(result.media[0]).toEqual(expect.objectContaining({ url: 'https://cdn.bsky.app/image.jpg', alt: null, width: null, height: 20 }));
   });
   test('未知の引用 value は投稿本文として取り込まない', async () => {
     responses({

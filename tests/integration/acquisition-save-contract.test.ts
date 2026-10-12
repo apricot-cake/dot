@@ -5,6 +5,7 @@ import { openDatabase } from '../../app/src/main/lib-db';
 import { drainInbox } from '../../app/src/main/lib-db-inbox';
 import { postsByIds } from '../../app/src/main/lib-db-query';
 import { buildSavedIndex } from '../../app/src/main/lib-saved-index';
+import { postKeyOf } from '../../native-host/post-key.mts';
 import { inboxNewDir, parseInboxEnvelope } from '../../native-host/inbox.mts';
 import type { SavePostRequest } from '../../native-host/protocol.mts';
 
@@ -99,8 +100,8 @@ test.each([
   expect(fs.readFileSync(avatarFile)).toEqual(image);
 
   vi.stubGlobal('fetch', async () => new Response('unavailable', { status: 503 }));
-  await expect(bridge.handleSavePost({ type: 'savePost', captureId: retryId, metadata: { platform, url, retryOf: originalId, text: null, displayName: null, bio: null, avatar: avatarUrl, media: [{ url: mediaUrl }], saveIncomplete: true } })).rejects.toThrow(/Post unavailable/);
-  expect(fs.existsSync(path.join(inboxNewDir(folder), `${retryId}.json`))).toBe(false);
+  expect(await bridge.handleSavePost({ type: 'savePost', captureId: retryId, metadata: { platform, url, retryOf: originalId, text: null, displayName: null, bio: null, avatar: avatarUrl, media: [{ url: mediaUrl }], saveIncomplete: true } })).toMatchObject({ ok: true, captureId: originalId, saveIncomplete: true });
+  expect(fs.existsSync(path.join(inboxNewDir(folder), `${retryId}.json`))).toBe(true);
   const after = await persistAndReopen(originalId);
   expect(after).toMatchObject({ text: before.text, displayName: before.displayName, avatarFile: before.avatarFile, saveIncomplete: true });
   expect(profileBio(platform, `${platform}-author`)).toEqual({ bio: '保存済みのプロフィール' });
@@ -204,4 +205,116 @@ test('画像の一部が HTTP エラーでも成功した実ファイルと取�
   expect(post.saveIncomplete).toBe(true);
   expect(post.media).toHaveLength(1);
   expect(fs.readFileSync(path.join(folder, post.media[0].file))).toEqual(image);
+});
+
+test.each([
+  ['x', 'https://x.com/contract/status/920', '1717500000020-ca20', '1717500000021-ca20'],
+  ['bluesky', 'https://bsky.app/profile/contract.bsky.social/post/urlonly', '1717500000022-ca21', '1717500000023-ca21'],
+  ['pixiv', 'https://www.pixiv.net/artworks/920', '1717500000024-ca22', '1717500000025-ca22'],
+])('%s: URL だけを DB 再起動後も保持し、通常の保存を既存投稿への再取得として合流する', async (platform, url, id, retryId) => {
+  expect(await bridge.handleSavePost({ type: 'savePost', captureId: id, metaOk: false, metadata: { platform, url } })).toMatchObject({ ok: true, captureId: id, mediaCount: 0, saveIncomplete: true });
+  const initial = await persistAndReopen(id);
+  expect(initial).toMatchObject({ url, text: null, media: [], saveIncomplete: true });
+  const reader = openDatabase(dbFile);
+  try {
+    expect(buildSavedIndex(reader.sqlite).entries[postKeyOf(url)!]).toMatchObject({ id, post: false });
+  } finally {
+    reader.sqlite.close();
+  }
+  // 新しい DB への Inbox 再生だけでも URL が復元できる。
+  const rebuilt = openDatabase(path.join(folder, id + '-restore.db'));
+  try {
+    drainInbox(folder, rebuilt.sqlite);
+    expect((await postsByIds(rebuilt.sqlite, [id]))[0]).toMatchObject({ url, saveIncomplete: true });
+  } finally {
+    rebuilt.sqlite.close();
+  }
+  successfulDownloads();
+  const request: SavePostRequest = { type: 'savePost', captureId: retryId, metadata: { platform, url, text: '後から取得した本文', media: [{ url: mediaUrl }] } };
+  const ack = await bridge.handleSavePost(request);
+  expect(ack).toMatchObject({ ok: true, captureId: id, mediaCount: 1, saveIncomplete: false });
+  expect(envelope(retryId).retryOf).toBe(id);
+  expect(await bridge.handleSavePost(request)).toEqual(ack);
+  const after = await persistAndReopen(id);
+  expect(after).toMatchObject({ url, text: '後から取得した本文', saveIncomplete: false, capturedAt: initial.capturedAt });
+  expect(after.media).toHaveLength(1);
+  const db = openDatabase(dbFile);
+  try {
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM posts WHERE url = ?').get(url)).toEqual({ n: 1 });
+  } finally {
+    db.sqlite.close();
+  }
+});
+
+test('画像のみの保存で通信失敗しても元の画像 URL を保持し、同じ画像の再取得を合流する', async () => {
+  const id = '1717500000030-ca30';
+  const retryId = '1717500000031-ca30';
+  const url = 'https://x.com/contract/status/930';
+  vi.stubGlobal('fetch', async () => new Response('unavailable', { status: 503 }));
+  expect(await bridge.handleSaveMedia({ type: 'saveMedia', captureId: id, mediaUrl, metadata: { url } })).toMatchObject({ ok: true, captureId: id, saveIncomplete: true, media: [] });
+  const initial = await persistAndReopen(id);
+  expect(initial).toMatchObject({ url, source: 'web', saveScope: 'media', saveIncomplete: true });
+  expect(initial.media).toMatchObject([{ url: mediaUrl, file: '' }]);
+  const reader = openDatabase(dbFile);
+  try {
+    expect(buildSavedIndex(reader.sqlite).entries[postKeyOf(url)!]).toMatchObject({ post: false, individualMedia: [], media: [] });
+  } finally {
+    reader.sqlite.close();
+  }
+  successfulDownloads();
+  const request = { type: 'saveMedia' as const, captureId: retryId, mediaUrl, metadata: { url } };
+  const result = await bridge.handleSaveMedia(request);
+  expect(result).toMatchObject({ ok: true, captureId: id, saveIncomplete: false, media: [mediaUrl] });
+  expect(await bridge.handleSaveMedia(request)).toEqual(result);
+  const after = await persistAndReopen(id);
+  expect(after.media).toHaveLength(1);
+  expect(after.media[0].file).toBeTruthy();
+  expect(fs.readFileSync(path.join(folder, after.media[0].file))).toEqual(image);
+});
+
+test('同じ投稿の別画像の個別保存は、再取得として既存画像へ合流しない', async () => {
+  successfulDownloads();
+  const url = 'https://x.com/contract/status/932';
+  const firstId = '1717500000032-ca32';
+  const secondId = '1717500000033-ca32';
+  await bridge.handleSaveMedia({ type: 'saveMedia', captureId: firstId, mediaUrl, metadata: { url } });
+  await persistAndReopen(firstId);
+  const secondUrl = 'https://pbs.twimg.com/media/separate-contract.png';
+  expect(await bridge.handleSaveMedia({ type: 'saveMedia', captureId: secondId, mediaUrl: secondUrl, metadata: { url } })).toMatchObject({ ok: true, captureId: secondId });
+  expect(envelope(secondId).retryOf).toBeUndefined();
+  expect(await persistAndReopen(secondId)).toMatchObject({ captureId: secondId });
+});
+
+test('画像選択保存が URL だけでも、次の通常保存で同じレコードへ画像を取得する', async () => {
+  const id = '1717500000040-ca40';
+  const retryId = '1717500000041-ca40';
+  const url = 'https://x.com/contract/status/940';
+  await bridge.handleSavePost({ type: 'savePost', captureId: id, metaOk: false, metadata: { url, saveScope: 'media', media: [] } });
+  await persistAndReopen(id);
+  successfulDownloads();
+  expect(await bridge.handleSavePost({ type: 'savePost', captureId: retryId, metadata: { url, saveScope: 'media', media: [{ url: mediaUrl }] } })).toMatchObject({ ok: true, captureId: id });
+  expect(envelope(retryId).retryOf).toBe(id);
+  const after = await persistAndReopen(id);
+  expect(after.media).toHaveLength(1);
+  expect(after.media[0].file).toBeTruthy();
+  const nextId = '1717500000042-ca40';
+  expect(await bridge.handleSavePost({ type: 'savePost', captureId: nextId, metadata: { url, saveScope: 'media', media: [{ url: 'https://pbs.twimg.com/media/different-hover.png' }] } })).toMatchObject({ ok: true, captureId: nextId });
+  expect(envelope(nextId).retryOf).toBeUndefined();
+});
+
+test('URL 不明のローカル画像を持つ個別保存には別画像を自動合流しない', async () => {
+  const id = '1717500000043-ca43';
+  const nextId = '1717500000044-ca43';
+  const url = 'https://x.com/contract/status/943';
+  successfulDownloads();
+  await bridge.handleSavePost({ type: 'savePost', captureId: id, metadata: { url, saveScope: 'media', media: [{ url: mediaUrl }], saveIncomplete: true } });
+  await persistAndReopen(id);
+  const db = openDatabase(dbFile);
+  try {
+    db.sqlite.prepare("UPDATE media SET url = '' WHERE postId = ?").run(id);
+  } finally {
+    db.sqlite.close();
+  }
+  expect(await bridge.handleSavePost({ type: 'savePost', captureId: nextId, metadata: { url, saveScope: 'media', media: [{ url: 'https://pbs.twimg.com/media/other-local-contract.png' }] } })).toMatchObject({ ok: true, captureId: nextId });
+  expect(envelope(nextId).retryOf).toBeUndefined();
 });

@@ -9,7 +9,7 @@ export function isVideoFileName(name: string | null | undefined): boolean {
   return typeof name === 'string' && VIDEO_FILE.test(name);
 }
 
-// URL だけの投稿を保存済みと扱わない。本文だけの投稿やリンクカードは内容を持つ。
+// URL だけの投稿を取得完了と扱わない。保存自体は許可し、再取得に使う。
 export function recordHoldsContent(record: Partial<PostRecordShape> | null | undefined): boolean {
   if (!record) return false;
   if (record.image || record.video || record.text || record.title || record.displayName) return true;

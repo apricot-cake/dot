@@ -114,7 +114,6 @@ async function ensureAvatarFile(folder, avatarUrl, referer) {
     let m: Awaited<ReturnType<typeof fetchPostMetadata>>;
     try {
       m = await fetchPostMetadata(rec.url);
-      if (m.acquisitionIssues.some((issue) => issue.reason === 'invalidResponse')) throw new Error('投稿情報の応答形式が不正です');
     } catch (error) {
       process.exitCode = 1;
       console.error('  取得エラー:', rec.captureId, error instanceof Error ? error.message : String(error));
@@ -127,7 +126,7 @@ async function ensureAvatarFile(folder, avatarUrl, referer) {
     // screenName は運ばれる。実際の API 応答でしか埋まらない text/likes/date
     // をゲートにする。そうでなければ保存済みのレコードをそのまま保つ
     // （text/author/userId/stats/lang を null で破壊しない）。（監査 #2）
-    if (m.text == null && m.likes == null && m.date == null) {
+    if (m.text == null && m.title == null && m.displayName == null && m.likes == null) {
       failed++;
       console.log('  データ無し:', rec.captureId, rec.url);
       continue;
@@ -155,14 +154,15 @@ async function ensureAvatarFile(folder, avatarUrl, referer) {
       date: m.date || rec.date,
       mediaType: m.mediaType ?? rec.mediaType,
       lang: m.lang ?? rec.lang,
+      saveIncomplete: rec.saveIncomplete || !!m.metaError || m.acquisitionIssues.length > 0,
       // 返信/引用/スレッドのフラグは3値（null＝「この種別ではない」）。ここへ
       // 到達するのは取り直しが成功した時だけ（text/likes/date が存在する）
       // なので、新しいフラグの方が権威を持つ — 保存済みの `true` が新しい
       // `null` を覆い隠してはならない（例えば、その投稿が本当にもう返信として
       // 検出されなくなった場合）。`?? rec` にしないこと。
-      isReply: m.isReply,
-      isQuote: m.isQuote,
-      isThread: m.isThread,
+      isReply: m.metaError ? (m.isReply ?? rec.isReply) : m.isReply,
+      isQuote: m.metaError ? (m.isQuote ?? rec.isQuote) : m.isQuote,
+      isThread: m.metaError ? (m.isThread ?? rec.isThread) : m.isThread,
       quotedUrl: m.quotedUrl ?? rec.quotedUrl,
     });
 

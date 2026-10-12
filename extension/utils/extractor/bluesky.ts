@@ -1,6 +1,6 @@
 import { ExtractedPostSchema } from '../../../native-host/protocol.mts';
 import { ResolveHandleSchema, rethrowContractError } from './api-schemas.ts';
-import { BlueskyQuotedSchema, BlueskyThreadResponseSchema, BlueskyProfileSchema, BlueskyImagesSchema, BlueskyExternalSchema, BlueskyVideoSchema, BlueskyFeedRecordSchema, BLUESKY_EMBED_VIEW_TYPES } from './bluesky-api-schemas.ts';
+import { PartialBlueskyPostSchema, PartialBlueskyProfileSchema, PartialBlueskyImagesSchema, PartialBlueskyVideoSchema, PartialBlueskyExternalSchema, PartialBlueskyQuotedSchema, PartialBlueskyFeedRecordSchema, BlueskyThreadResponseSchema, BlueskyProfileSchema, BLUESKY_EMBED_VIEW_TYPES } from './bluesky-api-schemas.ts';
 import { createAcquisitionDiagnostic } from './acquisition-diagnostic.ts';
 // Bluesky。
 //
@@ -195,7 +195,7 @@ function bskyVideoEmbed(post) {
 // morel.us-east.host.bsky.network へ送った）。
 function bskyMedia(post, pds?: string | null) {
   const rawVideo = bskyVideoEmbed(post);
-  const video = rawVideo ? BlueskyVideoSchema.parse(rawVideo) : null;
+  const video = rawVideo ? PartialBlueskyVideoSchema.parse(rawVideo) : null;
   if (video) {
     const did = (post.author && post.author.did) || null;
     const common = {
@@ -215,7 +215,7 @@ function bskyMedia(post, pds?: string | null) {
   if (type === 'app.bsky.embed.images#view') images = e.images;
   else if (type === 'app.bsky.embed.recordWithMedia#view' && e.media && e.media.$type === 'app.bsky.embed.images#view') images = e.media.images;
   if (images === null) return [];
-  return BlueskyImagesSchema.parse(images).map((im) => ({
+  return PartialBlueskyImagesSchema.parse(images).map((im) => ({
     url: im.fullsize,
     alt: im.alt || null,
     width: (im.aspectRatio && im.aspectRatio.width) || null,
@@ -262,17 +262,18 @@ function bskySensitive(record): boolean {
 // あり、#180 の v1 は引用のメディアをダウンロードしないから（URL は記録するが、ファイルは
 // 取りに行かない＝#290 が他所で引いたのと同じ線）。
 function bskyQuotedMedia(vr): MediaItem[] {
-  const quoted = BlueskyQuotedSchema.parse(vr);
+  const quoted = PartialBlueskyQuotedSchema.parse(vr);
   const embeds = Array.isArray(quoted.embeds) ? quoted.embeds : [];
   const out: MediaItem[] = [];
   for (const e of embeds) {
     const type = e.$type || '';
     if (type === 'app.bsky.embed.images#view') {
-      for (const im of BlueskyImagesSchema.parse(e.images)) {
+      for (const im of PartialBlueskyImagesSchema.parse(e.images)) {
         out.push({ url: im.fullsize, alt: im.alt || null, width: (im.aspectRatio && im.aspectRatio.width) || null, height: (im.aspectRatio && im.aspectRatio.height) || null });
       }
     } else if (type === 'app.bsky.embed.video#view') {
-      const video = BlueskyVideoSchema.parse(e);
+      const video = PartialBlueskyVideoSchema.parse(e);
+      if (!video.playlist) continue;
       out.push({ url: video.playlist, alt: video.alt || null, width: (video.aspectRatio && video.aspectRatio.width) || null, height: (video.aspectRatio && video.aspectRatio.height) || null, type: 'video' as const, poster: video.thumbnail || null });
     }
   }
@@ -293,7 +294,8 @@ function bskyLinkCard(post): LinkCard | null {
   if (type === 'app.bsky.embed.external#view') ext = e.external;
   else if (type === 'app.bsky.embed.recordWithMedia#view' && e.media && e.media.$type === 'app.bsky.embed.external#view') ext = e.media.external;
   if (ext === null) return null;
-  ext = BlueskyExternalSchema.parse(ext);
+  ext = PartialBlueskyExternalSchema.parse(ext);
+  if (!ext.uri) return null;
   return { url: ext.uri, title: ext.title || null, description: ext.description || null, thumbnail: ext.thumb || null };
 }
 
@@ -322,13 +324,17 @@ async function fetchBlueskyPost(parsed, url, logDiagnostic?: Parameters<typeof c
       return rec;
     }
     const data = res.data;
-    const { thread } = BlueskyThreadResponseSchema.parse(data);
-    const post: any = thread.post;
+    const validation = BlueskyThreadResponseSchema.safeParse(data);
+    if (!validation.success) {
+      acquisitionFailed(rec, 'post', 'invalidResponse');
+      report('bluesky.getPostThread', res.status, 'contract', validation.error);
+    }
+    const post: any = data && typeof data === 'object' && data.thread?.post ? PartialBlueskyPostSchema.parse(data.thread.post) : null;
     if (!post) {
       acquisitionFailed(rec, 'post', 'unavailable');
       return rec;
     }
-    const record = post.record;
+    const record = post.record ?? {};
     rec.text = record.text || null;
     rec.date = toIso(record.createdAt);
     rec.likes = post.likeCount ?? null;
@@ -348,7 +354,12 @@ async function fetchBlueskyPost(parsed, url, logDiagnostic?: Parameters<typeof c
       try {
         const pres = await request(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(actor)}`);
         if (pres.ok) {
-          const prof = BlueskyProfileSchema.parse(pres.data);
+          const validation = BlueskyProfileSchema.safeParse(pres.data);
+          if (!validation.success) {
+            acquisitionFailed(rec, 'profile', 'invalidResponse');
+            report('bluesky.getProfile', pres.status, 'contract', validation.error);
+          }
+          const prof = PartialBlueskyProfileSchema.parse(pres.data ?? {});
           rec.avatar = prof.avatar || rec.avatar;
           rec.followers = prof.followersCount ?? null;
           rec.following = prof.followsCount ?? null;
@@ -429,7 +440,7 @@ async function fetchBlueskyPost(parsed, url, logDiagnostic?: Parameters<typeof c
         // （embed.record.record）。handle は、それを持っている方の段から読む。この入れ子は
         // handle だけでなく ViewRecord 全体（author/value/embeds）に効く＝下の vr は、
         // どちらの形でもその唯一の本物の ViewRecord。
-        const vr: any = BlueskyQuotedSchema.parse(rec2.uri ? rec2 : rec2.record || {});
+        const vr: any = PartialBlueskyQuotedSchema.parse(rec2.uri ? rec2 : rec2.record || {});
         if (vr.$type && vr.$type !== 'app.bsky.embed.record#viewRecord') {
           acquisitionFailed(rec, 'media', 'invalidResponse');
           report('bluesky.quote', 200, 'unsupportedType');
@@ -447,7 +458,7 @@ async function fetchBlueskyPost(parsed, url, logDiagnostic?: Parameters<typeof c
           report('bluesky.quote', 200, 'unsupportedType');
           return ExtractedPostSchema.parse(rec);
         }
-        const qval = BlueskyFeedRecordSchema.parse(qvalue);
+        const qval = PartialBlueskyFeedRecordSchema.parse(qvalue);
         rec.quotedPost = {
           url: rec.quotedUrl,
           displayName: (vr.author && vr.author.displayName) || null,

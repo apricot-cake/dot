@@ -57,6 +57,7 @@ export function mergeBackfill(record: any, metadata: any, fetchedAt: string) {
   // インポート画像は投稿全体を取得した証拠にはならない。
   if (record.source === 'eagle-migration') merged.saveScope = 'media';
   if (metadata.media?.length) merged.imageCount = metadata.media.length;
+  merged.saveIncomplete = !!record.saveIncomplete || !!metadata.metaError || !!metadata.acquisitionIssues?.length;
   return merged;
 }
 
@@ -71,9 +72,9 @@ export function applyCachedMetadata(sqlite: Database.Database, folder: string, k
   const entry = state.entries.find((item: any) => item.key === key);
   if (!entry || entry.status !== 'fetched') throw Error('取得済みの項目ではありません');
   const { result, fetchedAt } = JSON.parse(fs.readFileSync(path.join(root, 'results', `${hash}.json`), 'utf8'));
-  if (result.metaError || !(result.text != null || result.title != null || result.likes != null || result.media?.length)) throw Error('メタデータを取得できていません');
+  if (!(result.text != null || result.title != null || result.likes != null || result.media?.length)) throw Error('メタデータを取得できていません');
   if (postKeyOf(result.url || entry.url) !== key || !Number.isFinite(Date.parse(fetchedAt))) throw Error('取得結果が対象と一致しません');
-  const columns = [...fields, 'saveScope', 'imageCount', 'metaSource', 'updatedAt'] as const;
+  const columns = [...fields, 'saveScope', 'saveIncomplete', 'imageCount', 'metaSource', 'updatedAt'] as const;
   const update = sqlite.prepare(`UPDATE posts SET ${columns.map((column) => `${column} = ?`).join(',')} WHERE captureId = ? AND trashedAt IS NULL`);
   const stmts = preparePostStmts(sqlite);
   const assetsFile = path.join(root, 'results', `${hash}.assets.json`);

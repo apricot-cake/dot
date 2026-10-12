@@ -18,12 +18,16 @@ test('一括保存はすべての画像を選ぶ', () => {
 
 test('不明な画像の指定を全体保存へ切り替えない', () => {
   expect(() => selectPostMedia(media, 'x', [])).toThrow();
-  expect(() => selectPostMedia(media, 'x', ['unknown'])).toThrow();
-  expect(() =>
+  expect(selectPostMedia(media, 'x', ['unknown'])).toEqual([]);
+  expect(
     selectPostMedia(
       media,
       'x',
       media.map((item) => mediaKeyOf('x', item.url)!),
     ),
-  ).toThrow();
+  ).toEqual([]);
+});
+
+test('API から画像を取得できなくても URL 保存に進める', () => {
+  expect(selectPostMedia([], 'x', ['x:AAA'])).toEqual([]);
 });

@@ -1,16 +1,3 @@
-// 一括取込の保存（handleSavePost）は「何も取れなかった投稿」を断る（#492）。
-//
-// 背景。削除された投稿・凍結アカウント・鍵付きアカウント・年齢制限付きの投稿では、
-// プラットフォームの API が投稿の情報を何も返さない。それでも以前はレコードを書いていて、
-// URL から推測できるもの（platform / screenName / id から復号したタイムスタンプ）しか
-// 持たない空の殻がライブラリに残った。さらに悪いことに noteSaved がバッジを点け、以後の
-// 取込はその投稿を飛ばす＝やり直す機会が永久に失われた。保存を断って失うのはやり直し
-// 1回分だけだが、成功として書けば投稿そのものを失う。
-//
-// ここで見るもの。空の保存は例外を投げ、エンベロープもジャーナルのエントリも残さない。
-// テキストだけの投稿（#365）とメディアのある投稿は今までどおり保存される＝ゲートを締めすぎて
-// いない。規則そのもの（recordHoldsContent）の網羅は post-record.test.ts にある。
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
@@ -56,28 +43,25 @@ const emptyMeta = {
 };
 
 describe('何も取れなかった投稿', () => {
-  test('保存を断る（理由つき）', async () => {
-    await expect(handleSavePost({ captureId: '1717500000000-e001', metadata: emptyMeta, metaOk: false, metaReason: 'unavailable' })).rejects.toThrow(/^Post unavailable.*unavailable/);
+  test.each([
+    ['1717500000000-e001', false, 'unavailable'],
+    ['1717500000000-e002', undefined, undefined],
+    ['1717500000000-e003', false, 'ageRestricted'],
+  ])('URL と取得不足を残す（%s）', async (captureId, metaOk, metaReason) => {
+    const metadata = { ...emptyMeta, url: emptyMeta.url + captureId.slice(-1) };
+    const result = await handleSavePost({ captureId, metadata, metaOk, metaReason });
+    expect(result).toMatchObject({ ok: true, captureId, mediaCount: 0, saveIncomplete: true });
+    expect(envelopeExists(captureId)).toBe(true);
+    const envelope = JSON.parse(fs.readFileSync(path.join(inboxNew(), captureId + '.json'), 'utf8'));
+    expect(envelope.record).toMatchObject({ url: metadata.url, media: [], text: null, saveIncomplete: true });
   });
 
-  test('エンベロープを残さない＝ライブラリに殻レコードを作らない', () => {
-    expect(envelopeExists('1717500000000-e001')).toBe(false);
-  });
-
-  test('バッジのジャーナルにも載らない＝次の取込がもう一度出会える', () => {
-    expect(journal()).not.toContain('2069378728497746227');
-  });
-
-  test('metaOk を送らない古い拡張からでも同じ判定（レコードの中身だけで決める）', async () => {
-    await expect(handleSavePost({ captureId: '1717500000000-e002', metadata: emptyMeta })).rejects.toThrow(/^Post unavailable/);
-    expect(envelopeExists('1717500000000-e002')).toBe(false);
-  });
-
-  // #505: この投稿の実際の理由は年齢制限であって削除ではない。capture.log に残るのはこの
-  // 文だけなので、理由がそのまま乗っていることが後から診断する唯一の手掛かりになる。
-  test('理由は断り文にそのまま乗る（capture.log から読めるのはこれだけ）', async () => {
-    await expect(handleSavePost({ captureId: '1717500000000-e003', metadata: emptyMeta, metaOk: false, metaReason: 'ageRestricted' })).rejects.toThrow(/^Post unavailable.*ageRestricted/);
-    expect(envelopeExists('1717500000000-e003')).toBe(false);
+  test('URL 保存を投稿全体の取得完了として記録しない', () => {
+    const entries = journal()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    expect(entries.filter((entry) => entry.k.startsWith('x:2069378728497746227'))).toEqual(expect.arrayContaining([expect.objectContaining({ post: false })]));
   });
 });
 

@@ -48,11 +48,27 @@ test('リンクの契約違反でも正常なアバターと紹介を取得す�
   expect(result.bio).toBe('紹介');
   expect(result.acquisitionIssues).toContainEqual({ scope: 'profile', reason: 'invalidResponse' });
 });
-test('必須の投稿識別情報が不正ならメディアを保存対象にしない', async () => {
+test('投稿者の識別情報が不正でも作品URLと媒体を保持する', async () => {
   responses({ ...body, userId: 42 });
   const result = await fetchPostMetadata('https://www.pixiv.net/artworks/12345', {});
-  expect(result.media).toEqual([]);
+  expect(result.media).toHaveLength(1);
   expect(result.acquisitionIssues).toContainEqual({ scope: 'post', reason: 'invalidResponse' });
+});
+test('日付・寸法・本文の一項目が不正でも独立した項目を保持する', async () => {
+  responses({ ...body, createDate: 'invalid', uploadDate: '2026-10-02T00:00:00Z', width: -1, illustComment: 42, description: '代替本文', likeCount: -1 });
+  const result = await fetchPostMetadata('https://www.pixiv.net/artworks/12345', {});
+  expect(result.text).toBe('代替本文');
+  expect(result.date).toBe('2026-10-02T00:00:00.000Z');
+  expect(result.media[0]).toEqual(expect.objectContaining({ url: body.urls.original, width: null, height: 80 }));
+  expect(result.likes).toBeNull();
+  expect(result.bookmarks).toBe(2);
+});
+test('空の連携先名を除き、本文・画像・正常なプロフィールリンクを残す', async () => {
+  responses(body, { social: { '': { url: 'https://example.com/invalid' }, website: { url: 'https://example.com/valid' } } });
+  const result = await fetchPostMetadata('https://www.pixiv.net/artworks/12345', {});
+  expect(result.text).toBe('本文');
+  expect(result.media).toHaveLength(1);
+  expect(result.profileLinks).toEqual([{ name: 'website', value: 'https://example.com/valid' }]);
 });
 test('未知の作品形式を静止画や複数ページとして扱わない', async () => {
   const fetch = responses({ ...body, illustType: 99, pageCount: 2 });
