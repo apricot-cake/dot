@@ -4,10 +4,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { DEFAULT_HOST_NAME, HOST_NAME, install, isLinkedWorktreeRuntime, shouldPreserveSharedRegistration, uninstall, updateAllowedOrigin, windowsRegistryKeys } from '../../native-host/install.mts';
 
 vi.mock('node:child_process', () => ({ execFileSync: vi.fn() }));
+
+const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')!;
 
 let root: string;
 let mainExe: string;
@@ -33,7 +35,9 @@ afterAll(() => {
 });
 
 afterEach(() => {
+  Object.defineProperty(process, 'platform', platformDescriptor);
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
 });
 
@@ -75,6 +79,11 @@ describe('shouldPreserveSharedRegistration', () => {
 });
 
 describe('隔離した設定からの共有登録保護', () => {
+  beforeEach(() => {
+    // 登録先は Windows のレジストリ。実行環境にかかわらず、この境界を模擬する。
+    Object.defineProperty(process, 'platform', { ...platformDescriptor, value: 'win32' });
+  });
+
   test('初回の隔離アプリ起動でも登録ファイルやレジストリを作らない', () => {
     const sandbox = path.join(root, 'unregistered-sandbox');
     vi.stubEnv('DOT_CONFIG_DIR', sandbox);
@@ -102,15 +111,26 @@ describe('隔離した設定からの共有登録保護', () => {
     vi.stubEnv('DOT_NATIVE_HOST_NAME', 'com.dot.dev');
     vi.resetModules();
     const custom = await import('../../native-host/install.mts');
+    // バンドルの内容はこの登録契約の対象外。生成済みの配布物に依存せず、
+    // 一時フィクスチャを実際の配置先へコピーして登録・削除を検証する。
+    const bridgeFixture = path.join(root, 'bridge-fixture.js');
+    const bridgeSource = '// isolated native messaging bridge fixture\n';
+    fs.writeFileSync(bridgeFixture, bridgeSource);
+    const existsSync = fs.existsSync.bind(fs);
+    const copyFileSync = fs.copyFileSync.bind(fs);
+    vi.spyOn(fs, 'existsSync').mockImplementation((file) => (file === custom.BRIDGE_PATH ? true : existsSync(file)));
+    vi.spyOn(fs, 'copyFileSync').mockImplementation((source, destination, mode) => copyFileSync(source === custom.BRIDGE_PATH ? bridgeFixture : source, destination, mode));
     const registration = custom.install({ exe: process.execPath, extensionId: 'a'.repeat(32) });
     const key = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.dot.dev';
     expect(registration.manifest).toBe(path.join(sandbox, 'com.dot.dev.json'));
     expect(JSON.parse(fs.readFileSync(registration.manifest, 'utf8')).name).toBe('com.dot.dev');
+    expect(fs.readFileSync(path.join(sandbox, 'bridge.js'), 'utf8')).toBe(bridgeSource);
     expect(fs.readFileSync(registration.launcher, 'utf8')).toContain(`set "DOT_CONFIG_DIR=${sandbox}"`);
     expect(execFileSync).toHaveBeenCalledWith('reg', ['add', key, '/ve', '/t', 'REG_SZ', '/d', registration.manifest, '/f'], { stdio: 'ignore' });
     custom.uninstall();
     expect(execFileSync).toHaveBeenCalledWith('reg', ['delete', key, '/f'], { stdio: 'ignore' });
     expect(fs.existsSync(registration.manifest)).toBe(false);
+    expect(fs.existsSync(path.join(sandbox, 'bridge.js'))).toBe(false);
     vi.resetModules();
   });
 });
@@ -119,5 +139,17 @@ describe('Chrome の Native Messaging 登録先', () => {
   test('Windows は Chrome のレジストリキーだけを使う', () => {
     const keys = windowsRegistryKeys();
     expect(keys).toEqual([`HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}`]);
+  });
+});
+
+describe('対応していない実行環境', () => {
+  test.each(['linux', 'darwin'])('登録と削除は Windows 以外で実行しない: %s', (platform) => {
+    const sandbox = path.join(root, `unsupported-${platform}`);
+    vi.stubEnv('DOT_CONFIG_DIR', sandbox);
+    Object.defineProperty(process, 'platform', { ...platformDescriptor, value: platform });
+    expect(() => install({ exe: mainExe, extensionId: 'a'.repeat(32) })).toThrow(`Unsupported platform: ${platform}`);
+    expect(() => uninstall()).toThrow(`Unsupported platform: ${platform}`);
+    expect(fs.existsSync(sandbox)).toBe(false);
+    expect(execFileSync).not.toHaveBeenCalled();
   });
 });
