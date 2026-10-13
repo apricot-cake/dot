@@ -84,8 +84,8 @@ p { text-wrap: pretty; }
   html { scroll-behavior: auto; }
 }
 .store-links { display: flex; flex-wrap: wrap; justify-content: center; align-items:center; gap: 20px; }
-.store-button { display:inline-flex; align-items:center; padding:0; border:0; background:transparent; cursor:default; }
-.store-button img { display:block; width:auto; height:52px; }
+.store-placeholder { display:flex; flex-direction:column; justify-content:center; gap:2px; width:220px; max-width:100%; min-height:72px; padding:10px 16px; border:1px dashed #a3a3a3; border-radius:8px; background:#fafafa; color:var(--page-text-muted); text-align:center; font-size:12px; }
+.store-placeholder-name { color:var(--text-strong); font-size:14px; font-weight:500; }
 .feature-visual { min-width: 0; }
 
 
