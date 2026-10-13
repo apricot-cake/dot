@@ -3,9 +3,8 @@ interface Props {
   store?: 'microsoft' | 'chrome';
 }
 const { store } = Astro.props;
-const base = import.meta.env.BASE_URL;
 ---
 <div class="store-links">
-  {store !== 'chrome' && <button class="store-button" type="button" disabled aria-label="Microsoft Store"><img src={base + 'brand/microsoft-store-ja.svg'} width="161" height="44" alt="Microsoft Storeからダウンロード" /></button>}
-  {store !== 'microsoft' && <button class="store-button" type="button" disabled aria-label="Chrome ウェブストア"><img src={base + 'brand/chrome-web-store.png'} width="340" height="96" alt="Chrome ウェブストア" /></button>}
+  {store !== 'chrome' && <div class="store-placeholder"><span class="store-placeholder-name">Microsoft Store</span><span>公式バッジをここに配置</span></div>}
+  {store !== 'microsoft' && <div class="store-placeholder"><span class="store-placeholder-name">Chrome ウェブストア</span><span>公式バッジをここに配置</span></div>}
 </div>
