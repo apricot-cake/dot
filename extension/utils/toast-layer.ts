@@ -42,7 +42,8 @@ function sync(state: ToastLayerState) {
 }
 
 export function mountToastLayer(stack: HTMLElement): void {
-  stack.setAttribute('popover', 'manual');
+  if (typeof stack.showPopover === 'function') stack.setAttribute('popover', 'manual');
+  else stack.removeAttribute('popover');
   const root = stack.getRootNode();
   const host = root instanceof ShadowRoot ? (root.host as HTMLElement) : stack;
   let state = scope[STATE_KEY];
