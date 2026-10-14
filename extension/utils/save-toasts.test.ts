@@ -160,3 +160,15 @@ test('保存中・成功・失敗・閉じるに Lucide を表示する', () => 
   expect(document.querySelector('[data-dot-save-banner] .toast-close svg')?.innerHTML).toBe(createElement(X).innerHTML);
   expect(document.querySelector('[data-dot-save-banner] .badge svg')?.innerHTML).toBe(createElement(CircleAlert).innerHTML);
 });
+
+test('Popover API がない環境でも通知を表示し、操作にフォーカスできる', () => {
+  expect(typeof HTMLElement.prototype.showPopover).toBe('undefined');
+  toasts.notice('fallback', '', '保存できませんでした', vi.fn());
+  const retry = document.querySelector<HTMLButtonElement>('[data-toast-focus="retry:fallback"]')!;
+  for (let ancestor = retry.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    expect(ancestor.hasAttribute('popover')).toBe(false);
+    expect(getComputedStyle(ancestor).display).not.toBe('none');
+  }
+  retry.focus();
+  expect(document.activeElement).toBe(retry);
+});
