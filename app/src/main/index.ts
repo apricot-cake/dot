@@ -1388,7 +1388,7 @@ if (!gotSingleInstanceLock) {
           }
           if (shot) {
             try {
-              const img = await (getWin() as BrowserWindow).webContents.capturePage();
+              const img = await (getWin() as BrowserWindow).webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
               fs.writeFileSync(shot, img.toPNG());
             } catch (err) {
               console.error('capture failed:', err);
