@@ -39,7 +39,7 @@ export default defineConfig(() => ({
     plugins: [externalizeDepsPlugin({ include: ['koffi'] })],
     build: {
       outDir: process.env.DOT_APP_BUILD_OUT ? path.join(process.env.DOT_APP_BUILD_OUT, 'main') : undefined,
-      lib: { entry: { index: r('src/main/index.ts'), 'image-processing-worker': r('src/main/image-processing-worker.ts'), 'archive-import-worker': r('src/main/archive-import-worker.ts') } },
+      lib: { entry: { index: r('src/main/index.ts'), 'image-processing-worker': r('src/main/image-processing-worker.ts'), 'archive-import-worker': r('src/main/archive-import-worker.ts'), 'library-integrity-worker': r('src/main/library-integrity-worker.ts') } },
     },
   },
   preload: {

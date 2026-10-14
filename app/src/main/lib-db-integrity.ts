@@ -67,41 +67,45 @@ interface RecoveredOrphan extends OrphanMedia {
 // 旧構造の直下ファイルと、現行構造の items/<captureId>/ を列挙する。共有リソース、
 // ごみ箱、内部データは投稿の実体ではないので辿らない。
 function listOwnedFiles(saveFolder: string): string[] {
-  let names: string[] = [];
+  let names: fs.Dirent[] = [];
   try {
-    names = fs.readdirSync(saveFolder);
+    names = fs.readdirSync(saveFolder, { withFileTypes: true });
   } catch {
     return [];
   }
   const out: string[] = [];
-  for (const name of names) {
+  for (const entry of names) {
+    const name = entry.name;
     if (name === TRASH_SUBDIR || name === AVATAR_SUBDIR || name === ITEMS_SUBDIR) continue;
     if (name.startsWith('.')) continue; // .dot-inbox、.trash、ドット始まりのファイル
     if (/\.tmp(-\d+)?$/i.test(name)) continue;
     try {
-      if (fs.statSync(path.join(saveFolder, name)).isFile()) out.push(name);
+      if (entry.isFile() || (entry.isSymbolicLink() && fs.statSync(path.join(saveFolder, name)).isFile())) out.push(name);
     } catch {
       /* 触れないエントリは飛ばす */
     }
   }
-  let itemKeys: string[] = [];
+  let itemKeys: fs.Dirent[] = [];
   try {
-    itemKeys = fs.readdirSync(path.join(saveFolder, ITEMS_SUBDIR));
+    itemKeys = fs.readdirSync(path.join(saveFolder, ITEMS_SUBDIR), { withFileTypes: true });
   } catch {
     itemKeys = [];
   }
-  for (const itemKey of itemKeys) {
-    let files: string[] = [];
+  for (const item of itemKeys) {
+    if (!item.isDirectory() && !item.isSymbolicLink()) continue;
+    const itemKey = item.name;
+    let files: fs.Dirent[] = [];
     try {
-      files = fs.readdirSync(path.join(saveFolder, ITEMS_SUBDIR, itemKey));
+      files = fs.readdirSync(path.join(saveFolder, ITEMS_SUBDIR, itemKey), { withFileTypes: true });
     } catch {
       continue;
     }
-    for (const file of files) {
+    for (const entry of files) {
+      const file = entry.name;
       const rel = `${ITEMS_SUBDIR}/${itemKey}/${file}`;
       if (!parseItemFilePath(rel)) continue;
       try {
-        if (fs.statSync(path.join(saveFolder, ITEMS_SUBDIR, itemKey, file)).isFile()) out.push(rel);
+        if (entry.isFile() || (entry.isSymbolicLink() && fs.statSync(path.join(saveFolder, ITEMS_SUBDIR, itemKey, file)).isFile())) out.push(rel);
       } catch {
         /* 触れないエントリは飛ばす */
       }
@@ -153,7 +157,13 @@ function readSidecarRecord(saveFolder: string, captureId: string): PostRecordSha
     return null; // 無い・読めない・JSON でない＝代わりに合成へ回る
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-  const record = normalizePostRecord({ ...(parsed as Record<string, unknown>), captureId, trashedAt: null });
+  let record: PostRecordShape;
+  try {
+    record = normalizePostRecord({ ...(parsed as Record<string, unknown>), captureId, trashedAt: null });
+  } catch {
+    // 一件の不正な旧レコードで、他の孤児と欠落メディアの検査を止めない。
+    return null;
+  }
   if (!recordHoldsContent(record)) {
     if (!z.url({ protocol: /^https?$/ }).safeParse(record.url).success) return null;
     record.saveIncomplete = true;
@@ -216,22 +226,39 @@ function findOrphanMedia(saveFolder: string, sqlite: Database.Database, knownFil
 // image/video/media[].file が saveFolder の下に無い posts の行（ゴミ箱行きは除く＝
 // ゴミ箱行きの投稿のメディアは物理的に .trash/ へ移してあるので、生存領域を見て判定すると
 // 偽陽性になる）。
-function findMissingMedia(saveFolder: string, sqlite: Database.Database): MissingMedia[] {
+function findMissingMedia(saveFolder: string, sqlite: Database.Database, knownFiles?: Set<string>): MissingMedia[] {
   const out: MissingMedia[] = [];
   const posts = sqlite.prepare('SELECT captureId, image, video FROM posts WHERE trashedAt IS NULL').all() as Array<{ captureId: string; image: string | null; video: string | null }>;
-  const mediaByPost = sqlite.prepare('SELECT file FROM media WHERE postId = ?');
+  const mediaByPost = new Map<string, string[]>();
+  for (const m of sqlite.prepare('SELECT m.postId, m.file FROM media m JOIN posts p ON p.captureId = m.postId WHERE p.trashedAt IS NULL ORDER BY m.postId, m.seq').all() as Array<{ postId: string; file: string }>) {
+    let files = mediaByPost.get(m.postId);
+    if (!files) mediaByPost.set(m.postId, (files = []));
+    files.push(m.file);
+  }
+  const existing = knownFiles && new Set([...knownFiles].map((file) => path.resolve(saveFolder, file)));
+  const checked = new Map<string, boolean>();
   for (const p of posts) {
-    const files = [p.image, p.video, ...(mediaByPost.all(p.captureId) as Array<{ file: string }>).map((m) => m.file)].filter((f): f is string => !!f);
+    const files = [p.image, p.video, ...(mediaByPost.get(p.captureId) || [])].filter((f): f is string => !!f);
     for (const f of files) {
       const resolved = resolveInSaveFolder(saveFolder, f);
-      if (!resolved || !fs.existsSync(resolved)) out.push({ captureId: p.captureId, file: f });
+      if (!resolved) {
+        out.push({ captureId: p.captureId, file: f });
+        continue;
+      }
+      let present = checked.get(resolved);
+      if (present === undefined) {
+        present = existing?.has(resolved) || fs.existsSync(resolved);
+        checked.set(resolved, present);
+      }
+      if (!present) out.push({ captureId: p.captureId, file: f });
     }
   }
   return out;
 }
 
 function checkOrphans(saveFolder: string, sqlite: Database.Database, knownFiles?: Set<string>): { orphanMedia: OrphanMedia[]; missingMedia: MissingMedia[] } {
-  return { orphanMedia: findOrphanMedia(saveFolder, sqlite, knownFiles), missingMedia: findMissingMedia(saveFolder, sqlite) };
+  const files = knownFiles || new Set(listOwnedFiles(saveFolder));
+  return { orphanMedia: findOrphanMedia(saveFolder, sqlite, files), missingMedia: findMissingMedia(saveFolder, sqlite, files) };
 }
 
 // captureId 自身の時刻の接頭辞 (epochMillis-hex)＝サイドカーも取込キューの痕跡も一切

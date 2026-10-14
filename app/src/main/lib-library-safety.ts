@@ -14,7 +14,8 @@ import type Database from 'better-sqlite3';
 import { configDir } from './native-host.ts';
 import { getSaveFolder, readLibraryExportReminderConfig, writeLibraryExportReminderConfig, readLibraryIntegrityStatus, writeLibraryIntegrityStatus } from './lib-config.ts';
 import { createGeneration, latestGeneration, listGenerations, pruneGenerations } from './lib-db-generations.ts';
-import { checkOrphans, recoverOrphanRecords } from './lib-db-integrity.ts';
+import { recoverOrphanRecords } from './lib-db-integrity.ts';
+import { inspectLibraryIntegrity } from './lib-library-integrity.ts';
 import type { CompleteExportWatermark, DbHandle } from './ipc-context.ts';
 
 export interface LibrarySafetyDeps {
@@ -103,19 +104,14 @@ function createLibrarySafety({ ensurePostsSynced, scheduleSavedIndexWrite, send 
     return publishExportReminder();
   };
 
-  function runIntegrityPass(folder: string, sqlite: any) {
-    let dbOk = true;
-    try {
-      const check = sqlite.pragma('integrity_check', { simple: true });
-      dbOk = check === 'ok';
-      if (!dbOk) log.error(`integrity_check failed: ${check}`);
-    } catch (err) {
-      dbOk = false;
-      log.error('integrity_check threw:', err);
-    }
-    const { orphanMedia, missingMedia } = checkOrphans(folder, sqlite);
-    const status = writeIntegrityStatus({ lastCheckAt: new Date().toISOString(), dbOk, orphanCount: orphanMedia.length, missingCount: missingMedia.length });
+  async function runIntegrityPass(folder: string, sqlite: Database.Database) {
+    const startedAt = Date.now();
+    const result = await inspectLibraryIntegrity(sqlite.name, folder);
+    if (path.resolve(getSaveFolder()) !== path.resolve(folder) || !sqlite.open) return;
+    if (!result.dbOk) log.error('integrity_check failed');
+    const status = writeIntegrityStatus({ lastCheckAt: new Date().toISOString(), ...result });
     send('integrity-check-done', status);
+    log.info('library integrity check completed', { durationMs: Date.now() - startedAt, ...result });
     return status;
   }
 
@@ -127,7 +123,7 @@ function createLibrarySafety({ ensurePostsSynced, scheduleSavedIndexWrite, send 
     if (!folder || !fs.existsSync(folder)) return;
     try {
       const handle = await ensurePostsSynced();
-      if (handle) runIntegrityPass(folder, handle.sqlite);
+      if (handle) await runIntegrityPass(folder, handle.sqlite);
     } catch (err) {
       log.error('startup integrity check failed:', err);
     }
@@ -141,7 +137,7 @@ function createLibrarySafety({ ensurePostsSynced, scheduleSavedIndexWrite, send 
     if (!handle) return { ok: false, error: 'not-configured' };
     const written = recoverOrphanRecords(folder, handle.sqlite);
     if (written.length) scheduleSavedIndexWrite(handle);
-    runIntegrityPass(folder, handle.sqlite);
+    await runIntegrityPass(folder, handle.sqlite);
     const adopted = written.filter((w) => w.via === 'sidecar').length;
     if (written.length) log.info(`orphan recovery: ${written.length} recovered (${adopted} from a sidecar, ${written.length - adopted} synthesized)`);
     return { ok: true, recovered: written.length, adopted };
