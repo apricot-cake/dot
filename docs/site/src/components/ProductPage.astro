@@ -26,7 +26,7 @@ const originImage = { src: originVariants[1].src, srcSet: originVariants.map((im
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
 <section class="hero section-wrap scroll-reveal">
-  <h1><span>そのイラスト、</span><span>投稿ごと残そう</span></h1>
+  <h1><span>そのイラスト</span><span>投稿ごと残そう</span></h1>
   <p class="hero-intro"><span>画像だけ保存していると、あとから探すのが大変。</span><span>本文や作者も一緒に保存して、名前やキーワードで探せます。</span></p>
   <div class="hero-actions">
     <StoreLinks />
@@ -44,7 +44,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 </section>
 <section class="feature-section feature-reverse section-wrap scroll-reveal">
   <div class="feature-copy">
-    <h2>自分の好きな分け方で</h2>
+    <h2>タグで整理する</h2>
     <p>作品やキャラ、好きなタグで整理できます。手元のイラストもインポートして、同じライブラリにまとめられます。</p>
   </div>
   <div class="feature-visual"><FeatureVisual mode="organize" base={base} /></div>
@@ -56,6 +56,23 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
   </div>
   <div class="feature-visual"><FeatureVisual mode="authors" base={base} authorThumbnails={authorThumbnails} /></div>
 </section>
+<section class="support-section section-wrap scroll-reveal" aria-labelledby="support-heading">
+  <h2 id="support-heading">対応サイトと保存できるもの</h2>
+  <div class="supported-sources">
+    <div>
+      <h3>投稿ごと保存</h3>
+      <p>X・Bluesky・pixiv の投稿に対応しています。本文や作者などの投稿情報も一緒に残せます。</p>
+    </div>
+    <div>
+      <h3>Webの画像・動画</h3>
+      <p>ほかのサイトの画像や動画も、右クリックから出典URLと一緒に保存できます。</p>
+    </div>
+    <div>
+      <h3>手元の画像・動画</h3>
+      <p>PCにあるファイルも取り込んで、同じライブラリで整理できます。</p>
+    </div>
+  </div>
+</section>
 <section class="local-section section-wrap scroll-reveal">
   <div class="local-icon" aria-hidden="true"><Lock size={58} strokeWidth={1.5} /></div>
   <div class="feature-copy">
@@ -64,7 +81,8 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
   </div>
 </section>
 <section class="setup-section section-wrap scroll-reveal" aria-label="導入">
-  <h2>使いはじめる</h2>
+  <h2>使ってみる</h2>
+  <p class="setup-availability">無料で使えるオープンソースのアプリです。</p>
   <p class="setup-requirement">WindowsアプリとChrome拡張機能を組み合わせて使います。</p>
   <StoreLinks />
 </section>

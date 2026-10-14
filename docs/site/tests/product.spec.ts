@@ -97,11 +97,11 @@ test('ヘッダーとバッジ、削除指定を反映する', async ({ page }) 
   await expect(page.locator('header .header-github')).toHaveText('');
   await expect(page.locator('header .header-github img')).toHaveCount(1);
   await expect(page.locator('.hero .header-github,.github-button,footer,header nav,.demo-restart,.demo-heading,.demo-caption,.demo-controls,.closing-section')).toHaveCount(0);
-  await expect(page.locator('.setup-section h2')).toHaveText('使いはじめる');
+  await expect(page.locator('.setup-section h2')).toHaveText('使ってみる');
   await expect(page.locator('.setup-section h3,.setup-section svg')).toHaveCount(0);
   await expect(page.locator('.local-section')).toContainText('アカウントを作らずに使えます');
   await expect(page.locator('.local-icon .lucide-lock')).toHaveCount(1);
-  await expect(page.locator('h1')).toContainText('そのイラスト、');
+  await expect(page.locator('.hero h1')).toContainText('そのイラスト');
   await expect(page.locator('.store-placeholder')).toHaveCount(4);
   await expect(page.locator('.store-placeholder-name').filter({ hasText: 'Microsoft Store' })).toHaveCount(2);
   await expect(page.locator('.store-placeholder img,.store-links button,.store-links a')).toHaveCount(0);
@@ -152,7 +152,7 @@ test('内部リンクは有効で、外部へ通信しない', async ({ page, re
   });
   for (const path of ['./', 'privacy/']) {
     await page.goto(path);
-    await expect(page.locator('h1')).toBeVisible();
+    await expect(page.locator('main h1')).toBeVisible();
     const links = await page.locator('a[href]').evaluateAll((a) => a.map((el) => (el as HTMLAnchorElement).href));
     for (const url of new Set(links.filter((url) => url.startsWith('http://127.0.0.1:4330/dot/')))) expect((await request.get(url.split('#')[0])).status()).toBe(200);
   }

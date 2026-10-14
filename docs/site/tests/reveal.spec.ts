@@ -26,7 +26,9 @@ for (const selector of ['#demo', '.feature-section', '.local-section', '.setup-s
 
 test('ヒーローを含む全セクションがモーション対象になる', async ({ page }) => {
   await page.goto('./');
-  await expect(page.locator('main > section.scroll-reveal')).toHaveCount(7);
+  const sections = page.locator('main > section');
+  await expect(sections).not.toHaveCount(0);
+  for (const section of await sections.all()) await expect(section).toHaveClass(/scroll-reveal/);
 });
 
 test('モーションを減らす設定では最初から静的に表示する', async ({ page }) => {
