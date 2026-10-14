@@ -544,7 +544,12 @@ const bluesky: Extractor = {
 
   overlay: {
     unitSelector: POST_CONTAINER,
-    mediaIn: (unit) => [...unit.querySelectorAll('img[src*="/img/feed_thumbnail/"], img[src*="/img/feed_fullsize/"], video')],
+    mediaIn: (unit) => {
+      const postUrl = bluesky.content?.getPermalink(unit);
+      if (!postUrl) return [];
+      // 引用カードも親の部分木にある。既存の画像所有判定と投稿URLが一致するものだけを扱う。
+      return [...unit.querySelectorAll('img[src*="/img/feed_thumbnail/"], img[src*="/img/feed_fullsize/"], video')].filter((media) => bluesky.mediaIdentity?.extractIdentity(media as PostMediaElement)?.link === postUrl);
+    },
     // 投稿者のアバター (#575)。上の isPostMedia の検査が退けるのと同じ CDN パスの一族で、
     // だからこそ、印を留めても保存の対象と取り違えられることがない。
     textAnchorIn: (unit) => unit.querySelector('img[src*="/img/avatar"]'),

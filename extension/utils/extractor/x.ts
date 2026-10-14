@@ -216,7 +216,54 @@ const X_COUNT_CONTROLS: ReadonlyArray<readonly ['replies' | 'reposts' | 'likes' 
   ['bookmarks', ['bookmark', 'removeBookmark']],
 ];
 
+// ビューアとメディア一覧は article の外に画像を描く。同じ投稿IDの article
+// だけを補完元にし、画像1枚だけから投稿全体の取得完了とは判定しない。
+function extractXImageUnitDomMeta(unit: Element): DomMeta {
+  const viewer = unit.getAttribute('data-testid') === 'swipe-to-dismiss';
+  const link = viewer ? parseXPostLink(location.href) : getXPostLink(unit);
+  if (!link || (viewer && !X_PHOTO_VIEWER_PATH.test(location.pathname))) return {};
+  if (
+    !viewer &&
+    xOwnAll(unit, 'a[href*="/status/"]').some((anchor) => {
+      const other = parseXPostLink((anchor as HTMLAnchorElement).href);
+      return other && other.postId !== link.postId;
+    })
+  )
+    return {};
+  const candidates = viewer ? [findXViewerMedia(unit)].filter((el): el is Element => !!el) : xOwnAll(unit, 'img');
+  const media: MediaItem[] = [];
+  for (const element of candidates) {
+    if (element.tagName !== 'IMG') continue;
+    if (!viewer) {
+      const anchor = element.closest('a[href*="/status/"]');
+      if (!anchor || parseXPostLink((anchor as HTMLAnchorElement).href)?.postId !== link.postId) continue;
+    }
+    const image = element as HTMLImageElement;
+    try {
+      const source = new URL(image.currentSrc || image.src, location.origin);
+      if (source.protocol !== 'https:' || source.hostname !== 'pbs.twimg.com' || !source.pathname.startsWith('/media/')) continue;
+      source.searchParams.set('name', 'orig');
+      if (!media.some((item) => item.url === source.href)) media.push({ url: source.href, type: 'image', alt: image.alt || null, width: null, height: null });
+    } catch {
+      // URLとして解釈できない画像は補完候補にしない。
+    }
+  }
+  if (!media.length) return {};
+  const scope = unit.closest('[role="dialog"]') ?? unit.ownerDocument;
+  const articles = [...scope.querySelectorAll('article[data-testid="tweet"]')].filter((article) => getXPostLink(article)?.postId === link.postId);
+  const article = articles.length === 1 ? articles[0] : undefined;
+  const meta: DomMeta = article ? extractXArticleDomMeta(article) : { screenName: link.screenName };
+  if (meta.snapshot && media.every((image) => meta.snapshot?.media.some((item) => item.url === image.url))) return meta;
+  meta.snapshot = { url: link.url, media, complete: false, mediaComplete: false };
+  return meta;
+}
+
 function extractXDomMeta(post: Element): DomMeta {
+  if (!(post instanceof Element)) return {};
+  return post.tagName === 'LI' || post.getAttribute('data-testid') === 'swipe-to-dismiss' ? extractXImageUnitDomMeta(post) : extractXArticleDomMeta(post);
+}
+
+function extractXArticleDomMeta(post: Element): DomMeta {
   const meta: DomMeta = {};
   if (!(post instanceof Element)) return meta;
 

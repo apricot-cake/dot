@@ -31,7 +31,8 @@ import { SAVED_QUERY_TIMEOUT_MS } from './deadline.ts';
 import { extensionAlive, noteExtensionGone, onExtensionGone } from './extension-context.ts';
 import { startSaveDeadline } from './save-deadline.ts';
 import { guardCaughtException } from './uncaught-report.ts';
-import type { ContentSite } from './extractor/types.ts';
+import type { ContentSite, DomMeta } from './extractor/types.ts';
+import { readDomMeta } from './extractor/dom-meta.ts';
 import { ICONS } from './icons.ts';
 import { StatusSurface } from './status-surface.ts';
 import { SaveToasts, SAVE_TOAST_DURATION_MS } from './save-toasts.ts';
@@ -53,6 +54,8 @@ export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
   const t = i18n.getMessage;
   const toasts = new SaveToasts(t);
   const retryTargets = new Map<string, string>();
+  // 仮想リストの要素を保持せず、同じ投稿と確認できた表示情報だけを記録する。
+  const snapshots = new Map<string, DomMeta>();
   const complete = (response: Extract<SaveResponse, { ok: true }>) => response.metaOk !== false && !response.mediaMissing && !response.acquisitionIssues?.length;
 
   // 再試行は保存済みのURLを使う。投稿が画面外へ出ても、取り込み終了後でも実行できる。
@@ -79,7 +82,7 @@ export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
       showFailure(url);
     });
     try {
-      chrome.runtime.sendMessage({ type: 'savePost', postUrl: url, platform: site.platform, saveId, retryOf: retryTargets.get(url), capturedVia: site.capturedVia ?? null } satisfies SavePostMessage, (response?: SaveResponse) => {
+      chrome.runtime.sendMessage({ type: 'savePost', postUrl: url, platform: site.platform, saveId, retryOf: retryTargets.get(url), domMeta: snapshots.get(url) ?? null, capturedVia: site.capturedVia ?? null } satisfies SavePostMessage, (response?: SaveResponse) => {
         if (!deadline.settle()) return;
         const ok = !chrome.runtime.lastError && response?.ok === true && complete(response);
         toasts.end(saveId, ok);
@@ -92,9 +95,7 @@ export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
     }
   }
 
-  // url -> 状態。要素は絶対に保持しない: パーマリンクさえ読めば投稿は
-  // URL だけで保存できるので、実行の途中で行がリサイクルされてもこれ
-  // が反応すべきイベントにはならない。
+  // url -> 状態。再利用されるDOM要素は保持せず、URLと取得時の情報を保存する。
   const entries = new Map<string, EntryState>();
   let savedCount = 0;
   let skippedCount = 0;
@@ -178,7 +179,10 @@ export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
       // 描画途中の行にはまだパーマリンクのアンカーがない。それはさら
       // なる変更としてアンカーを mount し、それがここへ戻ってこさせ
       // る。
-      if (!url || entries.has(url)) continue;
+      if (!url) continue;
+      const domMeta = readDomMeta(site, el);
+      if (domMeta?.snapshot?.url === url) snapshots.set(url, domMeta);
+      if (entries.has(url)) continue;
       entries.set(url, 'unknown');
       grew = true;
     }
@@ -360,6 +364,7 @@ export function startBulkCapture(site: ContentSite, i18n: DotI18nApi): void {
         {
           type: 'savePost',
           postUrl: url,
+          domMeta: snapshots.get(url) ?? null,
           platform: site.platform,
           saveId,
           // レコードの取り込み経路に印を付け、一括で取り込まれた投稿
