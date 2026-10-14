@@ -1,11 +1,31 @@
 import { test, expect, type Page } from '@playwright/test';
 async function ready(page: Page) {
   await expect(page.getByTestId('replay-demo')).toHaveAttribute('data-ready', 'true');
+  await page.getByRole('button', { name: 'デモを再生', exact: true }).click();
 }
 test.beforeEach(async ({ page }) => {
   await page.clock.install();
 });
 
+test('再生するまで先頭で静止し、キーボードで開始できる', async ({ page }) => {
+  await page.goto('./');
+  const demo = page.getByTestId('replay-demo');
+  await expect(demo).toHaveAttribute('data-ready', 'true');
+  await page.clock.runFor(10000);
+  await expect(demo).toHaveAttribute('data-elapsed', '0');
+  await expect(demo).toHaveAttribute('data-playing', 'false');
+  await expect(page.locator('.demo-start-overlay')).toHaveCSS('background-color', 'rgba(255, 255, 255, 0.4)');
+  await expect(page.locator('.demo-cursor')).toHaveAttribute('data-visible', 'false');
+  for (const step of await page.locator('.demo-step').all()) await expect(step).toBeDisabled();
+  const play = page.getByRole('button', { name: 'デモを再生', exact: true });
+  await play.focus();
+  await page.keyboard.press('Enter');
+  await expect(play).toHaveCount(0);
+  await expect(page.locator('.demo-start-overlay')).toHaveCount(0);
+  await expect(demo).toHaveAttribute('data-playing', 'true');
+  await page.clock.runFor(5800);
+  await expect(demo).toHaveAttribute('data-step', '1');
+});
 test('工程の選択は先頭から再生し、キーボードでも操作できる', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -26,7 +46,7 @@ test('工程の選択は先頭から再生し、キーボードでも操作で�
   expect(errors).toEqual([]);
 });
 
-test('自動再生が最後から先頭へループする', async ({ page }) => {
+test('開始したデモが最後から先頭へループする', async ({ page }) => {
   await page.goto('./');
   await ready(page);
   await page.mouse.move(1, 1);

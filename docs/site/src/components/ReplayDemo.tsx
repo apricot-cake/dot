@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import {
+  Play,
   Proportions,
   Calendar,
   Globe,
@@ -60,6 +61,7 @@ export default function ReplayDemo({ base }: { base: string }) {
   const screen = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [started, setStarted] = useState(false);
 
   const [keyboardFocus, setKeyboardFocus] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -70,14 +72,14 @@ export default function ReplayDemo({ base }: { base: string }) {
   const step = Math.min(c.steps.length - 1, Math.floor(elapsed / STEP_MS));
   const fraction = (elapsed % STEP_MS) / STEP_MS;
   const saved = step > 0 || fraction > 0.58;
-  const running = visible && pageVisible && !keyboardFocus;
+  const running = started && visible && pageVisible && !keyboardFocus;
   const busy = step === 0 && fraction > 0.4 && fraction < 0.58;
   const toastVisible = step === 0 && (busy || (saved && fraction < 0.58 + 2000 / STEP_MS));
   const localMs = elapsed % STEP_MS;
   const phaseMs = localMs - SEARCH_START_MS;
   const menuPhase = step !== 2 ? 'idle' : localMs < MENU_TIMING.filterOpen ? 'filter-moving' : localMs < MENU_TIMING.filterClose ? 'filter-open' : localMs < MENU_TIMING.sortOpen ? 'sort-moving' : localMs < MENU_TIMING.sortClose ? 'sort-open' : 'closed';
   const cursorTarget = step === 0 ? '0' : step === 1 ? 'search' : localMs < MENU_TIMING.sortMove ? 'filter' : 'sort';
-  const cursorVisible = !!cursorPoints[cursorTarget] && (step !== 1 || localMs >= SEARCH_START_MS);
+  const cursorVisible = started && !!cursorPoints[cursorTarget] && (step !== 1 || localMs >= SEARCH_START_MS);
   const point = (name: string): Point => cursorPoints[name] ?? { x: 0, y: 0 };
   const searchPoint = point('search');
   let cursor: Point;
@@ -188,6 +190,7 @@ export default function ReplayDemo({ base }: { base: string }) {
       className="dot-demo"
       data-testid="replay-demo"
       data-ready={ready}
+      data-started={started}
       data-step={step}
       data-search-phase={searchPhase}
       data-menu-phase={menuPhase}
@@ -210,7 +213,7 @@ export default function ReplayDemo({ base }: { base: string }) {
         <ol className="demo-timeline" aria-label="デモの工程">
           {c.steps.map((label, index) => (
             <li key={label}>
-              <button type="button" className="demo-step" data-testid={`replay-step-${index}`} onClick={() => jump(index)} aria-current={step === index ? 'step' : undefined}>
+              <button type="button" className="demo-step" data-testid={`replay-step-${index}`} onClick={() => jump(index)} disabled={!started} aria-current={step === index ? 'step' : undefined}>
                 <span className="demo-step-label">{label}</span>
                 <span className="demo-step-track" aria-hidden="true">
                   <span style={{ transform: `scaleX(${index < step ? 1 : index === step ? fraction : 0})` }} />
@@ -461,6 +464,23 @@ export default function ReplayDemo({ base }: { base: string }) {
                 </div>
               </dl>
             </aside>
+          </div>
+        )}
+        {!started && (
+          <div className="demo-start-overlay">
+            <button
+              type="button"
+              className="demo-start"
+              aria-label="デモを再生"
+              disabled={!ready}
+              onClick={() => {
+                setElapsed(0);
+                setKeyboardFocus(false);
+                setStarted(true);
+              }}
+            >
+              <Play size={56} strokeWidth={1.5} fill="currentColor" aria-hidden="true" />
+            </button>
           </div>
         )}
         <span className="demo-cursor" data-visible={cursorVisible} data-typing={step === 1 && phaseMs >= SEARCH_TIMING.typeStart} aria-hidden="true" style={{ transform: `translate(${cursor.x}px, ${cursor.y}px)` } as CSSProperties}>

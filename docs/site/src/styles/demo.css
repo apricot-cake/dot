@@ -4,18 +4,23 @@
 .demo-timeline-wrap { display:grid; align-items:center; width:min(100%,640px); margin-inline:auto; padding-bottom:20px; }
 .demo-timeline { min-width:0; list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .demo-step { display:flex; flex-direction:column; align-items:stretch; justify-content:center; width:100%; gap:10px; min-height:48px; padding:8px 10px; border:0; border-radius:8px; background:transparent; color:#71717a; text-align:center; font-family:inherit; font-size:12px; cursor:pointer; transition:background 180ms ease,scale 140ms ease; }
-.demo-step:hover { background:#f4f4f5; }
+.demo-step:enabled:hover { background:#f4f4f5; }
 .demo-step[aria-current] { color:#18181b; }
-.demo-step:active { scale:.98; }
+.demo-step:enabled:active { scale:.98; }
 .demo-step-label { white-space:nowrap; }
 .demo-step-track { display:block; width:100%; height:4px; border-radius:10px; background:#e4e4e7; overflow:hidden; }
 .demo-step-track > span { display:block; width:100%; height:100%; background:#71717a; border-radius:inherit; transform-origin:left; }
 .demo-step:focus-visible { outline:2px solid #71717a; outline-offset:3px; }
+.demo-step:disabled { cursor:default; }
+.demo-start-overlay { position:absolute; inset:0; z-index:10; display:grid; place-items:center; background:rgb(255 255 255 / .4); }
+.demo-start { display:inline-flex; align-items:center; justify-content:center; width:72px; height:72px; padding:0; border:0; background:transparent; color:#52525b; cursor:pointer; }
+.demo-start:enabled:hover { color:#27272a; }
+.demo-start:focus-visible { outline:2px solid #52525b; outline-offset:4px; border-radius:8px; }
 .demo-screen { position:relative; background:var(--surface-2); overflow:hidden; border:1px solid var(--border); border-radius:28px; box-shadow:var(--page-shadow); font-size:12px; }
 .demo-browser-scene { position:relative; display:grid; grid-template-columns:64px minmax(0,470px); justify-content:center; align-items:stretch; min-height:556px; padding:0 24px; background:var(--surface); }
 .demo-social-post { position:relative; width:100%; max-width:100%; padding:14px; background:var(--surface); border:0; border-radius:0; }
 .demo-social-post > p { margin:10px 0 12px; line-height:1.7; font-size:13px; }
-.demo-post-media > img { display:block; width:100%; height:320px; object-fit:contain; border-radius:8px; }
+.demo-post-media > img { display:block; width:100%; height:320px; object-fit:contain; }
 .demo-app-scene { display:grid; grid-template-columns:64px minmax(0,1fr) 30%; grid-template-rows:40px 48px minmax(0,1fr); height:556px; background:var(--surface-2); }
 .demo-sidebar { grid-column:1; grid-row:2 / -1; display:flex; flex-direction:column; padding:4px; background:var(--surface-3); border:0; }
 .demo-sidebar-item { display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center; min-height:55px; padding:8px 3px; margin-bottom:5px; border-radius:9px; font-size:10px; color:var(--text-muted); }
@@ -104,7 +109,7 @@
 }
 
 /* 拡張機能の control.ts / components.css と同じ面。位置とサイズは共有定数。 */
-.demo-post-media { position:relative; }
+.demo-post-media { position:relative; border:1px solid #cfd9de; border-radius:16px; overflow:hidden; }
 .demo-save-control { position:absolute; display:flex; align-items:center; justify-content:center; border:1px solid var(--dot-overlay-border); border-radius:50%; background:var(--dot-control-surface); color:var(--text-strong); box-shadow:var(--dot-control-shadow); pointer-events:none; }
 .demo-save-toast { position:absolute; bottom:16px; right:16px; display:flex; align-items:center; gap:8px; padding:12px; border:1px solid var(--dot-overlay-border); border-radius:11px; background:var(--surface); color:var(--text-strong); box-shadow:var(--dot-overlay-shadow); font:400 13px/1.4 var(--page-font-sans); white-space:nowrap; pointer-events:none; }
 .demo-toast-badge { display:flex; align-items:center; justify-content:center; width:16px; height:20px; color:var(--text-muted); }
