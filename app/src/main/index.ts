@@ -806,13 +806,9 @@ const {
 onLibraryMutation = noteLibraryMutation;
 onPostsSaved = notePostsSaved;
 
-// --- ライブラリの切り替え（#176） ---------------------------------------
-// データベースがライブラリフォルダの中へ移った今（dbFile() のコメントを参照）、#37 の指し直しを
-// 一般化したもの。指し直しはかつてコピーの要らないポインタの切り替えだった。saveFolder が何を
-// 指していてもデータベースは configDir に留まったので、ほかに何も起きる必要が無かった。今は
-// データベース自体を閉じ、ポインタを切り替え、新しい場所でデータベースを開く（あるいは作る、
-// あるいはスナップショットから復元する＝ensureDb() が既に3つともやっている）。関数は1つ。
-// 行方不明の保存先を復旧する処理。apply-repoint（#37）がこの経路を使う。
+// --- 既存ライブラリの復帰（#1198） ---------------------------------------
+// 保存処理を止め、現在の DB を閉じてから、選択した既存ライブラリを開く。
+// DB の新規作成や破損時の自動復元は行わず、失敗した場合は元の参照先へ戻す。
 let restoringMissingLibrary = false;
 let libraryRecoveryExistingOnly = false;
 async function waitForLibrarySafetyIdle(maxMs = 15000) {

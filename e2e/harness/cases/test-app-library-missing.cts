@@ -17,6 +17,8 @@ const { electronPath: resolveElectron } = require('../../../scripts/lib-electron
 
 const electronPath = resolveElectron();
 const { evalSource } = require('../../../scripts/lib-wait.cts');
+const { seedLibrary } = require('../../../scripts/lib-seed-library.cts');
+const { makePng } = require('../../../scripts/lib-sandbox-real-seed.cts');
 
 function launch(configDir: string, evalJs: string, extraEnv: Record<string, string> = {}): Promise<Record<string, any>> {
   return new Promise((resolve) => {
@@ -80,38 +82,71 @@ function check(name: string, ok: boolean, detail: string) {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 
-  // --- シナリオB: 既にライブラリを保持するフォルダへ向け直す。コピー無し --
+  // --- シナリオB: 既存DBを持つライブラリを移動後に開き直す。コピー無し --
   {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-libmissing-b-'));
     const configDir = path.join(tmp, 'dot');
     const missingFolder = path.join(tmp, 'gone-library');
-    const movedLibrary = path.join(tmp, 'moved-library'); // 「ユーザーがフォルダを手で別ドライブへ移動した」ことを模す
+    const movedLibrary = path.join(tmp, 'moved-library');
+    const emptyFolder = path.join(tmp, 'empty');
+    const mediaOnlyFolder = path.join(tmp, 'media-only');
+    const captureId = '1700000000000-aa01';
+    const image = `${captureId}.png`;
     fs.mkdirSync(configDir, { recursive: true });
-    fs.mkdirSync(path.join(movedLibrary, '.trash'), { recursive: true }); // 向け直しの「証拠」
-    fs.writeFileSync(path.join(movedLibrary, 'abcd1234.jpg'), 'not a real jpeg, existence is what matters');
+    fs.mkdirSync(path.join(missingFolder, '.trash'), { recursive: true });
+    const imageBytes = makePng(32, 32, [80, 120, 160]);
+    fs.writeFileSync(path.join(missingFolder, image), imageBytes);
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolder: missingFolder }));
+    seedLibrary(configDir, [{ captureId, image, capturedAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', tags: ['before'] }]);
+    fs.renameSync(missingFolder, movedLibrary);
+    fs.mkdirSync(emptyFolder);
+    fs.mkdirSync(path.join(mediaOnlyFolder, '.trash'), { recursive: true });
+    fs.writeFileSync(path.join(mediaOnlyFolder, image), imageBytes);
 
     const evalJs = evalSource(
       async (_waits, args) => {
         const before = await (window as any).dot.getLibraryStatus();
+        const empty = await (window as any).dot.applyRepoint(args.emptyFolder);
+        const mediaOnly = await (window as any).dot.applyRepoint(args.mediaOnlyFolder);
+        const rejectedConfig = await (window as any).dot.getConfig();
         const apply = await (window as any).dot.applyRepoint(args.movedLibrary);
         const after = await (window as any).dot.getLibraryStatus();
         const cfg = await (window as any).dot.getConfig();
-        return { before, apply, after, cfg };
+        const snapshot = await (window as any).dot.listPosts();
+        const retained = snapshot.posts.some((post: any) => post.captureId === args.captureId);
+        const write = await (window as any).dot.updateTags(args.image, ['recovered']);
+        return { before, empty, mediaOnly, rejectedConfig, apply, after, cfg, retained, write };
       },
-      { movedLibrary },
+      { movedLibrary, emptyFolder, mediaOnlyFolder, captureId, image },
     );
     const r = await launch(configDir, evalJs);
 
-    check('B1: apply-repointは既存の（空でない）フォルダに対して成功する', !!(r.apply && r.apply.ok === true && r.apply.saveFolder === movedLibrary), JSON.stringify(r.apply));
+    check('B1: apply-repointは既存DBを持つ移動済みライブラリに対して成功する', !!(r.apply && r.apply.ok === true && r.apply.saveFolder === movedLibrary), JSON.stringify(r.apply));
     check('B2: 向け直しはコピーを伴わない＝古い（欠落した）フォルダは依然として無い', !fs.existsSync(missingFolder), `existsSync(missingFolder)=${fs.existsSync(missingFolder)}`);
-    check('B3: 向け直しは送り先に既にあるファイルに触れなかった', fs.existsSync(path.join(movedLibrary, 'abcd1234.jpg')) && fs.existsSync(path.join(movedLibrary, '.trash')), '送り先の中身はそのまま');
+    check('B3: 向け直しは移動済みの画像を変更しない', fs.existsSync(path.join(movedLibrary, '.trash')) && fs.readFileSync(path.join(movedLibrary, image)).equals(imageBytes), '画像とゴミ箱フォルダはそのまま');
     check('B4: 向け直し後、get-library-statusは解決済みと報告する', !!(r.after && r.after.missing === false && r.after.path === movedLibrary), JSON.stringify(r.after));
     check('B5: config.jsonが実際に書き換わった（get-configに反映される）', !!(r.cfg && r.cfg.saveFolder === movedLibrary), JSON.stringify(r.cfg));
+    check('B6: 空フォルダを拒否し、DBを作成しない', !!(r.empty && r.empty.ok === false && r.empty.error === 'no-library') && fs.readdirSync(emptyFolder).length === 0, JSON.stringify(r.empty));
+    check('B7: 画像とゴミ箱だけのフォルダを拒否し、既存の画像を変更しない', !!(r.mediaOnly && r.mediaOnly.ok === false && r.mediaOnly.error === 'no-library') && !fs.existsSync(path.join(mediaOnlyFolder, 'dot.db')) && fs.readFileSync(path.join(mediaOnlyFolder, image)).equals(imageBytes), JSON.stringify(r.mediaOnly));
+    check('B8: 拒否した選択先へ設定を変更しない', !!(r.rejectedConfig && r.rejectedConfig.saveFolder === missingFolder), JSON.stringify(r.rejectedConfig));
+    check('B9: 既存投稿を保持し、復帰後もタグを書き込める', r.retained === true && !!(r.write && r.write.ok === true), JSON.stringify({ retained: r.retained, write: r.write }));
+
+    const restarted = await launch(
+      configDir,
+      evalSource(
+        async (_waits, args) => {
+          const status = await (window as any).dot.getLibraryStatus();
+          const snapshot = await (window as any).dot.listPosts();
+          const post = snapshot.posts.find((item: any) => item.captureId === args.captureId);
+          return { status, retained: !!post, tags: post?.tags || [] };
+        },
+        { captureId },
+      ),
+    );
+    check('B10: 再起動後も復帰先と既存投稿・タグの書き込みを保持する', !!(restarted.status && restarted.status.missing === false && restarted.status.path === movedLibrary) && restarted.retained === true && restarted.tags.includes('recovered'), JSON.stringify(restarted));
 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
-
   const ok = results.every((r) => r.ok);
   console.log(ok ? 'LIBRARY_MISSING_TEST_PASS' : 'LIBRARY_MISSING_TEST_FAIL');
   process.exit(ok ? 0 : 1);
