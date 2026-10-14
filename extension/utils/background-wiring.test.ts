@@ -490,6 +490,26 @@ describe('投稿保存と保存済み照会', () => {
     await expect(query.responseP).resolves.toEqual({ ok: true, results: { 'https://x.com/a/status/1': { id: 'one', media: [] } } });
   });
 
+  test('明示的な再確認は保存済みキャッシュを使わず、削除と復元を反映する', async () => {
+    const ports = env.connectAsControllablePort();
+    const url = 'https://x.com/a/status/1';
+    const first = env.dispatch({ type: 'checkSaved', urls: [url] });
+    const port = await portThatSent(ports, 'query');
+    const entry = { id: 'one', media: [] };
+    port.emitMessage({ id: port.sent[0].id, ok: true, results: { [url]: entry } });
+    await expect(first.responseP).resolves.toMatchObject({ results: { [url]: entry } });
+    const cached = env.dispatch({ type: 'checkSaved', urls: [url] });
+    await expect(cached.responseP).resolves.toMatchObject({ results: { [url]: entry } });
+    expect(port.sent).toHaveLength(1);
+    const deleted = env.dispatch({ type: 'checkSaved', urls: [url], fresh: true });
+    await vi.waitFor(() => expect(port.sent).toHaveLength(2));
+    port.emitMessage({ id: port.sent[1].id, ok: true, results: { [url]: null } });
+    await expect(deleted.responseP).resolves.toMatchObject({ results: { [url]: null } });
+    const restored = env.dispatch({ type: 'checkSaved', urls: [url], fresh: true });
+    await vi.waitFor(() => expect(port.sent).toHaveLength(3));
+    port.emitMessage({ id: port.sent[2].id, ok: true, results: { [url]: entry } });
+    await expect(restored.responseP).resolves.toMatchObject({ results: { [url]: entry } });
+  });
   test('個別画像を取得できなくても URL を取得不足として保存する', async () => {
     const ports = env.connectAsControllablePort();
     const save = env.dispatch({ type: 'savePost', platform: 'x', postUrl: POST_URL, mediaKeys: ['x:missing-image'] }, X_SENDER);

@@ -32,7 +32,7 @@ import type { OkResult, UpdateTagsResult } from './ipc-payloads.ts';
 import { itemDirectoryRelative } from '../../../native-host/item-storage.mts';
 
 function register(ctx: IpcContext) {
-  const { getSaveFolder, getTrashDir, baseOf, LIBRARY_MEDIA_EXTS, getDbWriter, ensurePostsSynced, scheduleSavedIndexWrite, send } = ctx;
+  const { getSaveFolder, getTrashDir, baseOf, LIBRARY_MEDIA_EXTS, getDbWriter, ensurePostsSynced, scheduleSavedIndexWrite, flushSavedIndexWrite, send } = ctx;
 
   ipcMain.handle('delete-post', async (_e, image): Promise<OkResult> => {
     const folder = getSaveFolder();
@@ -74,7 +74,10 @@ function register(ctx: IpcContext) {
     // あるキャプチャを名指しさせてしまう。この書き直しは、ゴミ箱の通知
     // （#158）を公開するものでもある——削除された投稿は索引の `entries` から
     // `trashed` の map へ移る。
-    if (handle) scheduleSavedIndexWrite(handle);
+    if (handle) {
+      scheduleSavedIndexWrite(handle);
+      await flushSavedIndexWrite();
+    }
     return { ok: true };
   });
 
@@ -132,6 +135,7 @@ function register(ctx: IpcContext) {
     if (restored && handle) {
       send('posts-changed', null);
       scheduleSavedIndexWrite(handle);
+      await flushSavedIndexWrite();
     }
     return { ok: true };
   });
@@ -147,7 +151,10 @@ function register(ctx: IpcContext) {
     // という出口。
     const handle = ensurePostsSynced();
     if (handle) await collectUnreferencedQuotes(handle.sqlite, trashDir);
-    if (handle) scheduleSavedIndexWrite(handle);
+    if (handle) {
+      scheduleSavedIndexWrite(handle);
+      await flushSavedIndexWrite();
+    }
     return { ok: true };
   });
 
@@ -175,7 +182,10 @@ function register(ctx: IpcContext) {
     // empty-trash と同じことを、投稿1件について: その通知はレコードと運命を共にしなければならない（#158）。
     const handle = ensurePostsSynced();
     if (handle) await collectUnreferencedQuotes(handle.sqlite, trashDir);
-    if (handle) scheduleSavedIndexWrite(handle);
+    if (handle) {
+      scheduleSavedIndexWrite(handle);
+      await flushSavedIndexWrite();
+    }
     return { ok: true };
   });
 

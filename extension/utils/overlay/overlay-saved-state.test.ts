@@ -94,3 +94,44 @@ describe('overlay の保存状態問い合わせ', () => {
     query.dispose();
   });
 });
+
+test('再確認で表示中の保存済み投稿を再照会し、削除されたマークを取り除く', async () => {
+  const unit = {} as Element;
+  const state: UnitState = { url: 'https://x.com/a/status/1', saved: { whole: true, keys: new Set(), seqs: new Set(), post: true, total: null }, anchors: new Map() };
+  const hidden = {} as Element;
+  const onResolved = vi.fn();
+  let answer: ((response: unknown) => void) | undefined;
+  vi.stubGlobal('chrome', {
+    runtime: {
+      id: 'test',
+      lastError: undefined,
+      onMessage: { addListener: vi.fn(), removeListener: vi.fn() },
+      sendMessage: vi.fn((_message, callback) => {
+        answer = callback;
+      }),
+    },
+  });
+  const query = createSavedQuery({
+    debounceMs: 0,
+    tracked: new Map([
+      [unit, state],
+      [hidden, { ...state }],
+    ]),
+    isVisible: (element) => element === unit,
+    isWanted: () => true,
+    isAlive: () => true,
+    getPermalink: () => state.url,
+    getMedia: () => null,
+    onResolved,
+  });
+  try {
+    query.refresh();
+    await vi.waitFor(() => expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: 'checkSaved', urls: [state.url], fresh: true }, expect.any(Function)));
+    answer?.({ ok: true, results: { [state.url!]: null } });
+    expect(state.saved).toBeNull();
+    expect(onResolved).toHaveBeenCalledWith(unit, state);
+  } finally {
+    query.dispose();
+    vi.unstubAllGlobals();
+  }
+});

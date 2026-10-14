@@ -948,8 +948,10 @@ export async function startOverlay(): Promise<() => void> {
     layoutMayAdoptHovered = true;
     tracker.forgetDetached();
     tracker.scan();
+    savedQuery.refresh();
     scheduleReposition(true);
   });
+  addEventListener('focus', onPageRestore);
   addEventListener('pageshow', onPageRestore);
   addEventListener('popstate', onPageRestore);
   document.addEventListener('visibilitychange', onPageRestore);
@@ -998,6 +1000,7 @@ export async function startOverlay(): Promise<() => void> {
     removeEventListener('scroll', onScroll, { capture: true });
     removeEventListener('scrollend', onScrollEnd, { capture: true });
     removeEventListener('resize', onResize);
+    removeEventListener('focus', onPageRestore);
     removeEventListener('pageshow', onPageRestore);
     removeEventListener('popstate', onPageRestore);
     document.removeEventListener('visibilitychange', onPageRestore);

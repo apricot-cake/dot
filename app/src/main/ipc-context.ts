@@ -79,6 +79,7 @@ export interface IpcContext {
   /** DB を開いて取込キューを送り出す。 */
   ensurePostsSynced(): DbHandle | null;
   scheduleSavedIndexWrite(handle: { sqlite: Database.Database }): void;
+  flushSavedIndexWrite(): Promise<void>;
   /** 保留中の `replaces` の印を消費する（#34）——アプリ内での書き込みには取込キューのイベントが発火しない。 */
   sweepReplacements(): Promise<void>;
   listPosts(): Promise<PostsSnapshot>;

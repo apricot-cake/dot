@@ -1235,7 +1235,7 @@ export function startBackground(): void {
         const results: SavedResults = {};
         const ask: string[] = [];
         for (const u of urls) {
-          const hit = cacheGet(u);
+          const hit = message.fresh === true ? undefined : cacheGet(u);
           if (hit) results[u] = hit.entry;
           else ask.push(u);
         }

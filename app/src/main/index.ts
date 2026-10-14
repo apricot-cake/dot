@@ -399,10 +399,7 @@ function scheduleSavedIndexWrite(handle: { sqlite: any }) {
   savedIndexPending = handle;
   savedIndexTimer = setTimeout(() => {
     if (libraryReadsPaused) return;
-    savedIndexPending = null;
-    savedIndexInFlight = writeSavedIndexNow(handle).finally(() => {
-      savedIndexInFlight = null;
-    });
+    void flushSavedIndexWrite();
   }, 1500);
 }
 // 投稿を削除して1.5秒のデバウンスの内にアプリを閉じると、以前は書き直しが丸ごと落ちていた。
@@ -410,12 +407,24 @@ function scheduleSavedIndexWrite(handle: { sqlite: any }) {
 // 答え続けた＝#158 が防ぐために存在する、まさにその古くなった印。before-quit から await する。
 async function flushSavedIndexWrite() {
   clearTimeout(savedIndexTimer);
-  const handle = savedIndexPending;
-  savedIndexPending = null;
-  // 飛行中のものが先。そちらの方が先に予約されていて、ファイルには2つの状態のうち後の方が
-  // 残らなければならない。
-  if (savedIndexInFlight) await savedIndexInFlight;
-  if (handle) await writeSavedIndexNow(handle);
+  if (savedIndexInFlight) {
+    await savedIndexInFlight;
+    if (savedIndexPending) await flushSavedIndexWrite();
+    return;
+  }
+  // 同時に呼ばれた IPC とタイマーは同じ書き込みを待つ。非同期のゴミ箱走査中に
+  // 予約された変更も書き終えるまで、完了を返さない。
+  savedIndexInFlight = (async () => {
+    while (savedIndexPending) {
+      clearTimeout(savedIndexTimer);
+      const handle = savedIndexPending;
+      savedIndexPending = null;
+      await writeSavedIndexNow(handle);
+    }
+  })().finally(() => {
+    savedIndexInFlight = null;
+  });
+  return savedIndexInFlight;
 }
 
 // .dot-inbox/new を DB へ流し込む（#5 St6 / #299）＝エンベロープ1件につき受領記録の付いた
@@ -984,6 +993,7 @@ function registerExtractedIpc() {
     getDbWriter,
     ensurePostsSynced,
     scheduleSavedIndexWrite,
+    flushSavedIndexWrite,
     sweepReplacements,
     listPosts,
     listPostsDelta,

@@ -20,8 +20,11 @@ let writer: ReturnType<typeof createDbWriter>;
 const captureId = '1700000000000-aa01';
 let itemDir: string;
 let trashDir: string;
+const flushSavedIndexWrite = vi.fn(async () => {});
 
 beforeEach(() => {
+  flushSavedIndexWrite.mockReset();
+  flushSavedIndexWrite.mockResolvedValue(undefined);
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-delete-'));
   ({ sqlite } = openDatabase(path.join(dir, 'library.db')));
   writer = createDbWriter(sqlite);
@@ -36,7 +39,7 @@ beforeEach(() => {
       { id: 'b', name: 'B', items: [captureId] },
     ],
   });
-  register({ getSaveFolder: () => dir, getTrashDir: () => trashDir, baseOf: () => captureId, LIBRARY_MEDIA_EXTS: ['jpg'], getDbWriter: () => writer, ensurePostsSynced: () => ({ sqlite }), scheduleSavedIndexWrite: vi.fn(), send: vi.fn() } as unknown as IpcContext);
+  register({ getSaveFolder: () => dir, getTrashDir: () => trashDir, baseOf: () => captureId, LIBRARY_MEDIA_EXTS: ['jpg'], getDbWriter: () => writer, ensurePostsSynced: () => ({ sqlite }), scheduleSavedIndexWrite: vi.fn(), flushSavedIndexWrite, send: vi.fn() } as unknown as IpcContext);
 });
 
 afterEach(() => {
@@ -246,4 +249,24 @@ test.each(['insert', 'flags'])('実 IPC の %s 拒否は全媒体と sidecar を
   for (const name of names) expect(fs.readFileSync(path.join(trashDir, name), 'utf8')).toBe('original-' + name);
   expect(JSON.parse(fs.readFileSync(path.join(trashDir, captureId + '.json'), 'utf8'))).toEqual(record);
   expect(fs.existsSync(itemDir)).toBe(false);
+});
+
+test.each(['delete-post', 'restore-post', 'empty-trash', 'delete-from-trash'])('%s は保存済み索引の反映が終わるまで応答しない', async (channel) => {
+  if (channel !== 'delete-post') await deletePost();
+  let release!: () => void;
+  flushSavedIndexWrite.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+  );
+  let completed = false;
+  const pending = handlers.get(channel)!({}, captureId).then((result: unknown) => {
+    completed = true;
+    return result;
+  });
+  await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+  expect(completed).toBe(false);
+  release();
+  await expect(pending).resolves.toEqual({ ok: true });
 });

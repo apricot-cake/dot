@@ -108,6 +108,7 @@ export interface SavedQuery {
   add(unit: Element): void;
   forget(unit: Element): void;
   scheduleQuery(): void;
+  refresh(): void;
   dispose(): void;
 }
 
@@ -124,6 +125,7 @@ export interface SavedQueryOptions {
 
 export function createSavedQuery(opts: SavedQueryOptions): SavedQuery {
   const pending = new Set<Element>();
+  let fresh = false;
   let queryTimer: ReturnType<typeof setTimeout> | null = null;
 
   function flushQuery() {
@@ -154,8 +156,10 @@ export function createSavedQuery(opts: SavedQueryOptions): SavedQuery {
     pending.clear();
     if (!byUrl.size) return;
 
+    const bypassCache = fresh;
+    fresh = false;
     chrome.runtime.sendMessage(
-      { type: 'checkSaved', urls: [...byUrl.keys()] } satisfies CheckSavedMessage,
+      { type: 'checkSaved', urls: [...byUrl.keys()], ...(bypassCache ? { fresh: true } : {}) } satisfies CheckSavedMessage,
       guardCaughtException(logSaveEvent, 'content', 'overlay-saved-answer', (res?: CheckSavedResponse) => {
         // 届かない host は何も答えない: 「未保存」と断定するのではなく、投
         // 稿には印を付けないままにする。background.js は次のスクロールで
@@ -213,6 +217,11 @@ export function createSavedQuery(opts: SavedQueryOptions): SavedQuery {
       pending.delete(unit);
     },
     scheduleQuery,
+    refresh() {
+      fresh = true;
+      for (const unit of opts.tracked.keys()) if (opts.isVisible(unit)) pending.add(unit);
+      scheduleQuery();
+    },
     dispose() {
       chrome.runtime.onMessage.removeListener(onMessage);
       if (queryTimer) clearTimeout(queryTimer);

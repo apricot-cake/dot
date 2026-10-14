@@ -18,6 +18,7 @@ interface SavePostMessage {
 
 interface CheckSavedMessage {
   type: 'checkSaved';
+  fresh?: boolean;
   urls: string[];
 }
 
