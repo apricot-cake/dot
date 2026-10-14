@@ -29,9 +29,17 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   // 壊れた入力に ID 重複があっても、従来の find と同じく先に現れた方を byId の答えにする。
   let ids: Map<string, DotFolder> | null = null;
   let kids: Map<string | null, DotFolder[]> | null = null;
+  // 投稿ごとの照合で所属配列や部分木を走査し直さない。所属・構造の変更で破棄する。
+  const ownItems = new Map<string, Set<string>>();
+  const deepItems = new Map<string, Set<string>>();
+  function invalidateItems() {
+    ownItems.clear();
+    deepItems.clear();
+  }
   function invalidateTree() {
     ids = null;
     kids = null;
+    invalidateItems();
   }
   function ensureIndexes() {
     if (!ids || !kids) {
@@ -69,11 +77,17 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   // 集約で、「このフォルダのみ」がそこから抜ける。
   function hasDeep(id: string | null | undefined, key: string, only?: boolean) {
     if (only) return has(id, key);
-    for (const fid of subtreeIds(id)) {
-      const f = byId(fid);
-      if (f && f.items.includes(key)) return true;
+    if (!id) return false;
+    let items = deepItems.get(id);
+    if (!items) {
+      items = new Set<string>();
+      for (const fid of subtreeIds(id)) {
+        const f = byId(fid);
+        if (f) for (const item of f.items) items.add(item);
+      }
+      deepItems.set(id, items);
     }
-    return false;
+    return items.has(key);
   }
   // 「親 / 子 / 孫」の形。木の外でフォルダを見せる画面のためのもの。フォルダが入れ子に
   // なれるようになった瞬間、名前だけでは識別子として使えなくなった（別々の親の下に
@@ -135,7 +149,13 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
   };
   const has = (id: string | null | undefined, key: string) => {
     const f = byId(id);
-    return !!(f && f.items.includes(key));
+    if (!f) return false;
+    let items = ownItems.get(f.id);
+    if (!items) {
+      items = new Set(f.items);
+      ownItems.set(f.id, items);
+    }
+    return items.has(key);
   };
   function create(name: string | null | undefined, opts?: { parentId?: string | null } | null) {
     const nm = (name || '').trim();
@@ -185,6 +205,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
       added.push(c);
     }
     if (!added.length && !removed.length) return none;
+    invalidateItems();
     persist();
     return { added, removed };
   }
@@ -213,6 +234,7 @@ export function createFolderStore({ idPrefix, persist, isLibrary }: { idPrefix: 
       f.items = f.items.filter((c) => existing.has(c));
       if (f.items.length !== n) changed = true;
     });
+    if (changed) invalidateItems();
     return changed;
   }
   // 並べ替え。draggedId を targetId の前／後ろへ置く（ドラッグ＆ドロップ）。順序が変わったら

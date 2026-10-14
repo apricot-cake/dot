@@ -7,7 +7,7 @@ import { openDatabase } from './lib-db';
 import { prepareZipIntoEmptyDatabase, mergeFolders, mergeUngrouped, mergeManualGroups, mergePosterFolders, mergePosterTags, mergePosterProfiles, mergeTagGroups } from './lib-archive';
 import { createDbWriter } from './lib-db-write';
 import { preparePostStmts, makeTagResolver, writePost } from './lib-db-record-writer';
-import { importClassifiedTagVocabulary } from './lib-tag-classification';
+import { importClassifiedTagVocabulary, syncWorkTags } from './lib-tag-classification';
 import { PostRecordInputSchema } from '../../../native-host/post-schemas.mts';
 import { PostFlagsSchema } from '../shared/data-schemas';
 import { createArchiveFilePublisher } from './archive-file-publisher';
@@ -80,9 +80,10 @@ export async function applyArchiveImport(sqlite: Database.Database, stage: strin
       const measured = await fillMediaDimsAsync(destination, fillCardDims(destination, rec), measurements);
       const normalized = writePost(stagedStmts, stagedTags, { ...measured, tags: rec.tagClassification?.generalTags ?? rec.tags });
       updateRecord.run(JSON.stringify({ ...normalized, ...PostFlagsSchema.parse(rec), replaces: null }), row.captureId);
-      stagedWriter.restorePostFlags(row.captureId, rec);
+      stagedWriter.restorePostFlags(row.captureId, rec, false);
       progress();
     }
+    syncWorkTags(prepared);
     sqlite.transaction(() => {
       const stmts = preparePostStmts(sqlite),
         tags = makeTagResolver(sqlite),
@@ -97,7 +98,7 @@ export async function applyArchiveImport(sqlite: Database.Database, stage: strin
       const existingProfiles = target.getPosterProfiles();
       prepared.exec('UPDATE archive_records SET applied=0');
       const markApplied = prepared.prepare('UPDATE archive_records SET applied=1 WHERE captureId=?');
-      importClassifiedTagVocabulary(sqlite, prepared.prepare("SELECT t.name,t.category,w.name AS workName FROM tags t LEFT JOIN tags w ON w.id=t.workId WHERE t.category!='general'").all() as Array<{ name: string; category: 'character' | 'work'; workName: string | null }>);
+      importClassifiedTagVocabulary(sqlite, prepared.prepare("SELECT t.name,t.category,w.name AS workName FROM tags t LEFT JOIN tags w ON w.id=t.workId WHERE t.category!='general'").all() as Array<{ name: string; category: 'character' | 'work'; workName: string | null }>, false);
       let appliedCursor: string | null = null;
       for (;;) {
         const row = nextPost.get(appliedCursor, appliedCursor) as { captureId: string; json: string } | undefined;
@@ -110,11 +111,12 @@ export async function applyArchiveImport(sqlite: Database.Database, stage: strin
         const rec = parseImportRecord(row.json);
         writePost(stmts, tags, { ...rec, tags: rec.tagClassification?.generalTags ?? rec.tags });
         // 既存グループの数値 ID は、整理情報の統合で再採番される前に参照する。
-        target.restorePostFlags(row.captureId, rec);
+        target.restorePostFlags(row.captureId, rec, false);
         markApplied.run(row.captureId);
         imported++;
         progress();
       }
+      syncWorkTags(sqlite);
       target.setFolders(mergeFolders(target.getFolders(), incoming('folders', source.getFolders)));
       target.setUngrouped(mergeUngrouped(target.getUngrouped(), incoming('ungrouped', source.getUngrouped)).keys);
       target.setManualGroups(mergeManualGroups(target.getManualGroups(), incoming('manual-groups', source.getManualGroups)).groups);

@@ -1,7 +1,7 @@
 import { PostRecordInputSchema } from '../../../native-host/post-schemas.mts';
 import { PostFlagsSchema } from '../shared/data-schemas.ts';
 import { PortableClassifiedTagVocabulary } from '../shared/tag-classification.ts';
-import { exportTagClassification, importClassifiedTagVocabulary } from './lib-tag-classification.ts';
+import { exportTagClassification, importClassifiedTagVocabulary, syncWorkTags } from './lib-tag-classification.ts';
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -905,7 +905,7 @@ async function importFromOpenZip(sqlite: Database.Database, zipfile: ZipReader, 
   const existingIds = new Set((sqlite.prepare('SELECT captureId FROM posts').all() as Array<{ captureId: string }>).map((r) => r.captureId));
   if (orgEntries['classified-tags.json']) {
     const vocab = PortableClassifiedTagVocabulary.parse(await parseOrgEntry(orgEntries['classified-tags.json']));
-    importClassifiedTagVocabulary(sqlite, vocab);
+    importClassifiedTagVocabulary(sqlite, vocab, false);
   }
   // 投稿は upsert ではなく、上のバイナリのキャプチャの書き込みと同じ「すでに在るものを決して
   // 潰さない」取り決め（すでに在れば飛ばす）＝取り込みが、すでに持っているものを黙って上書き
@@ -921,10 +921,12 @@ async function importFromOpenZip(sqlite: Database.Database, zipfile: ZipReader, 
     // 私有 DB には入力値を保持する。非置換公開後、実際の宛先媒体を worker が計測する。
     writePost(stmts, resolveTagId, { ...rec, tags: rec.tagClassification?.generalTags ?? rec.tags, replaces: null });
     storeRecord.run(rec.captureId, JSON.stringify({ ...rec, replaces: null }));
-    dbWriter.restorePostFlags(rec.captureId, rec); // userKind/tagReviewed/localViewCount＝writePost はこれらを運ばない (lib-db-write.ts のモジュールのコメント)
+    dbWriter.restorePostFlags(rec.captureId, rec, false); // userKind/tagReviewed/localViewCount＝writePost はこれらを運ばない (lib-db-write.ts のモジュールのコメント)
     existingIds.add(rec.captureId);
     imported++;
   }
+
+  syncWorkTags(sqlite);
 
   // 整理の層。今の DB の状態を読む → 入って来た JSON と統合する（同じ純粋な MERGERS の
   // 関数）→ 書き戻す。

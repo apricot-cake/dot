@@ -276,7 +276,7 @@ function replacePostTags(sqlite: Sqlite, postId: string, tags: string[], patch: 
       for (const tag of existing) sqlite.prepare('INSERT OR IGNORE INTO post_tags(postId,tagId,implied) VALUES(?,?,?)').run(postId, tag.tagId, tag.implied);
     } else insertTag.run(postId, resolve(name));
   }
-  syncWorkTags(sqlite);
+  syncWorkTags(sqlite, [postId]);
 
   const sets = ['updatedAt = ?'];
   const params: unknown[] = [new Date().toISOString()];
@@ -332,8 +332,8 @@ function recordPostView(sqlite: Sqlite, postId: string, viewedAt = new Date().to
   const row = sqlite.prepare('UPDATE posts SET localViewCount = localViewCount + 1, lastViewedAt = ? WHERE captureId = ? RETURNING localViewCount').get(viewedAt, postId) as { localViewCount: number } | undefined;
   return row?.localViewCount ?? null;
 }
-function applyPostFlagsFromRecord(sqlite: Sqlite, postId: string, rec: PostFlags) {
-  if (rec.tagClassification) restoreTagClassification(sqlite, postId, rec.tagClassification);
+function applyPostFlagsFromRecord(sqlite: Sqlite, postId: string, rec: PostFlags, sync = true) {
+  if (rec.tagClassification) restoreTagClassification(sqlite, postId, rec.tagClassification, sync);
   const userKind = rec.userKind ?? null;
   const tagReviewed = rec.tagReviewed == null ? null : rec.tagReviewed ? 1 : 0;
   if (userKind != null || tagReviewed != null) {
@@ -489,7 +489,8 @@ function createDbWriter(sqlite: Sqlite) {
         return result.changes === 1;
       }),
     getPostFlags: (postId: string) => readPostFlags(sqlite, postId),
-    restorePostFlags: (postId: string, rec: unknown) => transaction(() => applyPostFlagsFromRecord(sqlite, postId, PostFlagsSchema.parse(rec))),
+    // 一括取り込みでは false を指定し、外側の処理の最後に作品タグを再計算する。
+    restorePostFlags: (postId: string, rec: unknown, sync = true) => transaction(() => applyPostFlagsFromRecord(sqlite, postId, PostFlagsSchema.parse(rec), sync)),
     deletePost: (postId: string) => transaction(() => deletePost(sqlite, postId)),
     deleteAllPosts: () => transaction(() => deleteAllPosts(sqlite)),
     tagVocabOverview: () => tagVocabOverviewImpl(sqlite),

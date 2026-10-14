@@ -114,7 +114,7 @@ const LABELS: Record<string, string> = {
 // （下の #195 の bookmark 種別の件数）を、他の欄をすべて写した2つ目の deps を手で書かずに
 // 観察するため。
 let groupedEntries: DotTagEntry[] = [];
-function makeFacetsWith(pop: any[]) {
+function makeFacetsWith(pop: any[], overrides: Partial<Parameters<typeof makeFacets>[0]> = {}) {
   return makeFacets({
     tagGroupEntries: () => groupedEntries,
     getFilteredPosts: () => pop.map(postView),
@@ -141,6 +141,7 @@ function makeFacetsWith(pop: any[]) {
     namedPosters: () => posters,
     postFolders: () => postFolders,
     buildUsers: () => posters,
+    ...overrides,
   });
 }
 const { facetCounts, qfValues } = makeFacetsWith(filtered);
@@ -427,6 +428,22 @@ describe('qfValues: folder（投稿フォルダ）', () => {
   test('ラベルはパス・count はサブツリー小計（#41）', () => {
     // filtered は先頭3件 (c1/c2/c3)。親は自身の c1 と子の c2 で2、子は c2 だけで1。
     expect(qfValues('folder')).toEqual([expect.objectContaining({ v: 'f-parent', l: '親', count: 2 }), expect.objectContaining({ v: 'f-child', l: '親 / 子', count: 1 })]);
+  });
+  test('絞り込み結果だけを数え、親子で重なる所属を重複集計しない', () => {
+    const excluded: string[][] = [];
+    const facets = makeFacetsWith([], {
+      getFilteredPosts: (excludeTypes = []) => {
+        excluded.push(excludeTypes);
+        return [{ captureId: 'shared' }, { captureId: 'child' }, { captureId: 'outside' }].map(postView);
+      },
+      postFolders: () =>
+        [
+          { id: 'parent', name: '親', items: ['shared', 'shared', 'filtered-out'] },
+          { id: 'child', name: '子', parentId: 'parent', items: ['shared', 'child'] },
+        ] as DotFolder[],
+    });
+    expect(facets.qfValues('folder').map(({ count }) => count)).toEqual([2, 2]);
+    expect(excluded).toEqual([[]]);
   });
 });
 

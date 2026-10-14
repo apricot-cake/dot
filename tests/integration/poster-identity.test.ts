@@ -94,3 +94,22 @@ test('未知のサービスは完全一致で照合し、サービス未指定�
     sqlite.close();
   }
 });
+
+test('投稿者プロフィールだけに残るハンドルの整理情報も補完し、再実行では投稿を更新しない', () => {
+  const { sqlite } = openDatabase(':memory:');
+  try {
+    sqlite.exec("INSERT INTO posts (captureId, platform, screenName, userId, capturedAt, updatedAt) VALUES ('1', 'x', 'Alice', '11', '2026-09-13', '2026-09-13')");
+    sqlite.exec("INSERT INTO poster_profiles (posterKey, platform, screenName, contentHash, provenance, firstObservedAt, lastObservedAt) VALUES ('x:@alice', 'x', 'alice', 'hash', '{}', '2026-09-13', '2026-09-13')");
+    const tagId = makeTagResolver(sqlite)('好き');
+    sqlite.prepare('INSERT INTO poster_tags VALUES (?, ?)').run('x:@alice', tagId);
+    reconcilePosterIdentity(sqlite);
+    expect(sqlite.prepare('SELECT posterKey, userId FROM poster_profiles').all()).toEqual([{ posterKey: 'x:11', userId: '11' }]);
+    expect(sqlite.prepare('SELECT posterKey FROM poster_tags').all()).toEqual([{ posterKey: 'x:11' }]);
+    const changes = sqlite.prepare('SELECT total_changes() AS n').get();
+    reconcilePosterIdentity(sqlite);
+    expect(sqlite.prepare('SELECT total_changes() AS n').get()).toEqual(changes);
+    expect(sqlite.prepare('SELECT updatedAt FROM posts').get()).toEqual({ updatedAt: '2026-09-13' });
+  } finally {
+    sqlite.close();
+  }
+});

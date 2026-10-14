@@ -97,12 +97,19 @@ export function makeUsers(deps: { allPosts(): DotPost[]; profiles?(): Array<Reco
     }
     for (const list of byPlatform.values()) {
       list.sort((a, b) => (b.followers as number) - (a.followers as number));
+      const ranks = new Map<number, { first: number; last: number }>();
       for (let index = 0; index < list.length; index++) {
-        const user = list[index];
-        const first = list.findIndex((candidate) => candidate.followers === user.followers);
-        let last = first;
-        for (let candidate = first + 1; candidate < list.length && list[candidate].followers === user.followers; candidate++) last = candidate;
-        user.followerPercentile = list.length === 1 ? 1 : 1 - (first + last) / 2 / (list.length - 1);
+        const followers = list[index].followers as number;
+        const range = ranks.get(followers);
+        if (range && range.last === index - 1) range.last = index;
+        else if (!range) ranks.set(followers, { first: index, last: index });
+      }
+      for (const user of list) {
+        const range = ranks.get(user.followers as number);
+        if (!range) continue;
+        // 同数の投稿者の最初と最後の順位を、一度の走査で求めて使い回す。
+        const rank = Number.isNaN(user.followers) ? -1 : (range.first + range.last) / 2;
+        user.followerPercentile = list.length === 1 ? 1 : 1 - rank / (list.length - 1);
       }
     }
     _cachedUsers = [...map.values()];

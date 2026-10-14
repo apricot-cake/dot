@@ -44,4 +44,31 @@ describe('buildUsers', () => {
     expect(users.find((u) => u.key === 'x:b')?.followerPercentile).toBe(0.5);
     expect(users.find((u) => u.key === 'x:c')?.followerPercentile).toBe(0);
   });
+
+  test('同順位は平均順位を使い、サイト別の母集団と欠損値を区別する', () => {
+    const posts = [
+      { platform: 'x', userId: 'a', followers: 100 },
+      { platform: 'x', userId: 'b', followers: 100 },
+      { platform: 'x', userId: 'c', followers: 50 },
+      { platform: 'x', userId: 'd', followers: 0 },
+      { platform: 'x', userId: 'e', followers: 0 },
+      { platform: 'x', userId: 'missing' },
+      { platform: 'bluesky', userId: 'solo', followers: 0 },
+    ] as DotPost[];
+    const users = makeUsers({ allPosts: () => posts, generation: () => 1, userKey: keyOf, hostOf: () => '' }).buildUsers();
+    expect(users.map((user) => user.followerPercentile)).toEqual([0.875, 0.875, 0.5, 0.125, 0.125, null, 1]);
+  });
+
+  test('全員同数でも平均順位を使い、世代変更後のプロフィールを再集計する', () => {
+    const posts = Array.from({ length: 1000 }, (_, index) => ({ platform: 'x', userId: String(index), followers: 0 })) as DotPost[];
+    let generation = 1;
+    const profiles = [{ key: 'x:0', followers: 0 }];
+    const { buildUsers } = makeUsers({ allPosts: () => posts, profiles: () => profiles, generation: () => generation, userKey: keyOf, hostOf: () => '' });
+    const initial = buildUsers();
+    expect(initial.every((user) => user.followerPercentile === 0.5)).toBe(true);
+    expect(buildUsers()).toBe(initial);
+    profiles[0].followers = 100;
+    generation++;
+    expect(buildUsers()[0].followerPercentile).toBe(1);
+  });
 });

@@ -193,7 +193,14 @@ export function makeFacets(deps: {
           }
           return parts.join(' / ');
         };
-        const cnt = countForCategory((p) => folders.filter((f) => itemsDeep(f).has(p.captureId)).map((f) => f.id));
+        const postCounts = new Map<string, number>();
+        for (const p of getFilteredPosts(excludeTypes)) postCounts.set(p.captureId, (postCounts.get(p.captureId) || 0) + 1);
+        const cnt = new Map<string, number>();
+        for (const f of folders) {
+          let count = 0;
+          for (const id of itemsDeep(f)) count += postCounts.get(id) || 0;
+          cnt.set(f.id, (cnt.get(f.id) || 0) + count);
+        }
         return folders.map((f) => ({ v: f.id, l: pathOf(f), on: act('folder', f.id), count: cnt.get(f.id) || 0 }));
       }
       case 'hashtag': {

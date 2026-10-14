@@ -3,11 +3,18 @@ import { normalizeTagName } from '../../../native-host/tag-normalize.mts';
 import type { ClassifiedTagInput, TagAssignment, PortableTagClassification } from '../shared/tag-classification.ts';
 
 /** 自動付与の作品だけを再計算する。手動付与は残す。 */
-export function syncWorkTags(db: Database.Database) {
-  db.prepare('DELETE FROM post_tags WHERE implied = 1').run();
-  db.prepare(`INSERT OR IGNORE INTO post_tags(postId,tagId,implied)
-    SELECT pt.postId,t.workId,1 FROM post_tags pt JOIN tags t ON t.id=pt.tagId
-    WHERE t.category='character' AND t.workId IS NOT NULL`).run();
+export function syncWorkTags(db: Database.Database, postIds?: string[]) {
+  const ids = postIds && [...new Set(postIds)];
+  if (ids?.length === 0) return;
+  // 投稿の付与変更はその投稿だけ、語彙の親変更は全投稿を再計算する。
+  const batches = ids ? Array.from({ length: Math.ceil(ids.length / 500) }, (_, i) => ids.slice(i * 500, (i + 1) * 500)) : [undefined];
+  for (const batch of batches) {
+    const where = batch ? ` AND postId IN (${batch.map(() => '?').join(',')})` : '';
+    db.prepare(`DELETE FROM post_tags WHERE implied = 1${where}`).run(...(batch ?? []));
+    db.prepare(`INSERT OR IGNORE INTO post_tags(postId,tagId,implied)
+      SELECT pt.postId,t.workId,1 FROM post_tags pt JOIN tags t ON t.id=pt.tagId
+      WHERE t.category='character' AND t.workId IS NOT NULL${where}`).run(...(batch ?? []));
+  }
 }
 
 export function saveClassifiedTag(db: Database.Database, input: ClassifiedTagInput, sync = true): number {
@@ -38,7 +45,7 @@ export function getClassifiedAssignments(db: Database.Database, postIds: string[
   return postIds.map((postId) => ({ postId, tagIds: (query.all(postId) as { tagId: number }[]).map((r) => r.tagId) }));
 }
 
-export function setClassifiedAssignments(db: Database.Database, assignments: TagAssignment[]): void {
+export function setClassifiedAssignments(db: Database.Database, assignments: TagAssignment[], sync = true): void {
   db.transaction(() => {
     for (const { postId, tagIds } of assignments) {
       if (!db.prepare('SELECT 1 FROM posts WHERE captureId=?').get(postId)) throw new Error('post-not-found');
@@ -47,7 +54,11 @@ export function setClassifiedAssignments(db: Database.Database, assignments: Tag
       for (const id of tagIds) db.prepare('INSERT OR IGNORE INTO post_tags(postId,tagId) VALUES(?,?)').run(postId, id);
       db.prepare('UPDATE posts SET updatedAt=? WHERE captureId=?').run(new Date().toISOString(), postId);
     }
-    syncWorkTags(db);
+    if (sync)
+      syncWorkTags(
+        db,
+        assignments.map(({ postId }) => postId),
+      );
   })();
 }
 
@@ -63,17 +74,20 @@ export function importClassifiedTag(db: Database.Database, tag: PortableTagClass
   return saveClassifiedTag(db, { name: tag.name, category: tag.category, workId }, sync);
 }
 
-export function importClassifiedTagVocabulary(db: Database.Database, tags: PortableTagClassification['tags']): void {
+export function importClassifiedTagVocabulary(db: Database.Database, tags: PortableTagClassification['tags'], sync = true): void {
   for (const tag of tags) importClassifiedTag(db, tag, false);
-  if (tags.length) syncWorkTags(db);
+  if (sync && tags.length) syncWorkTags(db);
 }
 
-export function restoreTagClassification(db: Database.Database, postId: string, value: PortableTagClassification) {
-  const ids = value.tags.map((tag) => importClassifiedTag(db, tag));
-  db.prepare('DELETE FROM post_tags WHERE postId=?').run(postId);
-  for (const name of value.generalTags) {
-    const id = saveClassifiedTag(db, { name, category: 'general', workId: null });
-    db.prepare('INSERT OR IGNORE INTO post_tags(postId,tagId) VALUES(?,?)').run(postId, id);
-  }
-  setClassifiedAssignments(db, [{ postId, tagIds: ids }]);
+export function restoreTagClassification(db: Database.Database, postId: string, value: PortableTagClassification, sync = true) {
+  db.transaction(() => {
+    const ids = value.tags.map((tag) => importClassifiedTag(db, tag, false));
+    db.prepare('DELETE FROM post_tags WHERE postId=?').run(postId);
+    for (const name of value.generalTags) {
+      const id = saveClassifiedTag(db, { name, category: 'general', workId: null }, false);
+      db.prepare('INSERT OR IGNORE INTO post_tags(postId,tagId) VALUES(?,?)').run(postId, id);
+    }
+    setClassifiedAssignments(db, [{ postId, tagIds: ids }], false);
+    if (sync) syncWorkTags(db);
+  })();
 }

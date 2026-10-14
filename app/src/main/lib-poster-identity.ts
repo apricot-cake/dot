@@ -4,6 +4,25 @@ import type Database from 'better-sqlite3';
 // 大文字・小文字を区別しないサービスだけ正規化し、その他は完全一致で照合する。
 const handleSql = "CASE WHEN platform IN ('x', 'bluesky') THEN lower(screenName) ELSE screenName END";
 export function reconcilePosterIdentity(sqlite: Database.Database, screenName?: string | null, platform?: string): void {
+  // 補完対象を一度に読む。ID が揃った投稿者ごとに全投稿を再走査しない。
+  const missing = sqlite
+    .prepare(`SELECT DISTINCT platform, ${handleSql} AS handle, screenName FROM (
+      SELECT platform, screenName, userId FROM posts
+      UNION ALL SELECT platform, screenName, userId FROM poster_profiles
+    ) WHERE platform IS NOT NULL AND platform <> '' AND screenName IS NOT NULL AND screenName <> ''
+      AND (userId IS NULL OR userId = '')
+      AND (? IS NULL OR ${handleSql} = CASE WHEN platform IN ('x', 'bluesky') THEN lower(?) ELSE ? END)
+      AND (? IS NULL OR platform = ?)`)
+    .all(screenName ?? null, screenName ?? null, screenName ?? null, platform ?? null, platform ?? null) as Array<{ platform: string; handle: string; screenName: string }>;
+  if (!missing.length) return;
+  const missingByService = new Map<string, Map<string, Array<{ screenName: string }>>>();
+  for (const row of missing) {
+    let handles = missingByService.get(row.platform);
+    if (!handles) missingByService.set(row.platform, (handles = new Map()));
+    let names = handles.get(row.handle);
+    if (!names) handles.set(row.handle, (names = []));
+    names.push(row);
+  }
   const known = sqlite
     .prepare(`
     SELECT platform, ${handleSql} AS handle, min(userId) AS userId FROM (
@@ -17,10 +36,8 @@ export function reconcilePosterIdentity(sqlite: Database.Database, screenName?: 
     .all(screenName ?? null, screenName ?? null, screenName ?? null, platform ?? null, platform ?? null) as Array<{ platform: string; handle: string; userId: string }>;
   const now = new Date().toISOString();
   for (const { platform: service, handle, userId } of known) {
-    const oldNames = sqlite
-      .prepare(`SELECT DISTINCT screenName FROM posts WHERE platform = ? AND ${handleSql} = ? AND (userId IS NULL OR userId = '')
-      UNION SELECT screenName FROM poster_profiles WHERE platform = ? AND ${handleSql} = ? AND (userId IS NULL OR userId = '')`)
-      .all(service, handle, service, handle) as Array<{ screenName: string }>;
+    const oldNames = missingByService.get(service)?.get(handle);
+    if (!oldNames) continue;
     const target = `${service}:${userId}`;
     for (const row of oldNames) {
       const source = `${service}:@${row.screenName}`;
