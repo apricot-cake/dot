@@ -856,19 +856,16 @@ async function restoreMissingLibrary(dest: string): Promise<{ ok: true; saveFold
       writeConfig(cfg);
 
       try {
-        // 分類が示していたことは、ensureDb() が既に全部やっている。dot.db をそのまま開く
-        // （'has-db'）、ファイルが無ければ開く前に最新の世代のスナップショットを復元する
-        // （'evidence-no-db'＝既にある回収の経路で、新しい仕掛けは無い）、新しく作る（'empty'）。
-        ensureDb();
+        // 復帰では既存のDBだけを開き、作成や破損時の自動復元を行わない。
+        ensureDb(true);
       } catch (err: any) {
-        // ここまでに、ただ指し直して戻すだけでは取り消せないような永続的なことは何も起きて
-        // いない。ポインタを戻し、離れたライブラリを開き直す。
+        // 開けなかった場合は参照先を戻す。戻す際もDBの新規作成や自動復元を行わない。
         log.error(`restoreMissingLibrary: could not open the database at ${dest} — rolling back to ${from}:`, err);
         const back = readConfig();
         back.saveFolder = from;
         writeConfig(back);
         try {
-          ensureDb();
+          ensureDb(true);
         } catch {
           /* dbHandle は null のまま＝LibraryMissingState と空状態の UI が引き継ぐ */
         }
