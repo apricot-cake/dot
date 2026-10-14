@@ -9,7 +9,7 @@ import { reconcilePosterIdentity } from './lib-poster-identity.ts';
 class DatabaseCorruptError extends Error {}
 
 // 既存ライブラリには未適用の変更を順に追加する。
-function initializeSchema(db: Database.Database, readonly = false) {
+function initializeSchema(db: Database.Database, readonly = false, existingOnly = false) {
   const version = Number(db.pragma('user_version', { simple: true }));
   if (version === SCHEMA_VERSION) return;
   if ((version === 49 || version === 50 || version === 51 || version === 52 || version === 53) && !readonly) {
@@ -24,7 +24,7 @@ function initializeSchema(db: Database.Database, readonly = false) {
     return;
   }
   const empty = version === 0 && !db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get();
-  if (!empty || readonly) {
+  if (!empty || readonly || existingOnly) {
     throw new Error(`Unsupported database schema (user_version=${version}, expected=${SCHEMA_VERSION}); convert the library outside the app before opening it`);
   }
   db.transaction(() => {
@@ -41,8 +41,8 @@ function initializeSchema(db: Database.Database, readonly = false) {
 // 構造の走査（ページと索引の整合。テーブルをまたぐ検証はしない）。壊れたファイルを開いてそこへ
 // 書くと回収が難しくなるので、失敗はあとで分かりにくいクエリのエラーとして現れる前に、ここで
 // DatabaseCorruptError を throw する。完全な integrity_check は定期の走査の担当 (#301)。
-function openDatabase(file: string, opts: { readonly?: boolean } = {}) {
-  const sqlite = new Database(file, { readonly: !!opts.readonly });
+function openDatabase(file: string, opts: { readonly?: boolean; existingOnly?: boolean } = {}) {
+  const sqlite = new Database(file, { readonly: !!opts.readonly, fileMustExist: !!opts.existingOnly });
 
   // そもそも SQLite でないファイルは、ここで判定を返すのではなく SQLITE_NOTADB を throw する。
   // だから2つの形を同じエラーへ流し込むしかないし、どちらにせよハンドルを閉じないとファイルが
@@ -59,6 +59,15 @@ function openDatabase(file: string, opts: { readonly?: boolean } = {}) {
     throw new DatabaseCorruptError(`quick_check failed for ${file}: ${check}`);
   }
 
+  // 復帰候補が検証後に空・非対応のDBへ変わっていても、書き込み設定を行う前に拒否する。
+  if (opts.existingOnly) {
+    const version = Number(sqlite.pragma('user_version', { simple: true }));
+    if (version < 49 || version > SCHEMA_VERSION) {
+      sqlite.close();
+      throw new Error(`Unsupported database schema (user_version=${version}, expected=${SCHEMA_VERSION})`);
+    }
+  }
+
   // WAL は接続をまたいで残る（ファイルのヘッダに入っている）が、開くたびに設定する。WAL でない
   // バックアップから復元したデータベースにも、これを取り戻させるため。
   if (!opts.readonly) sqlite.pragma('journal_mode = WAL');
@@ -68,7 +77,7 @@ function openDatabase(file: string, opts: { readonly?: boolean } = {}) {
   sqlite.pragma('foreign_keys = ON');
 
   try {
-    initializeSchema(sqlite, !!opts.readonly);
+    initializeSchema(sqlite, !!opts.readonly, !!opts.existingOnly);
     if (!opts.readonly) sqlite.transaction(() => reconcilePosterIdentity(sqlite))();
   } catch (err) {
     sqlite.close();

@@ -16,10 +16,7 @@ export function getLibraryStatus() {
 export function getExtensionContact() {
   return dotIpc.getExtensionContact();
 }
-// ディレクトリの選択を開き、付け替え先として妥当かを、何も書き込まずに検証する＝
-// `hasEvidence` が、そこが既存の dot のライブラリに見えるかを言う
-// （main のフォルダ分類を参照）。呼び出し側は、それを見て
-// applyRepoint を呼ぶ前に「空の新しいライブラリとして始めるか」を確認するかを決める。
+// 既存のライブラリのフォルダを選び、作成や復元をせずに検証する。
 export function pickRepointFolder() {
   return dotIpc.pickRepointFolder();
 }

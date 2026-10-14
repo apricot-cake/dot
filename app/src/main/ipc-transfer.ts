@@ -25,7 +25,8 @@ import { prepareImageBytes } from './image-processing.ts';
 import { makeTagResolver, preparePostStmts, writePost } from './lib-db-record-writer.ts';
 import { createDbWriter } from './lib-db-write.ts';
 import { IMPORTABLE_MEDIA, buildLocalRecord, importLocalFile, localCaptureId } from './lib-local-intake.ts';
-import { classifyLibraryFolder } from './lib-library-folder.ts';
+import { validateRecoveryLibrary } from './lib-library-recovery.ts';
+import { configDir } from './native-host.ts';
 import { collectDroppedPaths } from './lib-drop-import.ts';
 import type { PostRecordInput } from '../../../native-host/post-record.mts';
 import { ITEMS_SUBDIR, itemDirectoryAbsolute, itemFileRelative } from '../../../native-host/item-storage.mts';
@@ -500,23 +501,12 @@ function register(ctx: IpcContext) {
   // DB の話がある、というものではない。このペアは、行方不明ライブラリの復旧画面
   // （LibraryMissingState.tsx）向けの復旧経路である。
   ipcMain.handle('pick-repoint-folder', async (_e): Promise<RepointPickResult> => {
-    // #32 St1: 呼び出したウィンドウを親にする。ctx.getWin()（主ウィンドウ）ではない。
-    const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(_e.sender) as BrowserWindow, { properties: ['openDirectory', 'createDirectory'] });
-    if (res.canceled || !res.filePaths || !res.filePaths[0]) return { ok: false, canceled: true };
+    const res = await dialog.showOpenDialog(BrowserWindow.fromWebContents(_e.sender) as BrowserWindow, { properties: ['openDirectory'] });
+    if (res.canceled || !res.filePaths?.[0]) return { ok: false, canceled: true };
     const dest = res.filePaths[0];
-    // validateSaveFolder のパス安全性＋書き込み可否のチェックを再利用する（移動先が
-    // 満たすべきルールと同じ: 現在の——行方不明な——フォルダと入れ子にならない、
-    // 設定／バックアップと重ならない、書き込み可能）。その mkdirSync の再帰的な
-    // 確認は、`dest` が既に存在する時は何もしない＝ここで想定している通常のケース。
-    const v = validateSaveFolder(dest);
-    if (!v.ok) return { ok: false, error: v.error };
-    const classification = classifyLibraryFolder(dest);
-    // #176: ライブラリだった形跡が一切なく、中に自分たちのものでない何かが入っている
-    // フォルダは、黙って「空として始めますか？」という選択肢を出すのではなく、ここで
-    // 明確に拒む（looksLikeLibrary の旧来の二分岐はこれを通してしまっていたが、
-    // #176 で導入した四分類の判定は通さない）。
-    if (classification === 'reject') return { ok: false, error: 'not-a-library' };
-    return { ok: true, dest, hasEvidence: classification !== 'empty' };
+    const validation = validateRecoveryLibrary(dest, configDir());
+    if (!validation.ok) return validation;
+    return { ok: true, dest };
   });
 
   ipcMain.handle('apply-repoint', async (_e, dest): Promise<RepointApplyResult> => {

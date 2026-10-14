@@ -343,30 +343,15 @@ export interface ClipboardImportResult {
   error?: string;
 }
 
-/**
- * pick-repoint-folder（#37）: repoint の移動先を、何も書き込まずに決定・検証する
- * ——実際の書き込みは apply-repoint が行い、pick-save-folder/move-save-folder の
- * 二段階の形を踏襲する。`hasEvidence` は、そのフォルダが既存の dot
- * ライブラリらしく見えるかどうかを表す（.trash か .dot-inbox の
- * サブフォルダ、またはライブラリのメディアファイルが直下にある）。レンダラーは
- * 何の形跡も無いフォルダへ repoint する前に、利用者へ確認する。
- */
+/** 既存ライブラリのフォルダを選び、作成・復元せずに検証する。 */
 export interface RepointPickResult {
   ok: boolean;
   canceled?: boolean;
   error?: string;
   dest?: string;
-  hasEvidence?: boolean;
 }
 
-/**
- * apply-repoint（#37）: `dest` を復旧した保存先として
- * 開く——データベースが保存フォルダの内側にあるため、
- * ここでは旧データベースを閉じ、`dest` の側を開く（または作成する、あるいは
- * スナップショットから復元する）。`error: 'busy'` は復旧が既に進行中だったことを
- * 意味し、`'open-failed'` は新しい場所のデータベース自体が開けなかったことを
- * 意味する（自動的に元のライブラリへロールバックされる）。
- */
+/** 検証した既存ライブラリを開き直す。失敗時は元の参照先へ戻す。 */
 export interface RepointApplyResult {
   ok: boolean;
   error?: string;

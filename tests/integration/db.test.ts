@@ -112,3 +112,32 @@ describe('現行形式と更新元以外のDBを変更しない', () => {
     after.close();
   });
 });
+
+describe('復帰時は既存のDBだけを開く', () => {
+  test('DBが消えていても新しいファイルを作らない', () => {
+    const file = mkdb();
+    expect(() => openDatabase(file, { existingOnly: true })).toThrow();
+    expect(fs.existsSync(file)).toBe(false);
+  });
+
+  test('空のDBを新規ライブラリとして初期化しない', () => {
+    const file = mkdb();
+    new Database(file).close();
+    const before = fs.readFileSync(file);
+    expect(() => openDatabase(file, { existingOnly: true })).toThrow(/Unsupported database schema/);
+    expect(fs.readFileSync(file)).toEqual(before);
+    const read = new Database(file, { readonly: true });
+    expect(read.prepare("SELECT name FROM sqlite_schema WHERE name = 'posts'").get()).toBeUndefined();
+    read.close();
+  });
+
+  test('既存DBを開き直して投稿を保持する', () => {
+    const file = mkdb();
+    const first = openDatabase(file);
+    first.sqlite.prepare("INSERT INTO posts(captureId,capturedAt,updatedAt) VALUES ('keep','2026-01-01','2026-01-01')").run();
+    first.sqlite.close();
+    const reopened = openDatabase(file, { existingOnly: true });
+    expect(reopened.sqlite.prepare('SELECT captureId FROM posts').all()).toEqual([{ captureId: 'keep' }]);
+    reopened.sqlite.close();
+  });
+});

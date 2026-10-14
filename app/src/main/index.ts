@@ -18,6 +18,7 @@ import { watchAppDeployment } from './app-deployment.ts';
 import path from 'node:path';
 
 import { openDatabase, DatabaseCorruptError } from './lib-db.ts';
+import { validateRecoveryLibrary } from './lib-library-recovery.ts';
 import { repairLegacyItemReferences } from './lib-legacy-item-repair.ts';
 import { retireScreenshotImages } from './lib-screenshot-retirement.ts';
 import { computeDelta } from './lib-post-delta.ts';
@@ -44,7 +45,6 @@ import { checkForRedirect } from './lib-storage-redirect-guard.ts';
 import { readConfig, writeConfig, getSaveFolder, readSavePointer, initSaveFolderRedundancy, isConfigCorrupt, invalidateConfigCache, saveFolderStatus, migrateLibrarySettings } from './lib-config.ts';
 import { mimeForFile, registerImageProtocol } from './lib-thumbnails.ts';
 import { createLibrarySafety, latestRestorableSnapshot, readIntegrityStatus, validateSaveFolder } from './lib-library-safety.ts';
-import { classifyLibraryFolder } from './lib-library-folder.ts';
 import { APP_ICON, DEV_ORIGIN, DEV_SERVER_URL, RELOAD_AFTER_LIBRARY_SWAP_MS, createWindow, devServer, getWin, getWindows, installNavigationGuards, isPrimaryWindowSender, sendToOtherWins, sendToWin, sendWindowToBack } from './lib-window.ts';
 import { installDevRendererCsp, registerAppProtocol } from './app-protocol.ts';
 import { EXIT_NO_INSTANCE, EXIT_SIGNALLED, hasQuitSignal } from './restart-signal.ts';
@@ -300,7 +300,7 @@ function closeDb() {
 // directory does not exist"（さらに悪く、黙って空のものを mkdir すること）が不透明な IPC の
 // 拒否としてレンダラーへ届くより、何が起きたかを名指しするメッセージを付けてここできれいに断る
 // 方が確実に良い。まさにこの状態のために、LibraryMissingState.tsx が本文の列を丸ごと差し替える。
-function ensureDb() {
+function ensureDb(existingOnly = libraryRecoveryExistingOnly) {
   if (libraryReadsPaused && !ownerDbAccess && !isAdmittedLibraryIpc()) throw new Error('library relocation is in progress');
   if (dbHandle) return dbHandle;
   // 後片付けがすでにライブラリを閉じている（before-quit、このファイルの末尾）。起動時に仕掛けた
@@ -309,11 +309,11 @@ function ensureDb() {
   if (quitting) throw new Error('the app is quitting — not reopening the library database');
   if (saveFolderStatus().missing) throw new Error('save folder is missing — cannot open the library database');
   const file = dbFile();
-  if (!fs.existsSync(file)) restoreFromSnapshotIfAvailable(file);
+  if (!existingOnly && !fs.existsSync(file)) restoreFromSnapshotIfAvailable(file);
   try {
-    dbHandle = openDatabase(file);
+    dbHandle = openDatabase(file, { existingOnly });
   } catch (err) {
-    if (!(err instanceof DatabaseCorruptError)) throw err;
+    if (existingOnly || !(err instanceof DatabaseCorruptError)) throw err;
     for (const suffix of ['', '-wal', '-shm']) {
       try {
         fs.rmSync(file + suffix, { force: true });
@@ -322,7 +322,7 @@ function ensureDb() {
       }
     }
     restoreFromSnapshotIfAvailable(file);
-    dbHandle = openDatabase(file);
+    dbHandle = openDatabase(file, { existingOnly });
   }
   // #145 設計 §5:「掃除＝DB を開いた時に1回」＝ensureDb はメモ化されている（上の早期リターン）
   // ので、これが走るのは本当に新しく開いたときだけ。
@@ -805,6 +805,7 @@ onPostsSaved = notePostsSaved;
 // あるいはスナップショットから復元する＝ensureDb() が既に3つともやっている）。関数は1つ。
 // 行方不明の保存先を復旧する処理。apply-repoint（#37）がこの経路を使う。
 let restoringMissingLibrary = false;
+let libraryRecoveryExistingOnly = false;
 async function waitForLibrarySafetyIdle(maxMs = 15000) {
   const start = Date.now();
   while (isLibrarySafetyBusy() && Date.now() - start < maxMs) {
@@ -813,15 +814,14 @@ async function waitForLibrarySafetyIdle(maxMs = 15000) {
   if (isLibrarySafetyBusy()) throw new Error('library safety operation did not finish');
 }
 async function restoreMissingLibrary(dest: string): Promise<{ ok: true; saveFolder: string } | { ok: false; error: string }> {
-  const v = validateSaveFolder(dest);
-  if (!v.ok) return { ok: false, error: v.error || 'invalid' };
-  const classification = classifyLibraryFolder(dest);
-  if (classification === 'reject') return { ok: false, error: 'not-a-library' };
+  const v = validateRecoveryLibrary(dest, configDir());
+  if (!v.ok) return v;
   if (restoringMissingLibrary) return { ok: false, error: 'busy' };
   const owner = await pauseLibraryRelocation();
   if (owner === null) return { ok: false, error: 'busy' };
   return runAdmittedLibraryOperation(async () => {
     restoringMissingLibrary = true;
+    libraryRecoveryExistingOnly = true;
     const from = getSaveFolder();
     try {
       // 現在のライブラリへ書き込むものを、閉じる前に全部止める。取込キューの監視はきっぱり閉じる
@@ -834,6 +834,10 @@ async function restoreMissingLibrary(dest: string): Promise<{ ok: true; saveFold
         await closing.close().catch(() => {});
       }
       await waitForLibrarySafetyIdle();
+
+      // 保存処理が止まるまでに選択先が消えたり変わったりしていないか、再確認する。
+      const checked = validateRecoveryLibrary(dest, configDir());
+      if (!checked.ok) return checked;
 
       closeDb();
       savedIndexPrimed = false; // 次のライブラリは自分の saved-index のスナップショットを自分で用意する
@@ -896,7 +900,11 @@ async function restoreMissingLibrary(dest: string): Promise<{ ok: true; saveFold
       return { ok: true, saveFolder: dest };
     } finally {
       restoringMissingLibrary = false;
-      await resumeAfterLibraryRelocation(owner);
+      try {
+        await resumeAfterLibraryRelocation(owner);
+      } finally {
+        libraryRecoveryExistingOnly = false;
+      }
     }
   });
 }

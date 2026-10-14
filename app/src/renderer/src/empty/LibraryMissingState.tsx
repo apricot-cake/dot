@@ -1,124 +1,99 @@
-import { useState, useSyncExternalStore } from 'react';
-import { FolderSymlink, FolderX, RotateCw } from 'lucide-react';
+import { Fragment, useState, useSyncExternalStore } from 'react';
+import { FolderOpen, FolderX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { t } from '../_shared/i18n.ts';
-import { open as confirmOpen } from '../services/confirm.ts';
-import { getLibraryStatus, pickRepointFolder, applyRepoint } from '../services/library-path.ts';
+import { pickRepointFolder, applyRepoint } from '../services/library-path.ts';
 import { notify } from '../services/ui.ts';
 import { store, subscribeKey } from '../services/store.ts';
 
-// #37: 現在の保存フォルダがディスク上に無いとき、コンテンツ列（AppShell）全体を差し替える。
-// 無いというのは、アプリの外側で移動・改名されたか、それを載せていたドライブが外された状態。
-// 通常の empty/EmptyState.tsx の 'firstRun' 版は意図して使わない。#302 以降 posts テーブルは
-// 保存フォルダから独立して DB にあり、フォルダが無くなっても postGroups は空にならない＝
-// そのままでは、何が起きたかを説明する代わりに、グリッドが全カードを壊れたサムネイルで描画
-// してしまう。dotStore の 'libraryMissing'/'libraryMissingPath' は起動時に App.tsx の
-// LibraryStatusGate が入れる（services/library-path.ts の getLibraryStatus。呼ぶたびに
-// statSync し直す＝push の経路は無い。index.ts の refreshLibraryStatus のコメントを参照）。
-// ここでは再試行・フォルダの再指定のあとに入れ直す。
 const subMissing = (cb: () => void) => subscribeKey('libraryMissing', cb);
 const getMissing = () => store.getState().libraryMissing;
 const subPath = (cb: () => void) => subscribeKey('libraryMissingPath', cb);
 const getPath = () => store.getState().libraryMissingPath;
 
+function recoveryError(code?: string) {
+  switch (code) {
+    case 'no-library':
+    case 'not-a-library':
+      return t('libraryMissingNoLibrary');
+    case 'invalid-library':
+    case 'open-failed':
+      return t('libraryMissingInvalidLibrary');
+    case 'incompatible-db':
+      return t('libraryMissingIncompatibleLibrary');
+    case 'not-readable':
+      return t('libraryMissingNotReadable');
+    case 'not-writable':
+      return t('saveFolderErrNotWritable');
+    case 'config-overlap':
+      return t('saveFolderErrOverlap');
+    case 'busy':
+      return t('libraryMissingBusy');
+    default:
+      return t('saveFolderErrGeneric');
+  }
+}
+
 export function LibraryMissingState() {
   const missing = useSyncExternalStore(subMissing, getMissing);
   const path = useSyncExternalStore(subPath, getPath);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!missing) return null;
-
-  const refresh = async () => {
-    try {
-      const status = await getLibraryStatus();
-      store.setState({ libraryMissing: !!(status && status.missing) });
-      store.setState({ libraryMissingPath: (status && status.path) || null });
-      if (!status || !status.missing) notify(t('libraryMissingResolved'));
-    } catch {
-      /* 画面はそのまま出しておく＝利用者がもう一度やり直せる */
-    }
-  };
-
-  const retry = async () => {
-    setBusy(true);
-    try {
-      await refresh();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const doRepoint = async (dest: string) => {
-    setBusy(true);
-    try {
-      const res = await applyRepoint(dest);
-      if (res && res.ok) {
-        store.setState({ libraryMissing: false });
-        store.setState({ libraryMissingPath: null });
-        notify(t('libraryMissingRepointDone'));
-      } else {
-        notify(t('saveFolderErrGeneric'));
-      }
-    } catch {
-      notify(t('saveFolderErrGeneric'));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const repoint = async () => {
     setBusy(true);
+    setError(null);
     try {
-      const res = await pickRepointFolder();
-      if (!res || res.canceled) return;
-      if (!res.ok || !res.dest) {
-        notify(t('saveFolderErrGeneric'));
+      const selection = await pickRepointFolder();
+      if (!selection || selection.canceled) return;
+      if (!selection.ok || !selection.dest) {
+        setError(recoveryError(selection.error));
         return;
       }
-      if (res.hasEvidence) {
-        await doRepoint(res.dest);
+      const result = await applyRepoint(selection.dest);
+      if (!result.ok) {
+        setError(recoveryError(result.error));
         return;
       }
-      // 選ばれたフォルダに既存ライブラリの手がかりが無い場合（#37）＝黙って再指定せず確認を
-      // 出す。ライブラリを本当にそこへ移動したのでない限り、既存の投稿の画像が解決できない
-      // ため。
-      const dest = res.dest;
-      confirmOpen({
-        message: t('libraryMissingRepointConfirm'),
-        description: t('libraryMissingRepointConfirmDesc'),
-        okLabel: t('libraryMissingRepointConfirmOk'),
-        cancelLabel: t('confirmCancel'),
-        onOk: () => void doRepoint(dest),
-      });
+      store.setState({ libraryMissing: false, libraryMissingPath: null });
+      notify(t('libraryMissingRepointDone'));
+    } catch {
+      setError(t('saveFolderErrGeneric'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Empty data-slot="library-missing" className="py-16">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <FolderX />
+    <Empty data-slot="library-missing" className="min-h-full py-8">
+      <EmptyHeader className="max-w-xl">
+        <EmptyMedia className="text-muted-foreground">
+          <FolderX className="size-16" />
         </EmptyMedia>
-        <EmptyTitle>{t('libraryMissingTitle')}</EmptyTitle>
-        <EmptyDescription>
-          {t('libraryMissingDesc')}
-          <br />
-          <code className="bg-muted mt-2 inline-block max-w-full rounded-md px-2.5 py-1.5 font-mono text-xs break-all">{path}</code>
-        </EmptyDescription>
+        <EmptyTitle className="text-[1.25rem] leading-7">{t('libraryMissingTitle')}</EmptyTitle>
+        {path && (
+          <code className="bg-[var(--sidebar-active)] text-foreground mt-2 w-fit max-w-full rounded-lg px-3 py-2 font-mono text-[.875rem] leading-relaxed text-left text-wrap [overflow-wrap:break-word]">
+            {path.split(/(?<=[\\/])/u).map((part, index) => (
+              <Fragment key={index}>
+                {part}
+                <wbr />
+              </Fragment>
+            ))}
+          </code>
+        )}
       </EmptyHeader>
       <EmptyContent>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button variant="outline" onClick={() => void retry()} disabled={busy}>
-            <RotateCw />
-            {t('libraryMissingRetry')}
-          </Button>
-          <Button variant="outline" onClick={() => void repoint()} disabled={busy}>
-            <FolderSymlink />
-            {t('libraryMissingRepoint')}
-          </Button>
-        </div>
+        <Button variant="outline" size="lg" className="px-4 text-[.875rem]" onClick={() => void repoint()} disabled={busy} aria-busy={busy}>
+          <FolderOpen className="size-5" />
+          {t('libraryMissingRepoint')}
+        </Button>
+        {error && (
+          <p role="alert" className="text-destructive text-sm/relaxed">
+            {error}
+          </p>
+        )}
       </EmptyContent>
     </Empty>
   );
