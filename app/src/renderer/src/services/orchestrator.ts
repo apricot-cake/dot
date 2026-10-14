@@ -18,7 +18,7 @@ import { makeUsers } from './users.ts';
 import { notify } from './ui.ts';
 import { makeQfPop } from './qf-pop-builder.ts';
 import { makeFacets } from './facets.ts';
-import { mediaFilesOf, densityImage, percentileFn, makeGallery, loadUngrouped, loadManualGroups, postIdKey } from './records.ts';
+import { mediaFilesOf, densityImage, percentileFn, makeGallery, loadUngrouped, postIdKey } from './records.ts';
 import { fileSrc } from './asset-src.ts';
 import { makeTags, bindTagGroupOf, bindPosterFilterVocab, getTagGroups, getTagLabels, getPosterTags, load as loadTags } from './tags.ts';
 import { makeTabLabels } from './tab-state.ts';
@@ -52,7 +52,7 @@ import { store, subscribeKey } from './store.ts';
 import type { DotBrowseMode } from './store.ts';
 import { dotIpc } from './ipc.ts';
 import { recordPostView } from './posts.ts';
-import { findLinkedPost } from './post-link.ts';
+import { resolveLinkedPost } from './post-link.ts';
 
 // 起動完了の合図と、下にある起動／購読のハンドラ。旧来の共有ブリッジではなく本物の
 // ES の export になっている＝App.tsx の AppBoot／StoreSubscriptions がこれらを直接
@@ -1687,9 +1687,8 @@ export function endFilterEditSession(): void {
   // マウントと並行して自分で起動する形にはしていない。
   bootApp = async function () {
     if (CF()) await CF().load(); // 📁 とチップが正しくなるよう、初回描画の前にフォルダを読み込む
-    // グループ化の永続化（旧画像ビューと共有）＝手動のグループと、その適用除外。
+    // 自動グループ化の適用除外を復元する。手動グループは loadPosts が初回描画前に読み込む。
     postGrid.setUngrouped(await loadUngrouped());
-    postGrid.setManualGroups(await loadManualGroups());
     await loadTags();
     // ここにサイドバーへ種を入れる呼び出しは要らない＝services/sidebar.ts の source は
     // 最初の get() で自分のモデルを計算するので、両方の列は既に読み込まれているもので
@@ -1739,11 +1738,10 @@ export function endFilterEditSession(): void {
     // クローズが tabs.json を既定値で上書きすることはない。set-tabs は main の中で同期に
     // 書くので、荷物はレンダラーが畳まれる前に IPC のキューへ届きさえすればよい。
     window.addEventListener('pagehide', tabsCtl.persistTabsNow);
-    const openLinkedPost = async () => {
+    const openLinkedPost = async (refresh = true) => {
       const target = await dotIpc.takePostLink();
       if (!target) return;
-      await loadPosts(true);
-      const post = findLinkedPost(postGrid.getAllPosts(), target);
+      const post = await resolveLinkedPost(target, { posts: postGrid.getAllPosts, reload: () => loadPosts(true) }, refresh);
       if (!post) {
         notify(getMessage('linkedPostMissing'));
         return;
@@ -1760,7 +1758,7 @@ export function endFilterEditSession(): void {
     };
     const stopPostLinks = dotIpc.onPostLink(() => void openLinkedPost());
     window.addEventListener('pagehide', stopPostLinks, { once: true });
-    await openLinkedPost();
+    await openLinkedPost(false);
   };
   resolveViewerReady();
 })();

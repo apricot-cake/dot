@@ -1198,6 +1198,7 @@ if (!gotSingleInstanceLock) {
       }
       // 検証の接続要求では、既存ウィンドウの表示状態とフォーカスを変えない。
       if (argv.includes(BACKGROUND_LAUNCH_FLAG) || (typeof additionalData === 'object' && additionalData !== null && 'backgroundLaunch' in additionalData && additionalData.backgroundLaunch === true)) return;
+      if (receivePostLink(argv, getWin())) return;
       // 既存ウィンドウへの起動要求、または背景起動後の最初の通常起動は、
       // 隠れたウィンドウを復元して前面へ出す。
       const w = getWin();
@@ -1212,7 +1213,6 @@ if (!gotSingleInstanceLock) {
         });
         return;
       }
-      if (receivePostLink(argv, getWin())) return;
       // #32 St1: 2回目の起動は、最初のウィンドウにフォーカスするだけでなく別のウィンドウを開く
       // （設計: "2回目起動＝新規ウィンドウを開く"）。ただし、この実行自体が最小化・非アクティブで
       // 始まった場合（検証ハーネスの再起動）は別で、そこでは古い「既に動いているものを前に出す」

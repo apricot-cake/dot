@@ -127,47 +127,63 @@ export function makePostGridBuilder(deps: PostGridBuilderDeps) {
   // ソートし直すため。
   let _postsById = new Map<string, DotPost>();
   let _haveBaseline = false; // 完全なスナップショットを持つまでは false（リロード時にもリセットされる＝新しいモジュール状態）
-  let _loadPostsInFlight = false;
+  let _profilesSignature: string | null = null;
+  let _loadPostsInFlight: Promise<void> | null = null;
   let _loadPostsPending = false;
-  async function loadPosts(keepLimit?: boolean) {
+  function loadPosts(keepLimit?: boolean): Promise<void> {
     if (_loadPostsInFlight) {
       _loadPostsPending = true;
-      return;
+      return _loadPostsInFlight;
     }
-    _loadPostsInFlight = true;
-    try {
-      const res = await listPostsDelta(_haveBaseline);
-      // DB を閉じてライブラリを移動している間は「空」ではない。現在の一覧と baseline を
-      // 保持し、移動完了時の posts-changed による再取得を待つ。
-      if (res?.paused) return;
-      _postsById = applyPostsDeltaToCache(_postsById, res, stampPost);
-      _haveBaseline = true;
-      // フォルダのドロップ取り込みでは、投稿と手動グループが同じ操作で増える。
-      // 投稿だけを再読込すると古い manualGroups でカードを組み立ててしまうため、
-      // 描画前に永続化済みのグループも揃える。
-      manualGroups = await loadManualGroups();
-      // 最初の本物のスナップショットが届いた瞬間にストアへ反映する＝
-      // empty/EmptyState.tsx（services/library-status.ts 経由）が「まだ読み込み中」
-      // と「確認済みで空」を見分けるのに使う唯一の合図（#682）。posts と posters
-      // はこのキャッシュを共有するので、1つのフラグで両方のグリッドをカバーする。
-      store.setState({ libraryLoaded: true });
-      allPosts = [..._postsById.values()];
-      markPostsMutated();
-      deps.onPostsLoaded((res && res.profiles) || []);
-      stickyRecs.clear(); // 画面のリフレッシュ（リロード）では、変更で生き残った項目を掃除する
-      if (store.getState().browseMode === 'posters') deps.renderPosters(keepLimit);
-      else renderPosts(keepLimit);
-      reconcileFolders();
-      // 開いている image view は services/image-tab.ts の posts-data.ts 購読を
-      // 通してライブに再導出される＝このフックはオーケストレーション側の副作用
-      // のために残っている。
-    } finally {
-      _loadPostsInFlight = false;
-      if (_loadPostsPending) {
+    // 同時の呼び出しも再取得の完了まで待つ。リンク解決が更新前の一覧を読むことを防ぐ。
+    _loadPostsInFlight = (async () => {
+      do {
         _loadPostsPending = false;
-        loadPosts(true); // 実行中に取りこぼしたバックグラウンド再読み込み＝もう一度だけやり直す
-      }
+        await loadPostsOnce(keepLimit);
+        keepLimit = true;
+      } while (_loadPostsPending);
+    })().finally(() => {
+      _loadPostsInFlight = null;
+    });
+    return _loadPostsInFlight;
+  }
+  async function loadPostsOnce(keepLimit?: boolean) {
+    const res = await listPostsDelta(_haveBaseline);
+    // DB を閉じてライブラリを移動している間は「空」ではない。現在の一覧と baseline を
+    // 保持し、移動完了時の posts-changed による再取得を待つ。
+    if (res?.paused) return;
+    const postsChanged = !_haveBaseline || !res || res.full || !!res.added?.length || !!res.removed?.length;
+    _postsById = applyPostsDeltaToCache(_postsById, res, stampPost);
+    _haveBaseline = true;
+    // フォルダのドロップ取り込みでは、投稿と手動グループが同じ操作で増える。
+    // 投稿だけを再読込すると古い manualGroups でカードを組み立ててしまうため、
+    // 描画前に永続化済みのグループも揃える。
+    const nextManualGroups = await loadManualGroups();
+    const groupsChanged = JSON.stringify(manualGroups) !== JSON.stringify(nextManualGroups);
+    manualGroups = nextManualGroups;
+    const profiles = res?.profiles || [];
+    const profilesSignature = JSON.stringify(profiles);
+    const profilesChanged = _profilesSignature !== profilesSignature;
+    _profilesSignature = profilesSignature;
+    // 最初の本物のスナップショットが届いた瞬間にストアへ反映する＝
+    // empty/EmptyState.tsx（services/library-status.ts 経由）が「まだ読み込み中」
+    // と「確認済みで空」を見分けるのに使う唯一の合図（#682）。posts と posters
+    // はこのキャッシュを共有するので、1つのフラグで両方のグリッドをカバーする。
+    store.setState({ libraryLoaded: true });
+    if (postsChanged) allPosts = [..._postsById.values()];
+    if (postsChanged || groupsChanged) {
+      markPostsMutated();
+      stickyRecs.clear();
     }
+    if (profilesChanged) deps.onPostsLoaded(profiles);
+    // 空の差分でも投稿者と手動グループは独立に更新される。変更がない通知では一覧を再構築しない。
+    if (keepLimit && !postsChanged && !groupsChanged && !profilesChanged) return;
+    if (store.getState().browseMode === 'posters') deps.renderPosters(keepLimit);
+    else renderPosts(keepLimit);
+    if (postsChanged) reconcileFolders();
+    // 開いている image view は services/image-tab.ts の posts-data.ts 購読を
+    // 通してライブに再導出される＝このフックはオーケストレーション側の副作用
+    // のために残っている。
   }
   function reconcileFolders() {
     if (!CF()) return;
