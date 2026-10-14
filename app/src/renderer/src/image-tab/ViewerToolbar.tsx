@@ -1,7 +1,7 @@
 // 画像のズーム、ウィンドウフィット、左右反転の操作。
 import type { ReactNode } from 'react';
 import { useSyncExternalStore } from 'react';
-import { Crop, Expand, SquareCenterlineDashedHorizontal, Pencil, RotateCw, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Crop, Shrink, SquareCenterlineDashedHorizontal, Pencil, RotateCw, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { t } from '../_shared/i18n.ts';
@@ -56,7 +56,7 @@ export function ViewerToolbar() {
             <ZoomIn />
           </ToolButton>
           <ToolButton slot="viewer-fit-toggle" label={t('itvFitToWindow')} disabled={off} onClick={() => controller?.fit()}>
-            <Expand />
+            <Shrink />
           </ToolButton>
         </>
       )}

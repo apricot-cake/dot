@@ -9,7 +9,7 @@ import { isEditing } from '../services/image-edit-controls.ts';
 // 持っているのは viewer.js のほう。このコンポーネントはモデルを押し込まれるのではなく、
 // services/image-tab.ts から自分で引く＝旧来の render(model) による押し込み（viewer が
 // 8か所ほどから呼んでいた）から切り替えたもので、2つのグリッドのソースと同じ形。ズームと
-// パン（react-zoom-pan-pinch）、前後の描画、画像タブが表示中の時の ←/→ キーは、今も
+// パン（Viewer.js）、前後の描画、画像タブが表示中の時の ←/→ キーは、今も
 // このコンポーネントが持つ。
 
 // useSyncExternalStore は使わない。get() は通知のたびに新しいオブジェクトを作り直すので

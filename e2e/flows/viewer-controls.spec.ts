@@ -1,4 +1,5 @@
 import { expect, test } from '../lib/harness.ts';
+import { FIXTURE_POSTS } from '../lib/library.ts';
 
 test('閲覧と編集を切り替え、保存とキャンセルを区別する', async ({ launchDot }) => {
   const dot = await launchDot();
@@ -74,3 +75,65 @@ test('閲覧と編集を切り替え、保存とキャンセルを区別する',
   await expect(page.locator('[data-slot="image-editor"]')).toHaveCount(0);
   expect(edits()).toEqual(before);
 });
+for (const [shape, width, height] of [
+  ['縦長', 1200, 2400],
+  ['横長', 2400, 1200],
+] as const) {
+  test(`${shape}画像を初期表示と領域変更後に全体表示する`, async ({ launchDot }) => {
+    const dot = await launchDot({ posts: [{ ...FIXTURE_POSTS[0], width, height }] });
+    const { page } = dot;
+    await page.locator('[data-slot="post-card"]').first().dblclick();
+    const image = page.locator('[data-slot="viewer-image"]');
+    const level = page.locator('[data-slot="viewer-zoom-level"]');
+    const contained = async () =>
+      image.evaluate((img) => {
+        const wrapper = img.closest('[data-slot="viewer-zoom-wrapper"]');
+        if (!wrapper || !(img instanceof HTMLImageElement) || !img.naturalWidth) return false;
+        const bounds = wrapper.getBoundingClientRect(),
+          frame = img.getBoundingClientRect();
+        return frame.width > 0 && frame.height > 0 && frame.left >= bounds.left - 1 && frame.top >= bounds.top - 1 && frame.right <= bounds.right + 1 && frame.bottom <= bounds.bottom + 1;
+      });
+    await expect(level).toHaveText(/^\d+%$/);
+    await expect.poll(contained).toBe(true);
+    for (const viewport of [
+      { width: 960, height: 800 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect.poll(contained).toBe(true);
+      await page.locator('[data-slot="inspector-toggle"]').click();
+      await expect.poll(contained).toBe(true);
+    }
+    await page.locator('[data-slot="viewer-zoom-in"]').click();
+    await expect(level).toHaveText(/\d+%/);
+    await expect
+      .poll(async () => {
+        const percent = await image.evaluate((img) => {
+          const image = img as HTMLImageElement;
+          return Math.round((image.getBoundingClientRect().width * 100) / image.naturalWidth);
+        });
+        return level.textContent().then((text) => text === `${percent}%`);
+      })
+      .toBe(true);
+    const imageBounds = await image.boundingBox();
+    if (!imageBounds) throw new Error('画像が表示されていません');
+    const cursor = { x: imageBounds.x + imageBounds.width * 0.6, y: imageBounds.y + imageBounds.height * 0.4 };
+    await page.mouse.move(cursor.x, cursor.y);
+    for (let pulse = 0; pulse < 3; pulse++) {
+      await page.mouse.wheel(0, -100);
+      await page.waitForTimeout(70);
+    }
+    await expect(image).toHaveCSS('transition-duration', '0.3s');
+    await expect
+      .poll(async () =>
+        image.evaluate((img, point) => {
+          const rect = img.getBoundingClientRect();
+          return Math.abs((point.x - rect.left) / rect.width - 0.6) < 0.003 && Math.abs((point.y - rect.top) / rect.height - 0.4) < 0.003;
+        }, cursor),
+      )
+      .toBe(true);
+    await page.locator('[data-slot="viewer-fit-toggle"]').click();
+    await expect(level).toHaveText(/^\d+%$/);
+    await expect.poll(contained).toBe(true);
+  });
+}

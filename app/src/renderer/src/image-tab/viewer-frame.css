@@ -1,0 +1,9 @@
+.dot-image-viewer.viewer-container {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot-image-viewer .viewer-transition {
+    transition: none;
+  }
+}

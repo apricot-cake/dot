@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from '@/components/ui/dialog';
 import { t } from '../_shared/i18n.ts';
 import { PLATE } from '../image-tab/plate.ts';
-import { MAX_SCALE, MIN_SCALE } from '../services/image-zoom.ts';
 import { close, type CompareItem, type CompareState } from '../services/compare.ts';
 
 // ペイン1枚。ズームと移動は react-zoom-pan-pinch 自身のホイール・ピンチ・ダブルクリックの
@@ -23,7 +22,7 @@ function ComparePane({ item }: { item: CompareItem }) {
       {item.video ? (
         <video data-slot="compare-media" className="h-full w-full object-contain" src={item.src} controls playsInline preload="metadata" />
       ) : (
-        <TransformWrapper minScale={MIN_SCALE} maxScale={MAX_SCALE} centerOnInit disablePadding>
+        <TransformWrapper minScale={1} maxScale={40} centerOnInit disablePadding>
           <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img data-slot="compare-media" className="max-h-full max-w-full cursor-grab object-contain active:cursor-grabbing" src={item.src} alt={item.alt} decoding="async" draggable={false} />
           </TransformComponent>
