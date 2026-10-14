@@ -1,7 +1,8 @@
-import { Fragment, useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { FolderOpen, FolderX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyContent, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { t } from '../_shared/i18n.ts';
 import { pickRepointFolder, applyRepoint } from '../services/library-path.ts';
 import { notify } from '../services/ui.ts';
@@ -41,6 +42,7 @@ export function LibraryMissingState() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!missing) return null;
+  const pathSplit = path ? Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')) + 1 : 0;
 
   const repoint = async () => {
     setBusy(true);
@@ -68,20 +70,25 @@ export function LibraryMissingState() {
 
   return (
     <Empty data-slot="library-missing" className="min-h-full py-8">
-      <EmptyHeader className="max-w-xl">
+      <EmptyHeader className="min-w-0 max-w-[min(100%,36rem)]">
         <EmptyMedia className="text-muted-foreground">
           <FolderX className="size-16" />
         </EmptyMedia>
         <EmptyTitle className="text-[1.25rem] leading-7">{t('libraryMissingTitle')}</EmptyTitle>
         {path && (
-          <code className="bg-[var(--sidebar-active)] text-foreground mt-2 w-fit max-w-full rounded-lg px-3 py-2 font-mono text-[.875rem] leading-relaxed text-left text-wrap [overflow-wrap:break-word]">
-            {path.split(/(?<=[\\/])/u).map((part, index) => (
-              <Fragment key={index}>
-                {part}
-                <wbr />
-              </Fragment>
-            ))}
-          </code>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <code className="bg-[var(--sidebar-active)] text-foreground mt-2 flex w-fit max-w-full min-w-0 rounded-lg px-3 py-2 font-mono text-[.875rem] leading-relaxed text-left whitespace-nowrap">
+                  <span className="min-w-0 truncate">{path.slice(0, pathSplit)}</span>
+                  <span className="flex max-w-[calc(100%-3ch)] shrink-0 justify-end overflow-hidden">
+                    <span className="shrink-0">{path.slice(pathSplit)}</span>
+                  </span>
+                </code>
+              }
+            />
+            <TooltipContent className="max-w-xl break-all font-mono">{path}</TooltipContent>
+          </Tooltip>
         )}
       </EmptyHeader>
       <EmptyContent>
