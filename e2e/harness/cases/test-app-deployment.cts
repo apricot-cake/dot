@@ -54,6 +54,7 @@ fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ ...pkg, mai
 fs.writeFileSync(path.join(appDir, 'out/main/deployment-observer.cjs'), `(${observeDeployment.toString()})();`);
 fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ saveFolder: library }));
 fs.symlinkSync(path.join(root, 'node_modules'), path.join(tmp, 'node_modules'), 'junction');
+fs.symlinkSync(path.join(root, 'app', 'node_modules'), path.join(appDir, 'node_modules'), 'junction');
 fs.symlinkSync(path.join(root, 'native-host'), path.join(tmp, 'native-host'), 'junction');
 const env: NodeJS.ProcessEnv = { ...cleanDebugEnvironment(), DOT_CONFIG_DIR: config, DOT_SANDBOX: '1', DOT_DEPLOYMENT_OBSERVATIONS: observations };
 delete env.DOT_SMOKE;
@@ -152,7 +153,7 @@ function assertReady(record: any) {
       const resolved = path.resolve(tmp);
       assert.ok(path.dirname(resolved) === tempRoot && path.basename(resolved).startsWith('dot-deploy-test-'), '一時領域の撤去先が一致しません');
       if (!failure || observed('started').every((record: any) => !isAlive(record.pid))) {
-        for (const name of ['node_modules', 'native-host']) fs.unlinkSync(path.join(resolved, name));
+        for (const name of ['node_modules', 'app/node_modules', 'native-host']) fs.unlinkSync(path.join(resolved, name));
         fs.rmSync(resolved, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       }
     } catch (error) {
