@@ -40,7 +40,7 @@ async function launchDevelopmentContext(options: any, dependencies: any = {}): P
   const find = dependencies.runningPid || runningChromePid;
   const pid = find(options.profile);
   if (pid !== null) throw new Error(`専用プロファイルの Chrome が起動中です (pid ${pid})。実行中の開発用コマンドを通常終了してから再実行してください`);
-  const chromium = dependencies.chromium || require('playwright').chromium;
+  const chromium = dependencies.chromium || require('@playwright/test').chromium;
   return chromium.launchPersistentContext(options.profile, persistentLaunchOptions(options));
 }
 

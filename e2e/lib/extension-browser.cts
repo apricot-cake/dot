@@ -23,7 +23,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 
 const ROOT = path.join(__dirname, '../..');
 const SOURCE_EXTENSION = path.join(ROOT, 'extension', '.output', 'chrome-mv3-test');

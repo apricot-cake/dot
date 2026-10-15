@@ -1,6 +1,6 @@
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 const { electronPath } = require('./lib-electron-path.cts');
 const { waitFor } = require('./lib-wait.cts');
 

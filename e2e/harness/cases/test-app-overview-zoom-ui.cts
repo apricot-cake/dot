@@ -3,7 +3,7 @@
 // 仮想グリッドのCtrl+ホイールは、古いDOMへ合成イベントを送ると再描画の途中で
 // イベントが切れる。Playwrightの実入力で、利用者と同じズーム経路を検証する。
 
-const { _electron } = require('playwright');
+const { _electron } = require('@playwright/test');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -40,7 +40,7 @@ const posts = Array.from({ length: 80 }, (_, index) => {
 seedLibrary(configDir, posts);
 
 async function main() {
-  let app: import('playwright').ElectronApplication | undefined;
+  let app: import('@playwright/test').ElectronApplication | undefined;
   try {
     const launched = await _electron.launch({
       executablePath: resolveElectron(),

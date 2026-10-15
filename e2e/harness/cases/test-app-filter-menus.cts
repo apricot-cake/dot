@@ -4,7 +4,7 @@
 // smoke harness ではその入力を再現できないため、ここだけは Playwright が
 // Electron を直接操作し、投稿者・タグ・ハッシュタグの実際の選択経路を検証する。
 
-const { _electron } = require('playwright');
+const { _electron } = require('@playwright/test');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -32,7 +32,7 @@ const posts = [
 seedLibrary(configDir, posts);
 
 async function main() {
-  let app: import('playwright').ElectronApplication | undefined;
+  let app: import('@playwright/test').ElectronApplication | undefined;
   try {
     const launched = await _electron.launch({ executablePath: resolveElectron(), args: ['.'], cwd: appDir, env: { ...process.env, APPDATA: tmp, DOT_CONFIG_DIR: configDir } });
     app = launched;

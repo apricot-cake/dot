@@ -66,9 +66,9 @@ for (let i = 0; i < records.length; i++) {
 seeded.sqlite.close();
 
 async function main() {
-  let app: import('playwright').ElectronApplication | undefined;
+  let app: import('@playwright/test').ElectronApplication | undefined;
   try {
-    const launched: import('playwright').ElectronApplication = await _electron.launch({
+    const launched: import('@playwright/test').ElectronApplication = await _electron.launch({
       executablePath: electronPath,
       args: ['.', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling'],
       cwd: appDir,
