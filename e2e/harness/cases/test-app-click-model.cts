@@ -296,11 +296,13 @@ const evalJs = evalSource(async ({ waitFor, waitStable, neverHappens }) => {
   const restoredPoster = document.querySelector<HTMLElement>('[data-slot="poster-grid"] [data-slot="poster-card"][data-inspected]');
   if (!restoredPoster) throw new Error('戻った投稿者カードが選択状態になっていない');
   dblclick(restoredPoster);
-  out.drilledIn = await waitFor('ダブルクリックした投稿者がその投稿へ潜ること', () => !navActive());
+  out.drilledIn = await waitFor('ダブルクリックした投稿者がその投稿へ潜ること', () => !navActive() && postCards().some((card) => card.getBoundingClientRect().width > 0));
 
   // 投稿インスペクタの投稿者リンクは投稿者ビューへ移り、対象カードを選択して
   // 表示範囲へ運ぶ。仮想グリッド上でも DOM に現れることがこの検査になる。
-  click(postCards()[0]);
+  const drilledPost = postCards()[0];
+  if (!drilledPost) throw new Error('投稿者の投稿一覧にクリックできるカードがありません');
+  click(drilledPost);
   await waitFor('投稿インスペクタに投稿者リンクが出ること', () => !!document.querySelector('[data-slot="inspector-author-link"]'));
   const authorLink = document.querySelector<HTMLElement>('[data-slot="inspector-author-link"]');
   if (!authorLink) throw new Error('投稿インスペクタの投稿者リンクが見つからない');
@@ -309,10 +311,12 @@ const evalJs = evalSource(async ({ waitFor, waitStable, neverHappens }) => {
   const jumpedPoster = document.querySelector<HTMLElement>('[data-slot="poster-grid"] [data-slot="poster-card"][data-inspected]');
   if (!jumpedPoster) throw new Error('投稿者リンクの移動先カードが見つからない');
   dblclick(jumpedPoster);
-  await waitFor('移動先の投稿者から投稿一覧へ戻れること', () => !navActive());
+  await waitFor('移動先の投稿者から投稿一覧へ戻れること', () => !navActive() && postCards().some((card) => card.getBoundingClientRect().width > 0));
 
   // H. 投稿をダブルクリック → 画像ビュー（タブ内履歴の行き先）
-  dblclick(postCards()[0]);
+  const imagePost = postCards()[0];
+  if (!imagePost) throw new Error('投稿一覧に画像ビューを開くカードがありません');
+  dblclick(imagePost);
   out.imageViewActive = await waitFor('ダブルクリックした投稿で画像ビューが開くこと', () => !!document.querySelector('[data-slot="image-tab-view"]'));
 
   out.errors = errors;
