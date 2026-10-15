@@ -2,8 +2,8 @@ import { expect, test } from '../lib/harness.ts';
 
 test('サイズのつまみは連続して動き、カードは列数の境目で変わる', async ({ launchDot }) => {
   const { page } = await launchDot();
-  await page.getByRole('button', { name: '表示', exact: true }).click();
-  const thumb = page.getByRole('slider');
+  const control = page.locator('[data-slot="toolbar-card-size"]');
+  const thumb = control.getByRole('slider');
   await thumb.focus();
   await page.keyboard.press('Home');
   const min = Number(await thumb.getAttribute('min'));
@@ -12,14 +12,15 @@ test('サイズのつまみは連続して動き、カードは列数の境目�
   const card = page.locator('[data-slot="post-card"]').first();
   const width = () => card.evaluate((e) => e.getBoundingClientRect().width);
   const initialWidth = await width();
-  const box = await page.locator('[data-slot="slider-track"]').boundingBox();
-  const knob = await page.locator('[data-slot="slider-thumb"]').boundingBox();
+  const box = await control.locator('[data-slot="slider-track"]').boundingBox();
+  const knob = await control.locator('[data-slot="slider-thumb"]').boundingBox();
   if (!box || !knob) throw new Error('スライダーの位置を取得できません');
   const start = knob.x + knob.width / 2;
   const unit = (box.width - knob.width) / (max - min);
   await page.mouse.move(start, knob.y + knob.height / 2);
   await page.mouse.down();
-  await page.mouse.move(start + unit * 0.25, knob.y + knob.height / 2);
+  await page.mouse.move(start + unit * 0.25, knob.y + knob.height / 2, { steps: 4 });
+  await expect.poll(async () => Number(await thumb.inputValue())).toBeGreaterThan(min);
   const intermediate = Number(await thumb.inputValue());
   expect(intermediate).toBeGreaterThan(min);
   expect(intermediate).toBeLessThan(min + 0.5);

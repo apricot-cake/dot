@@ -90,7 +90,7 @@ test('常設の検索欄へ入力しても右端の操作は動かず、検索�
   await expect(input).toBeVisible();
   // 候補ポップアップを開く間は Base UI が背面を aria-hidden にするため、位置測定は
   // アクセシビリティツリーではなく安定したツールバーのDOMで行う。
-  const display = page.locator('[data-slot="page-toolbar"] button').filter({ hasText: /^表示$/ });
+  const display = page.locator('[data-slot="toolbar-sort"]');
   const initial = await display.boundingBox();
   await input.fill('猫');
   await expect(input).toHaveValue('猫');

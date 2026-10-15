@@ -235,11 +235,11 @@ export function CardSizeControl() {
         </TooltipTrigger>
         <TooltipContent>{t('cardSizeSmaller')}</TooltipContent>
       </Tooltip>
-      <Tooltip>
+      <Tooltip disableHoverablePopup>
         <TooltipTrigger render={<div className="flex w-20 shrink-0" />}>
           <SizeSlider key={`${mode}:${track.min}:${track.max}`} track={track} onDrag={(v) => apply(v, false)} onCommit={(v) => apply(v, true)} />
         </TooltipTrigger>
-        <TooltipContent>{t('cardSizeLabel')}</TooltipContent>
+        <TooltipContent className="pointer-events-none">{t('cardSizeLabel')}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t('cardSizeLarger')} disabled={track.single || track.value >= track.max} onClick={() => apply(Math.min(track.max, track.value + track.step), true)} />}>

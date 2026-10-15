@@ -13,14 +13,13 @@ test('以前のリスト設定が残っていてもグリッドで表示し、�
   const cards = page.locator('[data-slot="post-grid"] [data-slot="post-card"]');
   await expect(cards).toHaveCount(4);
   await expect.poll(() => cards.evaluateAll((items) => new Set(items.map((item) => Math.round(item.getBoundingClientRect().left))).size)).toBeGreaterThan(1);
-  await page.getByRole('button', { name: '表示', exact: true }).click();
-  const menu = page.locator('[data-slot="popover-content"]');
-  await expect(menu.getByText('リスト', { exact: true })).toHaveCount(0);
-  const size = menu.getByRole('slider');
+
+  await expect(page.getByText('リスト', { exact: true })).toHaveCount(0);
+  const size = page.locator('[data-slot="toolbar-card-size"]').getByRole('slider');
   await expect(size).toBeEnabled();
-  const before = await size.getAttribute('aria-valuenow');
+  const before = await size.inputValue();
   await size.press('ArrowRight');
-  await expect(size).not.toHaveAttribute('aria-valuenow', before || '');
+  await expect(size).not.toHaveValue(before);
   await page.keyboard.press('Escape');
   await expect(cards).toHaveCount(4);
 });
