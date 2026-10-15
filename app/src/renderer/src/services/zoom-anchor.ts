@@ -5,8 +5,8 @@ export interface ZoomAnchor {
   viewportOffset: number;
 }
 
-// 配置済みのセル1つを、入れ物の座標系で表したもの（masonic の PositionerItem に、
-// positioner が共有する columnWidth を足した形）。
+// 配置済みのセル1つを、入れ物の座標系で表したもの（仮想化ライブラリの位置情報に、
+// 列幅を足した形）。
 export interface ZoomAnchorCell {
   index: number;
   left: number;

@@ -2,7 +2,7 @@
 // ゴミ箱）に対する、命令形→宣言形のブリッジ。orchestrator.ts がデータ
 // パイプラインを持ち、セル上のジェスチャーが何をするかを供給する
 // （configureActions）。グリッドのコンポーネントはセルの描画とウィンドウ
-// イング（masonic）を持つ。modelOf/keyOf に限っては dotStore とは
+// イング（TanStack Virtual）を持つ。modelOf/keyOf に限っては dotStore とは
 // 別に持っている＝これらがコールバックを運ぶため（menu.js/qf-pop.js と同じ
 // 理由）――それ以外（items、レイアウトの入力）は dotStore に本当に
 // 住んでいて、これらのソースはモデルの残りをそこから導出する。今は本物の
@@ -43,9 +43,9 @@ type TrashGridConfig = Omit<PostGridConfig, 'onAspect'>;
 // 起きない。
 //
 //  - columnCount は一覧を単一の全幅列に固定する。グリッドはこれを未設定の
-//    ままにするので、masonic は columnWidth を最小値として扱い、埋めるよう
+//    ままにするので、仮想一覧は columnWidth を最小値として扱い、埋めるよう
 //    列を伸ばす（旧来の CSS auto-fill minmax と同じ計算）。
-//  - itemHeightEstimate はあくまで最初の見積もり（masonic は自分が描画した
+//  - itemHeightEstimate はあくまで最初の見積もり（TanStack Virtual は自分が描画した
 //    ものを測る）＝実際の高さが届くまでの間、深いスクロール位置の復元が
 //    どこに着地するかを左右する。
 function postLayout(shape: DisplayShape, gridSize: number) {

@@ -11,7 +11,7 @@
 import { describe, expect, test } from 'vitest';
 import * as Z from './zoom-anchor';
 
-// 3列×2行（列幅 200、行の高さ 150、隙間なし）。masonic の positioner が返す形に合わせてある。
+// 3列×2行（列幅 200、行の高さ 150、隙間なし）。仮想化ライブラリの配置情報をセル矩形へ変換した形。
 const cells: Z.ZoomAnchorCell[] = [
   { index: 0, left: 0, top: 0, width: 200, height: 150 },
   { index: 1, left: 200, top: 0, width: 200, height: 150 },

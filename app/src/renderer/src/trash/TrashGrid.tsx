@@ -22,5 +22,5 @@ const onBackgroundClick = () => clearSelection();
 const container = () => gridSlot('trash');
 
 export function TrashGrid() {
-  return <GridMount bridge={dotTrashGridSource} container={container} renderHost={(model) => <VirtualGridHost model={model} cell={Cell} onBackgroundClick={onBackgroundClick} />} />;
+  return <GridMount bridge={dotTrashGridSource} container={container} renderHost={(model) => <VirtualGridHost kind="trash" model={model} cell={Cell} onBackgroundClick={onBackgroundClick} />} />;
 }

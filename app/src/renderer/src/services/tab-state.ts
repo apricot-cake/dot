@@ -1,17 +1,11 @@
+import type { RouterHistory } from '@tanstack/react-router';
+import { captureGridScroll, type GridScrollSnapshot } from './grid-scroll-restoration';
+import { defaultParseSearch } from '@tanstack/react-router';
+import { createTabHistory, createTabRouter, entryFromHref, entryHref, type TabRouter } from './navigation-router';
 import type { Translate } from './translation.ts';
 import { ASPECT_RATIOS } from './aspect-ratio.ts';
-// タブの状態の service＝タブのタイトルの導出（filterLabel / tabTitleOf）、タブごとの
-// ブラウザ風の戻る／進むの履歴の状態機械（makeNavHistory）、tabs.json の直列化・復元の対
-// （serializeTabs / sanitizeSavedTabs）、tabs.json の読み込みと永続化の呼び出し
-// （loadTabs / persistTabs）。viewer decomposition（最終形 B）の6番目の「純粋なロジック →
-// service」の切り出しとして viewer.js から1対1で取り出し、その後 P4 の「IPC → service」の
-// 領域ごとのまとめを重ねたもの。viewer.ts が直接 import する本物の ES モジュールで、DOM には
-// 触れない。実行時の結び付きは注入する＝再代入される viewer の let（appBooted）は getter の
-// 関数として、後で宣言する const（PF_NAME / CF）は遅延させたアロー関数として入る。だから
-// このファイルは Node でも読み込める（scripts/test-tabstate-unit.cts が動的 import で
-// 動かす）。loadTabs/persistTabs は dotIpc（services/ipc.ts）を呼ぶが、あちらは
-// window.dot をアロー関数の中で遅延して触る＝import 自体に副作用が無いので、Node でも
-// 無害なままでいられる。
+// タブの表示名、TanStack Router と保存形式の接続、タブ状態の永続化。
+// 画面の描画は tabs-builder に注入し、保存・復元は DOM に依存させない。
 import { dotIpc } from './ipc.ts';
 
 export function genTabId() {
@@ -150,77 +144,88 @@ export function navEntryUrl(kind: DotNavEntry['kind'], state: any): string {
   return kind === 'posters' ? '/posters' : '/posts';
 }
 
-// ブラウザ風の戻る／進むのための、タブごとのビューの履歴（#144: エントリはタグ付き
-// 共用体 DotNavEntry の JSON＝posts / posters / image がすべて同じスタックに乗る）。
-// idx は今のエントリを指す。線形なので、戻ってから新しい変更を加えると、進む側の
-// エントリは捨てられる。スタックは adopt/saveInto 経由でタブのオブジェクトに載って切り替えを
-// またぎ、tabs.json へ永続化される（保留の判断5）。
-//
-// deps の取り決め:
-//   cap＝履歴の深さの上限
-//   enabled()＝履歴のゲート（viewer の appBooted。initTabs が保存したビューを適用するまで
-//              エントリを作らない＝早い段階の設定の描画から空のエントリが紛れ込むのを避ける）
-//   snapshot()＝今のビューのエントリ（引き取り時に新しい履歴へ種を入れる）
-//   apply(entry)＝ビューのエントリを復元する（その restoring の防ぎが再 push を止める）
-//   onChange()＝hist/idx を書き換えるたびに発火する（viewer が nav のボタンを揃える）
-//   onPush(entry)＝#145: push() からだけ発火し（replace() では発火しない）、何もしない重複の
-//                  判定を通った後に呼ばれる＝全体の履歴ページが記録する「新しいビューを
-//                  実際に訪れた」という信号そのもの（置き換え＝実時間の打ち込み、ギャラリーの
-//                  ページ送り、並び順＝は、Issue で確定した記録の粒度の設計に従い、意図して
-//                  そちらからは見えないようにしてある）。
-export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot(): DotNavEntry; apply(e: DotNavEntry): void; onChange(): void; onPush?(e: DotNavEntry): void }) {
+// 履歴の移動・前方枝の破棄・現在位置は TanStack の MemoryHistory が管理する。
+// 永続化用の URL ジャーナルだけを公開 subscribe から更新し、履歴の実行は再実装しない。
+export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot(): DotNavEntry; apply(e: DotNavEntry): void; onChange(): void; onPush?(e: DotNavEntry): void; router?: TabRouter; scrollReady?(): boolean }) {
   const { cap, enabled, snapshot, apply, onChange, onPush } = deps;
-  let hist: string[] = [];
-  let idx = -1;
-  // record() のための、まとめの状態。呼び出し側が null でない同じキーを渡し続けている間
-  // （1回の実時間の打ち込みのまとまり、開いているファセットエディタ1つ）は、後続の記録が、
-  // 最初の記録が push したエントリを置き換える＝「1セッション、1エントリ」（決着済みの
-  // 保留の判断2）。移動や引き取りで初期化されるので、移動の後の編集は新しく push する。
+  let urls: string[] = [];
+  const sessions = new Map<string, { urls: string[]; history: RouterHistory }>();
+  const gridSnapshots = new Map<string, GridScrollSnapshot>();
+  const scrollPositions = new Map<string, number>();
+  let tabId: string | null = null;
+  const router = deps.router ?? createTabRouter(['/posts'], 0);
+  let initialized = false;
   let lastKey: unknown = null;
-
-  const sameEntry = (a: DotNavEntry, b: DotNavEntry) => a.u === b.u && a.kind === b.kind && JSON.stringify(a.state) === JSON.stringify(b.state);
-  function saveScrollTop(scrollTop: number) {
-    if (idx < 0 || !enabled()) return;
-    const entry = JSON.parse(hist[idx]) as DotNavEntry;
-    hist[idx] = JSON.stringify({ ...entry, scrollTop: Math.max(0, scrollTop) });
+  const index = () => router.history.location.state.__TSR_index;
+  function entryAt(href: string): DotNavEntry {
+    const entry = entryFromHref(href);
+    const id = String((defaultParseSearch(href.includes('?') ? href.slice(href.indexOf('?')) : '') as Record<string, unknown>).entry || '');
+    const grid = gridSnapshots.get(id);
+    const gridScroll = grid ? { ...grid, measurements: grid.measurements.filter((item): item is typeof item & { key: string | number } => typeof item.key !== 'bigint') } : undefined;
+    return { ...entry, scrollTop: scrollPositions.get(id) ?? entry.scrollTop, gridScroll };
   }
-
-  // 新しいビューを記録する。状態が今のエントリと同じなら何もしないので、背面の更新や、
-  // 同じクエリの描画のやり直しが積み上がらない。
+  const current = (): DotNavEntry | null => (initialized ? entryAt(router.history.location.href) : null);
+  const sameEntry = (a: DotNavEntry | null, b: DotNavEntry) => !!a && a.u === b.u && a.kind === b.kind && JSON.stringify(a.state) === JSON.stringify(b.state);
+  let unsubscribe = () => {};
+  function attach(nextUrls: string[], nextIndex: number, retainedHistory?: RouterHistory) {
+    unsubscribe();
+    urls = nextUrls;
+    const history = retainedHistory ?? createTabHistory(urls.slice(), nextIndex);
+    if (tabId) sessions.set(tabId, { urls, history });
+    router.update({ history });
+    initialized = true;
+    unsubscribe = history.subscribe(({ location, action }) => {
+      const i = location.state.__TSR_index;
+      if (action.type === 'PUSH') urls.splice(i, urls.length - i, location.href);
+      else if (action.type === 'REPLACE') urls[i] = location.href;
+      void router.load();
+      if (action.type === 'BACK' || action.type === 'FORWARD' || action.type === 'GO') {
+        lastKey = null;
+        const entry = current();
+        if (entry) {
+          apply(entry);
+        }
+        onChange();
+      }
+    });
+    void router.load();
+  }
+  function navigate(e: DotNavEntry, replace: boolean) {
+    const before = current();
+    const search = { view: e.state as Record<string, unknown>, entry: replace ? routeEntryId() : crypto.randomUUID(), scrollTop: e.scrollTop ?? (replace ? (before?.scrollTop ?? 0) : 0) };
+    void router.navigate({ to: `/${e.kind}`, search, replace, resetScroll: false });
+  }
+  function routeEntryId() {
+    return String((defaultParseSearch(router.history.location.search) as Record<string, unknown>).entry || crypto.randomUUID());
+  }
   function push(e: DotNavEntry) {
     if (!enabled()) return;
     lastKey = null;
-    const s = JSON.stringify(e);
-    if (idx >= 0 && sameEntry(JSON.parse(hist[idx]), e)) return;
-    if (idx < hist.length - 1) hist = hist.slice(0, idx + 1); // 進む側の枝を捨てる
-    hist.push(s);
-    if (hist.length > cap) hist = hist.slice(hist.length - cap);
-    idx = hist.length - 1;
+    if (sameEntry(current(), e)) return;
+    if (!initialized) attach([entryHref(e)], 0);
+    else navigate(e, false);
+    if (urls.length > cap) attach(urls.slice(-cap), cap - 1);
+    pruneScrollMetadata();
     onChange();
     onPush?.(e);
   }
-  // 今のエントリをその場で書き換える（実時間の打ち込み、ギャラリーのページ送り、並び順＝
-  // 決着した置き換えの一覧）。書き換えた結果が1つ前のエントリと同じになったら（例えば
-  // 打ち込みのセッションで、始めた場所まで消し戻した時）、同じ隣人を2つ残さずに捨てる。
   function replace(e: DotNavEntry) {
     if (!enabled()) return;
-    if (idx < 0) {
+    if (!initialized) {
       push(e);
       return;
     }
-    const s = JSON.stringify(e);
-    if (sameEntry(JSON.parse(hist[idx]), e)) return;
-    if (idx > 0 && sameEntry(JSON.parse(hist[idx - 1]), e)) {
-      hist.splice(idx, 1);
-      idx--;
-      lastKey = null; // このまとまりのエントリが消えた＝次にまとめられる記録は、新しく push しなければならない
-    } else {
-      hist[idx] = s;
-    }
+    if (sameEntry(current(), e)) return;
+    const i = index();
+    if (i > 0 && sameEntry(entryFromHref(urls[i - 1]), e)) {
+      const trimmed = urls.slice();
+      trimmed.splice(i, 1);
+      attach(trimmed, i - 1);
+      lastKey = null;
+    } else navigate(e, true);
+    pruneScrollMetadata();
     onChange();
   }
-  // push と置き換えの振り分け。null でないまとめのキーが繰り返されると、そのまとまりは、
-  // 最初の記録が push したエントリへ畳まれる。
   function record(e: DotNavEntry, coalesceKey?: unknown) {
     if (coalesceKey != null && coalesceKey === lastKey) {
       replace(e);
@@ -229,43 +234,79 @@ export function makeNavHistory(deps: { cap: number; enabled(): boolean; snapshot
     push(e);
     lastKey = coalesceKey ?? null;
   }
-  // 実際に移動したら true を返す（呼び出し側は true の時に永続化する）。
-  function go(i: number): boolean {
-    if (i < 0 || i >= hist.length || i === idx) return false;
-    idx = i;
-    lastKey = null;
-    apply(JSON.parse(hist[idx]));
-    onChange();
+  function saveScrollTop(scrollTop: number) {
+    if (!initialized || !enabled() || deps.scrollReady?.() === false) return;
+    const entry = current();
+    if (entry) {
+      if (entry.kind !== 'image') {
+        const captured = captureGridScroll();
+        if (captured) gridSnapshots.set(routeEntryId(), captured);
+      }
+      // 位置の更新は遷移ではない。Router の再読込や onRendered を起こさず、
+      // 保存時だけ既存の履歴形式へ載せる。
+      scrollPositions.set(routeEntryId(), Math.max(0, scrollTop));
+    }
+  }
+  const canBack = () => initialized && index() > 0;
+  const canForward = () => initialized && index() < router.history.length - 1;
+  function back() {
+    if (!canBack()) return false;
+    router.history.back();
     return true;
   }
-  const back = () => go(idx - 1);
-  const forward = () => go(idx + 1);
-  // 今のエントリ（解析した複製）＝最初の記録／引き取りより前は null。
-  function current(): DotNavEntry | null {
-    return idx >= 0 ? JSON.parse(hist[idx]) : null;
+  function forward() {
+    if (!canForward()) return false;
+    router.history.forward();
+    return true;
   }
-  // 今のエントリを適用し直す（タブの切り替え時。引き取ったスタックがビューを知っている）。
-  function applyCurrent() {
-    if (idx >= 0) apply(JSON.parse(hist[idx]));
-  }
-  // タブが選択された時に、その履歴を引き取る（無ければ種を入れる）。
   function adopt(t: DotTab | null | undefined) {
     lastKey = null;
-    if (t && Array.isArray(t._navHist) && t._navHist.length) {
-      hist = t._navHist;
-      idx = typeof t._navIdx === 'number' ? Math.max(0, Math.min(t._navIdx, hist.length - 1)) : hist.length - 1;
-    } else {
-      hist = [JSON.stringify(snapshot())];
-      idx = 0;
+    tabId = t?.id ?? null;
+    const retained = tabId ? sessions.get(tabId) : undefined;
+    if (retained) {
+      attach(retained.urls, retained.history.location.state.__TSR_index, retained.history);
+      onChange();
+      return;
     }
+    const saved = t?._navHist;
+    const hydrate = (entry: DotNavEntry) => {
+      const id = crypto.randomUUID();
+      if (entry.gridScroll) gridSnapshots.set(id, entry.gridScroll);
+      return entryHref(entry, id);
+    };
+    const nextUrls = saved?.length ? saved.map((value) => hydrate(JSON.parse(value))) : [hydrate({ ...snapshot(), scrollTop: t?._scrollTop ?? 0 })];
+    const nextIndex = saved?.length ? Math.max(0, Math.min(t?._navIdx ?? saved.length - 1, saved.length - 1)) : 0;
+    attach(nextUrls, nextIndex);
     onChange();
   }
-  // 生きている履歴を、タブのオブジェクトに載せて切り替えをまたいで運ぶ。
-  function saveInto(t: DotTab) {
-    t._navHist = hist;
-    t._navIdx = idx;
+  function pruneScrollMetadata() {
+    const live = new Set(
+      [...sessions.values()]
+        .flatMap((session) => session.urls)
+        .concat(urls)
+        .map((href) => String((defaultParseSearch(href.slice(href.indexOf('?'))) as Record<string, unknown>).entry || '')),
+    );
+    for (const key of gridSnapshots.keys()) if (!live.has(key)) gridSnapshots.delete(key);
+    for (const key of scrollPositions.keys()) if (!live.has(key)) scrollPositions.delete(key);
   }
-  return { push, replace, record, back, forward, saveScrollTop, current, applyCurrent, adopt, saveInto, canBack: () => idx > 0, canForward: () => idx < hist.length - 1 };
+  function releaseTab(id: string) {
+    const session = sessions.get(id);
+    sessions.delete(id);
+    if (session && id !== tabId) session.history.destroy();
+    if (id === tabId) urls = [];
+    pruneScrollMetadata();
+  }
+  function saveInto(t: DotTab) {
+    t._navHist = initialized ? urls.map((href) => JSON.stringify(entryAt(href))) : [];
+    t._navIdx = initialized ? index() : -1;
+  }
+  function applyCurrent() {
+    const entry = current();
+    if (entry) {
+      apply(entry);
+    }
+  }
+  return { push, replace, record, back, forward, saveScrollTop, current, applyCurrent, adopt, saveInto, canBack, canForward, router, releaseTab, gridSnapshot: () => gridSnapshots.get(routeEntryId()) };
 }
 
 // タブ1枚が再起動後に戻ってくるために必要なものを、まとめて1つの不透明な塊にしたもの。

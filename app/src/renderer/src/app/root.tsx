@@ -1,4 +1,6 @@
 import { createRoot } from 'react-dom/client';
+import { Outlet, RouterProvider } from '@tanstack/react-router';
+import { configureNavigationRoot, getNavigationRouter } from '../services/navigation-router.ts';
 import './log.ts';
 import { initI18n } from '../_shared/i18n.ts';
 import { App } from './App.tsx';
@@ -14,6 +16,15 @@ import { ErrorBoundary } from './ErrorBoundary.tsx';
 // 影響を受けない＝自分のブリッジが内容を持って初めて描かれ、載る時に
 // useSyncExternalStore で今のモデルを引くため。何度実行しても同じ（mounted の番人）ので、
 // 読み込み直しても安全。
+configureNavigationRoot(function NavigationRoot() {
+  return (
+    <>
+      <App />
+      <Outlet />
+    </>
+  );
+});
+
 let mounted = false;
 function mount() {
   if (mounted) return;
@@ -25,7 +36,7 @@ function mount() {
   // なるということ。だから境界はそのすぐ下に置く（#324＝ErrorBoundary.tsx を参照）。
   createRoot(root).render(
     <ErrorBoundary>
-      <App />
+      <RouterProvider router={getNavigationRouter()} />
     </ErrorBoundary>,
   );
 }

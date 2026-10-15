@@ -194,7 +194,7 @@ export function AppShell() {
                     防ぐ（サイズスライダーの列合わせの計算は幅が安定していることに依る）。
                     overflow-anchor:none は、ビューポートより上でセルがマウントされたときに
                     ブラウザが位置を補正するのを止める。あれはグリッドが揺れているように見える。 */}
-                  <div ref={setContentEl} data-slot="content-scroll" hidden={imageView} className="relative min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pt-2 pb-4 [overflow-anchor:none] [scrollbar-gutter:stable]">
+                  <div ref={setContentEl} data-slot="content-scroll" data-scroll-restoration-id="dot-content" hidden={imageView} className="relative min-h-0 min-w-0 flex-1 overflow-y-auto px-3 pt-2 pb-4 [overflow-anchor:none] [scrollbar-gutter:stable]">
                     {/* #37: 保存フォルダがディスク上に無い＝下の3つの行き先の代わりにそれを
                       見せる（3つの `hidden` の条件は、新しい要素で包むのではなく、それぞれに
                       `|| libraryMissing` を足してある。こうすれば、仮想化のホスト＝この
@@ -244,7 +244,7 @@ export function AppShell() {
           </div>
         </SidebarProvider>
       </AppTabs>
-      {/* 仮想化のグリッドは、GridMount の effect 経由で上の枠に取り付く。masonic のホストへの
+      {/* 仮想化のグリッドは、GridMount の effect 経由で上の枠に取り付く。仮想一覧のホストへの
           取り付けと flushSync の経路を変えずに済むよう、コンテンツの列の外に置いてある。 */}
       <PostGrid />
       <PosterGrid />

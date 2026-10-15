@@ -65,6 +65,8 @@ export interface dot {
   page: Page;
   configDir: string;
   saveFolder: string;
+  /** 同じ設定・ライブラリを再シードせず、実プロセスを終了して起動し直す。 */
+  restart(): Promise<void>;
   /** アプリのデータベースを開いて`fn`を実行する――永続化を検証するためのもの。 */
   readDb<T>(fn: (sqlite: any) => T): T;
   /**
@@ -93,59 +95,70 @@ async function launch(options: LaunchOptions): Promise<{ dot: dot; close: () => 
   seedFixtureLibrary(configDir, saveFolder, options.posts ?? FIXTURE_POSTS);
   options.seed?.({ configDir, saveFolder });
 
-  const app = await _electron.launch({
-    executablePath: electronPath(),
-    args: ['.', '--force-device-scale-factor=1', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', ...(options.args ?? [])],
-    cwd: appDir,
-    env: {
-      ...process.env,
-      // %APPDATA%も同様に、フォールバックの読み書きがすべてサンドボックス内に留まるように。
-      APPDATA: tmp,
-      DOT_CONFIG_DIR: configDir,
-      // ネイティブホストの登録をスキップする＝HKCUへの書き込みも、共有設定ディレクトリへの
-      // コピーも起きない。実行は実際のライブラリにも、実際のChromeから見えるその姿にも
-      // 触れない。
-      DOT_SANDBOX: '1',
-      DOT_E2E: '1',
-      // 実入力をCDPから送るフローも、利用者の画面へウィンドウを出さない。
-      DOT_E2E_HIDDEN: '1',
-      DOT_START_INACTIVE: '1',
-      // スペックは日本語のラベルでコントロールを探す。これが無いと言語はマシンのものになり、
-      // en-USのCIランナーでは「言語が違う」ではなく「コントロールが見つからない」と
-      // 読めてしまう（docs/テスト.md）。
-      DOT_LANG: 'ja',
-      // 日付はUTCの瞬間として保存され、ローカル時刻で描画されるので、インスペクタが
-      // 「この投稿はいつ投稿されたか」と表示する内容はマシンのタイムゾーンが決める。
-      // 言語を固定するのと同じ理由でここも固定する＝別タイムゾーンのランナーは
-      // （正しくはあるが）別の日付を描画し、スペックはそのラベルを読んでいる。
-      TZ: 'Asia/Tokyo',
-    },
-  });
+  async function startApp() {
+    const app = await _electron.launch({
+      executablePath: electronPath(),
+      args: ['.', '--force-device-scale-factor=1', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding', '--disable-background-timer-throttling', ...(options.args ?? [])],
+      cwd: appDir,
+      env: {
+        ...process.env,
+        // %APPDATA%も同様に、フォールバックの読み書きがすべてサンドボックス内に留まるように。
+        APPDATA: tmp,
+        DOT_CONFIG_DIR: configDir,
+        // ネイティブホストの登録をスキップする＝HKCUへの書き込みも、共有設定ディレクトリへの
+        // コピーも起きない。実行は実際のライブラリにも、実際のChromeから見えるその姿にも
+        // 触れない。
+        DOT_SANDBOX: '1',
+        DOT_E2E: '1',
+        // 実入力をCDPから送るフローも、利用者の画面へウィンドウを出さない。
+        DOT_E2E_HIDDEN: '1',
+        DOT_START_INACTIVE: '1',
+        // スペックは日本語のラベルでコントロールを探す。これが無いと言語はマシンのものになり、
+        // en-USのCIランナーでは「言語が違う」ではなく「コントロールが見つからない」と
+        // 読めてしまう（docs/テスト.md）。
+        DOT_LANG: 'ja',
+        // 日付はUTCの瞬間として保存され、ローカル時刻で描画されるので、インスペクタが
+        // 「この投稿はいつ投稿されたか」と表示する内容はマシンのタイムゾーンが決める。
+        // 言語を固定するのと同じ理由でここも固定する＝別タイムゾーンのランナーは
+        // （正しくはあるが）別の日付を描画し、スペックはそのラベルを読んでいる。
+        TZ: 'Asia/Tokyo',
+      },
+    });
 
-  const page = await app.firstWindow();
-  // サイズを合わせるのはウィンドウではなくCONTENTボックス＝フレームの寸法はOSの領分であり
-  // マシンごとに違うが、スクリーンショットが写しているのはコンテンツボックスの方だ。
-  await app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setContentSize(size.width, size.height), CONTENT_SIZE);
-  // 「最初の描画が終わった」＝カードがグリッドのスロットに載ったか、ライブラリが空で
-  // 代わりにプレースホルダーがその場所を占めたかのいずれか。
-  await page.waitForFunction(() => !!document.querySelector('[data-slot="post-card"], [data-slot="empty-state"]'));
-  // ……そして描画がブレークポイントのWIDE側で終わったこと。これはすべてのフローのケースが
-  // 前提に書かれているレイアウトだ。CONTENT_SIZEはそれ以外にはなり得ないよう算出されている
-  // （#649）が、要求どおりの結果になるとは限らない＝setContentSizeは作業領域にクランプ
-  // されるので、要求より狭いディスプレイでは全ケースが黙ってnarrowレイアウトを渡されて
-  // しまう。layout-mode.ts自身の数値から組み立てたメディアクエリとして問うので、これも
-  // ブレークポイントに追従する――そして1つのスペックにつき1回ではなく、起動につき1回問う。
-  // （アプリ自体はもうこの問いを立てない＝#975/#981以降、幅で形を変えるものはアプリの中に
-  // 何一つ無い。答えにまだ依存しているのはこのテスト一式の方だ――グリッドの列数、カードの
-  // インデックス、ピクセルのベースライン。）
-  const side = await page.evaluate((bp) => ({ width: window.innerWidth, wide: matchMedia(`(min-width: ${bp}px)`).matches }), WIDE_MIN_PX);
-  if (!side.wide) throw new Error(`E2E ウィンドウが narrow 側で起動しました（実測 ${side.width}px ／ wide の下限 ${WIDE_MIN_PX}px）。要求した ${CONTENT_SIZE.width}px が画面の作業領域に収まらなかったか、幅の算出がブレークポイントから外れています。`);
+    const page = await app.firstWindow();
+    // サイズを合わせるのはウィンドウではなくCONTENTボックス＝フレームの寸法はOSの領分であり
+    // マシンごとに違うが、スクリーンショットが写しているのはコンテンツボックスの方だ。
+    await app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0].setContentSize(size.width, size.height), CONTENT_SIZE);
+    // 「最初の描画が終わった」＝カードがグリッドのスロットに載ったか、ライブラリが空で
+    // 代わりにプレースホルダーがその場所を占めたかのいずれか。
+    await page.waitForFunction(() => !!document.querySelector('[data-slot="post-card"], [data-slot="empty-state"]'));
+    // ……そして描画がブレークポイントのWIDE側で終わったこと。これはすべてのフローのケースが
+    // 前提に書かれているレイアウトだ。CONTENT_SIZEはそれ以外にはなり得ないよう算出されている
+    // （#649）が、要求どおりの結果になるとは限らない＝setContentSizeは作業領域にクランプ
+    // されるので、要求より狭いディスプレイでは全ケースが黙ってnarrowレイアウトを渡されて
+    // しまう。layout-mode.ts自身の数値から組み立てたメディアクエリとして問うので、これも
+    // ブレークポイントに追従する――そして1つのスペックにつき1回ではなく、起動につき1回問う。
+    // （アプリ自体はもうこの問いを立てない＝#975/#981以降、幅で形を変えるものはアプリの中に
+    // 何一つ無い。答えにまだ依存しているのはこのテスト一式の方だ――グリッドの列数、カードの
+    // インデックス、ピクセルのベースライン。）
+    const side = await page.evaluate((bp) => ({ width: window.innerWidth, wide: matchMedia(`(min-width: ${bp}px)`).matches }), WIDE_MIN_PX);
+    if (!side.wide) throw new Error(`E2E ウィンドウが narrow 側で起動しました（実測 ${side.width}px ／ wide の下限 ${WIDE_MIN_PX}px）。要求した ${CONTENT_SIZE.width}px が画面の作業領域に収まらなかったか、幅の算出がブレークポイントから外れています。`);
+    return { app, page };
+  }
+
+  const { app, page } = await startApp();
 
   const dot: dot = {
     app,
     page,
     configDir,
     saveFolder,
+    async restart() {
+      await dot.app.close();
+      const restarted = await startApp();
+      dot.app = restarted.app;
+      dot.page = restarted.page;
+    },
     readDb(fn) {
       const { openDatabase } = require(path.join(appDir, 'src', 'main', 'lib-db.ts'));
       // #176: dot.dbは今、configDirではなく保存フォルダの中にある。
@@ -169,7 +182,7 @@ async function launch(options: LaunchOptions): Promise<{ dot: dot; close: () => 
   return {
     dot,
     close: async () => {
-      await app.close();
+      await dot.app.close();
       fs.rmSync(tmp, { recursive: true, force: true });
     },
   };

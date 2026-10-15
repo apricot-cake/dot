@@ -1,4 +1,4 @@
-// 仮想化した投稿グリッド＝共有の VirtualGridHost に載せる投稿用のセル（masonic と
+// 仮想化した投稿グリッド＝共有の VirtualGridHost に載せる投稿用のセル（仮想化と
 // スクロール周りの配線は _shared/VirtualGrid.tsx が持つ）。このコンポーネントが持つのは
 // セルの描画と窓の制御で、データ（model.items = viewGroups）とセルが呼び返す操作は
 // orchestrator.ts が持つ。
@@ -41,5 +41,5 @@ export function GridHost({ model }: { model: DotGridModel }) {
   // anchor: そして Ctrl+ホイールのズームが位置を保つのもこのグリッド（#282）＝投稿者
   // グリッドのズームの経路はノッチごとに確定させ、位置を保つことはない。
   //
-  return <VirtualGridHost model={model} cell={PostCell} nav anchor onBackgroundClick={onBackgroundClick} />;
+  return <VirtualGridHost kind="post" model={model} cell={PostCell} nav anchor onBackgroundClick={onBackgroundClick} />;
 }

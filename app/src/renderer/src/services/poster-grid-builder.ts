@@ -86,7 +86,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
     // 件数とリセットは、ツールバーの絞り込みバーが 'posterGroups'/
     // 'posterQueryTree'/'searchQuery' から自己導出する（下の
     // dotStore.set('posterGroups', …) を購読している）。
-    // 表示: ここではセルがどう描かれるかは何も決めない。形は masonic の
+    // 表示: ここではセルがどう描かれるかは何も決めない。形は TanStack Virtual の
     // モデルに乗り（services/grid.ts がポスターの表示キーからそれを導出
     // する）、各セルはそこから自分でレイアウトする＝どのコンテナにも density
     // クラスは無い（#630）。
@@ -298,7 +298,7 @@ export function makePosterGridBuilder(deps: PosterGridBuilderDeps) {
   function restorePosterSelection(key: string | null) {
     const u = deps.buildUsers().find((item) => item.key === key);
     store.setState({ selectedPosterKey: u?.key ?? null });
-    if (u) dotPosterGridSource.reveal('p:' + u.key);
+    // 履歴の表示位置は Router と Virtual が復元する。選択の復元ではスクロールしない。
   }
 
   // ポスターの右クリックメニュー: 投稿一覧への移動とタグの編集。

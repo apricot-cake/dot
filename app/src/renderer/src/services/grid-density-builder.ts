@@ -67,7 +67,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
     const st = viewSizeState();
     st.set(Math.max(st.min, Math.min(st.max, px)));
     if (!commit) {
-      // ドラッグ中の実時間の再配置（masonic は columnWidth が変わると positioner を
+      // ドラッグ中の実時間の再配置（TanStack Virtual は columnWidth が変わると 配置と計測キャッシュ を
       // 作り直す）は、dotStore ではなく意図した脇道を通す＝ドラッグの入力を毎回
       // ストアへ書くと、pointermove のたびに再計算と通知が走り、何の得も無い。
       const grid = store.getState().browseMode === 'trash' ? deps.dotTrashGridSource : deps.dotPostGridSource;
@@ -91,7 +91,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
   }
 
   // グリッド自身の箱を実測したもの。溝は計算済みスタイルではなく、配置自身の定数＝隙間を
-  // 描くのは masonic で、入れ物には隙間が無い。
+  // 描くのは TanStack Virtual で、入れ物には隙間が無い。
   function postGridMetrics(): DotGridMetrics | null {
     const W = gridWidth(store.getState().browseMode === 'trash' ? 'trash' : 'post');
     if (!W) return null;
@@ -177,7 +177,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
   // 同じ高さに狙い続けられる。
   let _zoomAnchor: ZoomAnchor | null = null;
 
-  // 俯瞰の尺度ではサイズの適用が高くつく＝masonic は窓全体にわたって positioner を組み直し、
+  // 俯瞰の尺度ではサイズの適用が高くつく＝TanStack Virtual は窓全体にわたって 配置と計測キャッシュ を組み直し、
   // タイルが小さくなると窓は数百セルになる（9千件のライブラリで実測: 200px で1目盛り約50ms、
   // 48px で約200ms）。ホイールはそれよりずっと速く目盛りを届けるので、イベントごとに適用すると
   // 利用者が回している間ずっとメインスレッドが塞がる。代わりに目盛りを溜め、1フレームにつき
@@ -250,7 +250,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
       _zoomChanged = false;
       const settled = computeSizeTrack();
       if (!settled) return;
-      // コミットはグリッドを描き直し（renderPosts）、新しい項目の集合は positioner を
+      // コミットはグリッドを描き直し（renderPosts）、新しい項目の集合は 配置と計測キャッシュ を
       // 初期化する＝位置の保持が生き延びなければならない2回目の再配置。だから島には推測を
       // させず、同じアンカーをもう一度渡す。
       pushZoomAnchor(ending);
@@ -310,7 +310,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
   function posterGridMetrics(): DotGridMetrics | null {
     const W = gridWidth('poster');
     if (!W) return null;
-    // 溝は今や入れ物の CSS ではなく masonic のモデルにある（services/grid.ts）＝式は1つで、
+    // 溝は今や入れ物の CSS ではなく TanStack Virtual のモデルにある（services/grid.ts）＝式は1つで、
     // 両方が display.ts から読む。
     return { W, g: posterGutterFor(currentPosterShape()) };
   }
@@ -325,7 +325,7 @@ export function makeGridDensity(deps: GridDensityDeps) {
 
   // 投稿者のスライダーの値を適用する（ポップオーバーの Slider がこれを駆動する）。投稿者
   // グリッドは1目盛りごとにコミットする＝ドラッグ中と確定時を分けない。どちらにせよ
-  // masonic は columnWidth の変更で positioner を作り直すため。`value` は反転している
+  // TanStack Virtual は columnWidth の変更で 配置と計測キャッシュ を作り直すため。`value` は反転している
   // （右が大きい）ので、呼び出し側が最後に読んだトラックの min/max と一緒に trackCols を通す。
   function setPosterSizeFromSlider(value: number, min: number, max: number) {
     const st = posterSizeState();

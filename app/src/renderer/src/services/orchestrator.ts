@@ -461,10 +461,6 @@ export function endFilterEditSession(): void {
     const el = contentScrollEl();
     return el ? el.scrollTop : 0;
   };
-  const scrollContentTo = (y: number) => {
-    const el = contentScrollEl();
-    if (el) el.scrollTop = y;
-  };
   // グループ化の状態（manualGroups/ungrouped/stickyRecs。main 経由で
   // manual-groups.json / ungrouped.json に永続化する）は viewGroups と一緒に
   // post-grid-builder.ts へ移した＝下の postGrid を参照。
@@ -754,7 +750,6 @@ export function endFilterEditSession(): void {
     resetAllFilters: () => resetAllFilters(),
     setBrowseModeLite: (m) => setBrowseModeLite(m), // setBrowseModeLite はずっと下で宣言する＝遅延させる
     contentScrollTop: () => contentScrollTop(),
-    scrollContentTo: (y) => scrollContentTo(y),
     getPosterTree: () => posterQB.getTree(), // posterQB はずっと下で生成する＝遅延させる
     setPosterTree: (t) => {
       if (t) removeCondsMatchingIn(t, (leaf) => leaf.type === 'folder');

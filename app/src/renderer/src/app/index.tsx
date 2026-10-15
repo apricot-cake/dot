@@ -1,6 +1,6 @@
 // 単一バンドルのエントリ＝全 React コンポーネントの副作用 import。electron-vite の
 // レンダラービルド（electron.vite.config.ts 参照）がこの1本のバレルを Rollup/Vite で
-// バンドルするので、共有コード（React・masonic・@base-ui/react・
+// バンドルするので、共有コード（React・TanStack Virtual・@base-ui/react・
 // _shared/{VirtualGrid,i18n,tip}）はコンポーネントごとに重複せず1回だけバンドルされる。
 // （かつては手書きの islands/build.mjs が全 island 分をまとめた IIFE を1つ作っていた＝
 // レンダラーが electron-vite へ移ったときに退役。#156 参照。）

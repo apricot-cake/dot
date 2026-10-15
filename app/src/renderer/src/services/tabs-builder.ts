@@ -1,23 +1,11 @@
+import { postQueriesReady } from './search-results';
+import { getElementScrollRestorationEntry } from '@tanstack/router-core';
+import { restoreGridScroll, flushGridScrollRestoration } from './grid-scroll-restoration';
+import { getNavigationRouter } from './navigation-router';
 import type { Translate } from './translation.ts';
 import { isEditing as isImageEditing } from './image-edit-controls.ts';
-// nav の履歴（ブラウザ風の戻る／進む）と、ウィンドウのタブの CRUD ／バーとのやり取り＝
-// 旧 viewer.ts のモノリスから切り出したもの。undo-builder.ts ／ selection-builder.ts と
-// 同じ形をしている。状態機械（makeNavHistory と、tabs.json の直列化・復元の対）は
-// tab-state.ts に手を触れず置いたまま＝このモジュールはその使い手で、viewer.ts の
-// 埋め込みの結線を置き換える。加えて、dotStore に載った tabs/activeTabId の
-// アクセサ（かつての viewer.ts のローカル）と、ストリップが呼ぶタブの操作
-// （switchTab/addTab/closeTab/duplicateTab/showTabMenu）も持つ。ストリップ自身は
-// 今や自分の DOM イベントを自分で持つ＝ここからバーを見張っているものは何も無い（#621）。
-//
-// 画像ビューのまとまり（showImageView/hideImageView/openImageEntry/
-// setImageTabIndex/toggleImageTabInspector/closeImageTab/addImageTab）は
-// image-tab-builder.ts にある（#144 で type:'image' のタブを、タブごとに統一した履歴の
-// 'image' エントリへ作り替えた）。このモジュールは showImageView/hideImageView を依存として
-// 受け取り（遅らせた前方参照。undo-builder.ts の showToast/postGrid と同じ形）、まだ
-// ローカルに残っているコードのために＝そして viewer.ts の別の場所で宣言している
-// bootApp/postGrid 自身の依存のために＝タブの状態を呼び続けられるだけの面
-// （getTabs/mutateTabs/getActiveTabId/setActiveTabId/activeTab/
-// saveActiveTabState/nav/persistTabsDebounced/persistTabsNow/closeTab）を export する。
+// TanStack Router による各タブの履歴と、共有ビューへの状態適用を接続する。
+// タブ一覧の CRUD、再起動時の復元、ショートカットもここでまとめる。
 import { genTabId, makeNavHistory, navEntryUrl, sanitizeSavedTabs, loadTabs, persistTabs } from './tab-state.ts';
 import { isOpen as fulltextIsOpen } from './fulltext-dialog.ts';
 import { get as confirmGet } from './confirm.ts';
@@ -49,7 +37,6 @@ export interface TabsBuilderDeps {
   resetAllFilters(): void;
   setBrowseModeLite(mode: 'posts' | 'posters'): void;
   contentScrollTop(): number;
-  scrollContentTo(y: number): void;
   // 'posters' のエントリ向けの、投稿者側のビューの状態（#144 保留の判断3＝モードは今や
   // タブごとなので、投稿者の絞り込みの木／並び順／実時間の検索が履歴のエントリに乗る）。
   getPosterTree(): DotQueryGroup;
@@ -93,6 +80,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   }
   let _tabPersistTimer: any = null;
   let restoringState = false;
+  let pendingPostScroll = false;
   const closedTabs: { tab: DotTab; index: number }[] = [];
 
   function snapshotState(): DotTabSnapshot {
@@ -151,6 +139,10 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     if (store.getState().activeImageTab) return; // 画像ビューの下でのグリッドの描画は背面での更新
     const mode = store.getState().browseMode;
     if (mode !== 'posts') return; // 投稿者を見ている間の、隠れたグリッドの描画
+    if (pendingPostScroll) {
+      pendingPostScroll = false;
+      flushGridScrollRestoration();
+    }
     const snap = snapshotState();
     deps.setLastRenderedState(JSON.stringify(snap));
     if (restoringState) return;
@@ -199,6 +191,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   // posts/posters は、setBrowseMode の描画のデバウンスを通さずに閲覧モードを入れ替える
   // （下のエントリ自身の描画がその描画そのもの）。image はグリッドの上にそのまま重なる。
   function applyEntry(e: DotNavEntry) {
+    pendingPostScroll = e.kind === 'posts';
     _navReplaceNext = false; // 復元は、保留中の置き換えの手がかりを消費しない
     if (e.kind === 'image') {
       const st = e.state as { recs: string[]; idx: number };
@@ -206,7 +199,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
       return;
     }
     deps.hideImageView();
-    restoreScrollTop(e.scrollTop ?? 0);
+    prepareScroll(e.scrollTop ?? 0);
     deps.setBrowseModeLite(e.kind === 'posters' ? 'posters' : 'posts');
     if (e.kind === 'posters') {
       const st = e.state as { tree?: any; sort?: string; search?: string; inspectedPosterKey?: string | null };
@@ -217,6 +210,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
         deps.setSearchBoxValue(st.search || '');
         deps.renderPosters();
         deps.restorePosterSelection(st.inspectedPosterKey || null);
+        flushGridScrollRestoration();
       } finally {
         restoringState = false;
       }
@@ -255,11 +249,10 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   }
 
   // --- ビューの履歴（ブラウザ風の戻る／進む） ---
-  // 状態機械（hist/idx/上限/重複除去/進む側の枝の破棄/引き取り/置き換え/まとめ）は
-  // tab-state.ts にある（makeNavHistory）。このモジュールが持つのは、エントリの組み立て、
-  // 種別による振り分け、ストアのボタンの同期、永続化のためのフック。再 push は applyState の
-  // restoringState が防ぐ。
+  // 戻る・進むは Router の MemoryHistory に任せ、画面状態の適用だけを注入する。
   const nav = makeNavHistory({
+    router: getNavigationRouter(),
+    scrollReady: () => !pendingPostScroll,
     cap: NAV_CAP,
     enabled: () => appBooted,
     snapshot: snapshotEntry,
@@ -272,7 +265,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   });
   // nav の戻る／進むの無効状態は、以前は押し込み型の activebar のモデルの一部だった。今の
   // activebar コンポーネントは、他のすべてを dotStore から自分で導く。ただし nav の
-  // canBack/canForward はストアではなく閉包（履歴のスタック）にある＝だからこれが、変化の
+  // canBack/canForward は Router の履歴から導出する＝だからこれが、変化の
   // たびに写す処理として1つだけ残っている。
   function updateNavButtons() {
     store.setState({ navCanBack: nav.canBack() });
@@ -339,26 +332,24 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     const t = getTabs().find((t) => t.id === getActiveTabId());
     if (!t) return;
     const cur = nav.current();
+    if (cur && cur.kind !== 'image') nav.saveScrollTop(deps.contentScrollTop());
     if (!cur || cur.kind === 'posts') {
       t.state = snapshotState();
-      t._scrollTop = deps.contentScrollTop(); // コンテンツのスクロール位置をタブごとに覚える（これも永続化する）
+      t._scrollTop = pendingPostScroll ? (cur?.scrollTop ?? 0) : deps.contentScrollTop(); // コンテンツのスクロール位置をタブごとに覚える（これも永続化する）
     }
     nav.saveInto(t); // 戻る／進むの履歴をタブと一緒に運ぶ
   }
-  // タブが覚えているコンテンツのスクロール位置を戻す。描画したばかりのグリッドの配置が
-  // 済むよう rAF を2回挟む。仮想化するグリッドは、自分の窓を scrollTop だけから
-  // 導く（推定した入れ物の高さは既に全項目分ある）。
-  let scrollRestoreFrame = 0;
-  function restoreScrollTop(y: number) {
-    cancelAnimationFrame(scrollRestoreFrame);
-    scrollRestoreFrame = requestAnimationFrame(() => {
-      scrollRestoreFrame = requestAnimationFrame(() => deps.scrollContentTo(y));
-    });
+  // 仮想グリッドの初期位置に渡す。Router のセッションキャッシュを優先し、
+  // 再起動後は保存した位置を使う。描画タイミングを rAF で推測しない。
+  function prepareScroll(fallback: number) {
+    const cached = getElementScrollRestorationEntry(nav.router, { id: 'dot-content' });
+    restoreGridScroll(nav.gridSnapshot() ?? { offset: cached?.scrollY ?? fallback, measurements: [], width: 0, lanes: 0 });
   }
   function restoreTabView(t: DotTab | null | undefined) {
-    if (!t) return;
-    const y = typeof t._scrollTop === 'number' ? t._scrollTop : 0;
-    restoreScrollTop(y);
+    if (!t || nav.current()?.kind === 'image') return;
+    prepareScroll(nav.current()?.scrollTop ?? t._scrollTop ?? 0);
+    pendingPostScroll = nav.current()?.kind === 'posts' && !postQueriesReady(deps.postQB.getTree());
+    if (!pendingPostScroll) flushGridScrollRestoration();
   }
   // モデルの導出（タイトルとアイコン）は services/tabs.ts の dotTabsSource にある＝
   // あちらは、下のどの書き換えも書き込むのと同じ dotStore のキーから引く
@@ -390,6 +381,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
       if (t.state) applyState(t.state);
       else deps.renderPosts();
       nav.adopt(t);
+      restoreTabView(t);
     }
   }
   function switchTab(id: string) {
@@ -399,7 +391,6 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     const t = getTabs().find((t) => t.id === id);
     if (!t) return;
     activateTab(t);
-    restoreTabView(t);
     persistTabsDebounced();
   }
   function addTab() {
@@ -413,7 +404,8 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     setActiveTabId(id);
     applyState({ f: [], ops: {}, folderId: null, search: '', sort: deps.getSortValue(), shuffleSeed: deps.getShuffleSeed(), multi: false });
     nav.adopt(getTabs().find((t) => t.id === id)); // 新しいタブ → 新しい履歴（空のビューを種として入れる）
-    requestAnimationFrame(() => deps.scrollContentTo(0)); // 新しいタブは先頭から始まる
+    restoreGridScroll(null);
+    flushGridScrollRestoration(); // 新しいタブは先頭から始まる
     persistTabsDebounced();
   }
   function openTextSearchTab(query: string) {
@@ -428,7 +420,8 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     setActiveTabId(id);
     applyState(state);
     nav.adopt(getTabs().find((t) => t.id === id));
-    requestAnimationFrame(() => deps.scrollContentTo(0));
+    restoreGridScroll(null);
+    flushGridScrollRestoration();
     persistTabsDebounced();
   }
   // #145: 履歴行の左クリック＝「現在タブで復元してパネルを閉じる」。復元は意図して、戻る／
@@ -484,8 +477,8 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     if (nextActive) {
       setActiveTabId(nextActive.id);
       activateTab(nextActive);
-      restoreTabView(nextActive);
     }
+    if (id) nav.releaseTab(id);
     persistTabsDebounced();
   }
   function reopenClosedTab() {
@@ -498,7 +491,6 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     });
     setActiveTabId(closed.tab.id);
     activateTab(closed.tab);
-    restoreTabView(closed.tab);
     persistTabsDebounced();
   }
   function duplicateTab(id: string) {

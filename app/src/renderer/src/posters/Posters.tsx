@@ -109,5 +109,5 @@ function PosterCell({ index, data, width }: GridCellProps) {
 const onBackgroundClick = () => posterClickBackground();
 
 export function PostersHost({ model }: { model: DotGridModel }) {
-  return <VirtualGridHost model={model} cell={PosterCell} onBackgroundClick={onBackgroundClick} />;
+  return <VirtualGridHost kind="poster" model={model} cell={PosterCell} onBackgroundClick={onBackgroundClick} />;
 }

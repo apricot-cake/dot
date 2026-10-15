@@ -139,10 +139,20 @@ export function normalizeTabPersistShape(input: unknown): unknown {
   for (const key of TAB_PERSIST_KEYS) if (Object.hasOwn(record, key)) canonical[key] = record[key];
   return canonical;
 }
+// 仮想一覧の実測値だけを保持する。壊れたキャッシュは捨てても履歴自体は復元できる。
+const GridScrollSnapshotSchema = z.object({
+  offset: z.number().nonnegative(),
+  measurements: z.array(z.object({ index: z.number().int().nonnegative(), key: z.union([z.string(), z.number()]), start: z.number(), size: z.number().nonnegative(), end: z.number(), lane: z.number().int().nonnegative() })),
+  width: z.number().nonnegative(),
+  lanes: z.number().int().nonnegative(),
+  scrollMargin: z.number().optional(),
+  anchor: z.object({ key: z.union([z.string(), z.number()]), viewportOffset: z.number() }).optional(),
+});
+const navigationMetadata = { scrollTop: z.number().nonnegative().optional(), gridScroll: GridScrollSnapshotSchema.optional().catch(undefined) };
 export const NavEntrySchema = z.discriminatedUnion('kind', [
-  z.object({ scrollTop: z.number().nonnegative().optional(), u: z.string().default(''), kind: z.literal('posts'), state: TabViewSchema }),
-  z.object({ scrollTop: z.number().nonnegative().optional(), u: z.string().default(''), kind: z.literal('posters'), state: TabViewSchema }),
-  z.object({ scrollTop: z.number().nonnegative().optional(), u: z.string().default(''), kind: z.literal('image'), state: z.object({ recs: z.array(IdSchema).min(1), idx: z.number().int().nonnegative().default(0) }) }),
+  z.object({ ...navigationMetadata, u: z.string().default(''), kind: z.literal('posts'), state: TabViewSchema }),
+  z.object({ ...navigationMetadata, u: z.string().default(''), kind: z.literal('posters'), state: TabViewSchema }),
+  z.object({ ...navigationMetadata, u: z.string().default(''), kind: z.literal('image'), state: z.object({ recs: z.array(IdSchema).min(1), idx: z.number().int().nonnegative().default(0) }) }),
 ]);
 export const TabPersistSchema = z.preprocess(
   normalizeTabPersistShape,

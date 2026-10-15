@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // tab-state.ts の単体テスト。切り出した4つの領域＝makeTabLabels
 // (filterLabel/tabTitleOf)、makeNavHistory (push/back/forward/adopt/saveInto)、
 // serializeTabs、sanitizeSavedTabs を見る。
@@ -427,4 +428,59 @@ test('保存済みタブと戻る履歴の反応数条件を除去する', () =>
     expect(state.tree.children).toEqual([]);
     expect(state.ops).toEqual({});
   }
+});
+
+test('TanStack Router のルート照合と検索状態がタブごとの戻る・進むと一致する', async () => {
+  const applied: DotNavEntry[] = [];
+  const posts = (search: string): DotNavEntry => ({ u: '/posts', kind: 'posts', state: { search, sort: 'date-desc' } });
+  const nav = makeNavHistory({ cap: 60, enabled: () => true, snapshot: () => posts(''), apply: (entry) => applied.push(entry), onChange: () => {} });
+  const first: DotTab = { id: 'first', pinned: false, title: null, state: {} };
+  const second: DotTab = { id: 'second', pinned: false, title: null, state: {} };
+  nav.adopt(first);
+  nav.push(posts('あんず'));
+  nav.saveScrollTop(900);
+  nav.saveInto(first);
+  nav.adopt(second);
+  nav.push({ u: '/posters', kind: 'posters', state: { search: '作者', sort: 'count' } });
+  nav.saveInto(second);
+  nav.adopt(first);
+  expect(nav.current()).toMatchObject({ kind: 'posts', state: { search: 'あんず' }, scrollTop: 900 });
+  await nav.router.load();
+  expect(nav.router.state.matches.at(-1)?.routeId).toBe('/posts');
+  expect(nav.router.state.location.search).toMatchObject({ view: { search: 'あんず' } });
+  expect(nav.back()).toBe(true);
+  expect(applied.at(-1)).toMatchObject({ kind: 'posts', state: { search: '' } });
+  nav.adopt(second);
+  expect(nav.current()).toMatchObject({ kind: 'posters', state: { search: '作者' } });
+  expect(nav.canBack()).toBe(true);
+  await nav.router.load();
+  expect(nav.router.state.matches.at(-1)?.routeId).toBe('/posters');
+});
+
+test('実測キャッシュは永続化・再起動・閉じたタブの復元をまたいで保持する', () => {
+  const entry: DotNavEntry = { u: '/posts', kind: 'posts', state: { search: 'あんず' }, scrollTop: 800, gridScroll: { offset: 800, width: 993, lanes: 3, measurements: [{ index: 0, key: 'post-1', start: 8, end: 450, size: 442, lane: 0 }], anchor: { key: 'post-1', viewportOffset: -20 } } };
+  const saved = { activeTabId: 'first', tabs: [{ id: 'first', pinned: false, title: null, state: { view: entry.state, nav: { hist: [entry], idx: 0 } } }] };
+  const tabs = sanitizeSavedTabs(saved, () => 'unused');
+  expect(tabs).not.toBeNull();
+  if (!tabs) throw new Error('タブが復元されません');
+  const first = tabs.tabs[0];
+  const nav = makeNavHistory({ cap: 3, enabled: () => true, snapshot: () => entry, apply: () => {}, onChange: () => {} });
+  nav.adopt(first);
+  expect(nav.gridSnapshot()).toEqual(entry.gridScroll);
+  nav.saveInto(first);
+  const persisted = serializeTabs([first], first.id);
+  expect(persisted.tabs[0].state.nav?.hist[0].gridScroll).toEqual(entry.gridScroll);
+  nav.adopt({ id: 'other', pinned: false, title: null, state: {} });
+  nav.releaseTab(first.id);
+  nav.adopt(first);
+  expect(nav.gridSnapshot()).toEqual(entry.gridScroll);
+});
+
+test('壊れた実測キャッシュだけを破棄し、保存済みの画面と履歴は復元する', () => {
+  const saved = { activeTabId: 'first', tabs: [{ id: 'first', pinned: false, title: null, state: { nav: { hist: [{ kind: 'posts', state: { search: 'あんず' }, gridScroll: { offset: 'invalid', measurements: [] } }], idx: 0 } } }] };
+  const restored = sanitizeSavedTabs(saved, () => 'unused');
+  const history = restored?.tabs[0]._navHist;
+  if (!history) throw new Error('履歴が復元されません');
+  expect(JSON.parse(history[0])).toMatchObject({ kind: 'posts', state: { search: 'あんず' } });
+  expect(JSON.parse(history[0]).gridScroll).toBeUndefined();
 });

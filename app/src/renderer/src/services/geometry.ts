@@ -11,9 +11,7 @@
 // clientWidth は半ピクセルを切り上げるので、それだとぴったり収まるはずの
 // サイズが1px 広くなり、1列を黙って落としてしまう）, g: 溝の px }。
 
-// 与えられた最小列サイズで何列入るか（auto-fill minmax の計算――masonic
-// の columnWidth は最小値で、列は埋めるよう伸びる。旧来の CSS グリッドと
-// 同じ列数の式）。
+// 与えられた最小列サイズで何列入るか。CSS auto-fill minmax と同じ列数の式。
 export const colsFor = (size: number, m: DotGridMetrics) => Math.max(1, Math.floor((m.W + m.g) / (size + m.g)));
 // 目標の列数にぴったり収まる列サイズ。
 export const sizeFor = (n: number, m: DotGridMetrics) => Math.floor((m.W - (n - 1) * m.g) / n);
