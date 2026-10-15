@@ -3,11 +3,8 @@
 // 送る PostRecord の形へ組み立てる方（buildWebMeta）。
 //
 // ここのフィクスチャは @marbec/web-auto-extractor の parse() の出力を模して手で書いた
-// オブジェクトで、実 HTML を実パーサに通したものではない。extension/ はリポジトリルートの
-// npm ワークスペースではない（ルートの package.json の `workspaces` を参照）ので、ルート
-// 直下のこのスイートからは extension/ 側の node_modules を解決できず、パッケージを直接
-// import できない。web-meta.ts 自身もパーサを import しない（import するのは出力の型だけ）
-// ＝この分け方が在る理由はまさにそれ（あのファイルの冒頭コメントを参照）。下の形は
+// オブジェクトで、実 HTML を実パーサに通したものではない。web-meta.ts 自身も
+// パーサを import せず、出力の型だけを受け取る。下の形は
 // 2026-08-03 に実パッケージ（2.2.1）と突き合わせて確かめた（やり方は設計の記録＝#239 の
 // 2026-08-03 のコメントを参照）。metatags / jsonld / microdata / rdfa はそれぞれページ自身の
 // 綴りと @type をキーに持ち、itemprop の繰り返しはすでに配列へ畳まれ、壊れた JSON-LD の

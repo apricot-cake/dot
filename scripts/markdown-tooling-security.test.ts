@@ -1,5 +1,10 @@
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+
+const toolingRequire = createRequire(require.resolve('markdownlint-cli2'));
+const toolingUrl = (name: string) => pathToFileURL(toolingRequire.resolve(name)).href;
 
 function probe(source: string, timeout = 5000) {
   return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', source], { encoding: 'utf8', timeout }));
@@ -8,7 +13,7 @@ function probe(source: string, timeout = 5000) {
 describe('Markdown の依存更新', () => {
   it('継承された trust では危険なリンクを許可せず、通常の数式と明示指定を保つ', () => {
     const result = probe(`
-      import katex from 'katex';
+      import katex from '${toolingUrl('katex')}';
       const expression = String.raw\`\\href{javascript:alert(1)}{x}\`;
       Object.defineProperty(Object.prototype, 'trust', { value: true, writable: true, configurable: true });
       try {
@@ -25,7 +30,7 @@ describe('Markdown の依存更新', () => {
 
   it('多数の TOML キーを制限時間内に解析する', () => {
     const result = probe(`
-      import { parse } from 'smol-toml';
+      import { parse } from '${toolingUrl('smol-toml')}';
       const count = 256000;
       const input = Array.from({ length: count }, (_, i) => 'k' + i + '=1').join('\\n');
       console.log(JSON.stringify({ count: Object.keys(parse(input)).length }));
@@ -35,7 +40,7 @@ describe('Markdown の依存更新', () => {
 
   it('既存方式の設定で長さ・無効化・警告レベルを維持する', () => {
     const result = probe(`
-      import { lint } from 'markdownlint/sync';
+      import { lint } from '${toolingUrl('markdownlint/sync')}';
       const config = { default: false, MD013: { line_length: 120, severity: 'warning' } };
       const run = (config, length) => lint({ strings: { fixture: 'x '.repeat(length).trim() + '\\n' }, config }).fixture;
       const allowed = run(config, 50);

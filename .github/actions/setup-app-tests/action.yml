@@ -12,26 +12,19 @@ description: >-
 runs:
   using: composite
   steps:
-    # node_modules はキャッシュせず、npm の内容アドレス付きダウンロードキャッシュ
-    # だけを再利用する。これなら PR 内の先行 run が導入済みのテスト runner を改変
-    # しても、後続 run はその実行ファイルを引き継がず、lockfile から木を作り直す。
-    - name: Setup Node
-      id: setup-node
-      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+    # node_modules は保存せず、pnpm のストアだけを再利用する。
+    - name: Setup pnpm and Node
+      uses: pnpm/setup@c9883cc79df532ad1a7b81bf9ab944ceb090d65c # v2.0.0
       with:
         node-version-file: .node-version
-        cache: npm
-        cache-dependency-path: |
-          package-lock.json
-          extension/package-lock.json
-    # ci.yml と同じ導入経路＝素の `npm ci` では動く木ができない理由は
-    # scripts/setup.cts を参照。ここでは拡張機能のビルドも行う。検証済みの Chrome
-    # リリース出力から用意するブラウザテストは、すべてこれを必要とする。
-    # setup.cts は Electron のランタイムの復元と extension/ の別 lockfile の install、
-    # Chrome 向け拡張機能のビルドも行う。
+        cache: true
+        install: false
     - name: Install dependencies
       shell: pwsh
-      run: npm run setup
+      run: pnpm install --frozen-lockfile
+    - name: Prepare development environment
+      shell: pwsh
+      run: pnpm run setup
     # decoder は固定ソースから各ランナーで作り直す。MSVC/CMake/Ninja は
     # windows-latest の既存ツール、Meson と NASM は隔離ディレクトリに用意する。
     - name: Prepare AVIF build tools
@@ -55,32 +48,29 @@ runs:
     # シャードの共通準備で明示的に作る。
     - name: Build test extension
       shell: pwsh
-      run: npm run ext:build:test
+      run: pnpm run ext:build:test
     # ハーネスは app/ で `electron .` を起こす。その main フィールドは app/out を
     # 指している。取り出したばかりのチェックアウトにはビルド出力が無く、
-    # `npm run setup` も作らないので、これが無いとどのハーネスも入口が無くて死ぬ。
+    # `pnpm run setup` も作らないので、これが無いとどのハーネスも入口が無くて死ぬ。
     - name: Build app bundles
       shell: pwsh
-      run: npm run _build --workspace=app
+      run: pnpm --dir app run _build
     # Playwright のブラウザのビルドは、package.json の `^` 範囲ではなく解決後の
-    # @playwright/test のバージョンに結び付いている＝lockfile から読むことで、
+    # @playwright/test のバージョンに結び付いている。導入済みパッケージから読み、
     # キャッシュのキーが実際に入るものを追いかける。
     - name: Resolve Playwright version
       id: playwright-version
       shell: bash
       run: |
-        version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")
+        version=$(node -p "require('@playwright/test/package.json').version")
         echo "version=$version" >> "$GITHUB_OUTPUT"
     - name: Cache Playwright browsers
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~\AppData\Local\ms-playwright
         key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-    # setup は --ignore-scripts で install するので、Playwright の postinstall は
-    # 走らず、ブラウザも取ってこない。Chromium だけにするのは、ここのブラウザ
-    # テストがすべて展開済みの MV3 拡張機能を読み込むからで、それはもともと
-    # Chromium にしかできない。キャッシュに当たっても走らせる＝ブラウザが既に
-    # あればすぐ返る。
+    # Chromium は各ジョブで明示的に準備する。キャッシュがあれば再利用する。
+    # 展開済みの MV3 拡張機能を読み込むテストは Chromium で実行する。
     - name: Install Playwright Chromium
       shell: pwsh
-      run: npx playwright install chromium
+      run: pnpm exec playwright install chromium

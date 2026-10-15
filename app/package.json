@@ -12,13 +12,11 @@
     "_build:theme-boot": "node build-theme-boot.mjs",
     "_build:native-host-bridge": "node build-native-host-bridge.mjs",
     "_prepare:avif": "node ../scripts/prepare-avif-validator.mjs",
-    "_dev": "node ../scripts/prepare-meilisearch.mjs && npm run _prepare:avif && npm run _build:theme-boot && npm run _build:native-host-bridge && node ../scripts/dev-app.cts",
-    "_build": "node ../scripts/prepare-meilisearch.mjs && npm run _prepare:avif && npm run _build:theme-boot && npm run _build:native-host-bridge && electron-vite build",
-    "_package:deps": "npm install --omit=dev --workspaces=false --package-lock=false --legacy-peer-deps",
-    "_package:restore-deps": "npm --prefix .. install",
-    "_package": "npm run _build && npm run _package:deps && node ../scripts/package-app.cjs && npm run _package:restore-deps",
-    "_make": "npm run _package && electron-forge make --from-package",
-    "_publish": "npm run _make && electron-forge release --from-make",
+    "_dev": "node ../scripts/prepare-meilisearch.mjs && pnpm run _prepare:avif && pnpm run _build:theme-boot && pnpm run _build:native-host-bridge && node ../scripts/dev-app.cts",
+    "_build": "node ../scripts/prepare-meilisearch.mjs && pnpm run _prepare:avif && pnpm run _build:theme-boot && pnpm run _build:native-host-bridge && electron-vite build",
+    "_package": "pnpm run _build && node ../scripts/package-app.cjs",
+    "_make": "pnpm run _package && electron-forge make --from-package",
+    "_publish": "pnpm run _make && electron-forge release --from-make",
     "typecheck": "tsc -b"
   },
   "devDependencies": {
@@ -76,5 +74,10 @@
     "yauzl": "^3.4.0",
     "yazl": "^3.3.1",
     "zod": "^4.6.5"
-  }
+  },
+  "files": [
+    "assets",
+    "out",
+    "package.json"
+  ]
 }

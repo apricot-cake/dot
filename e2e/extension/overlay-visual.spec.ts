@@ -6,7 +6,7 @@ import { test } from '@playwright/test';
 // ビルド済みの拡張機能を使い捨ての Chrome プロファイルへ読み込み、x.com 自身の
 // 形をしたページを配信する。
 //
-//   npx playwright test --project=extension overlay-visual
+//   pnpm exec playwright test --project=extension overlay-visual
 
 const { launchOverlayBrowser, openFixture } = require('../lib/overlay-browser.cts');
 const { sleep, waitFor } = require('../../scripts/lib-wait.cts');

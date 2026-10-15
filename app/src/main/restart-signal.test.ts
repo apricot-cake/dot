@@ -88,7 +88,7 @@ describe('scripts/restart-app.ps1 との取り決め', () => {
   });
 
   test('別ライブラリのプロセスを起動成功の根拠にしない', () => {
-    const launch = source.slice(source.indexOf('$npm ='));
+    const launch = source.slice(source.indexOf('$pnpm ='));
     expect(launch).not.toContain('Get-DotProcs');
     expect(launch).toContain('準備完了は未確認');
   });

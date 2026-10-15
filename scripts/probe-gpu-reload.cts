@@ -377,17 +377,17 @@ function launch(opts: Options, port: number, env: NodeJS.ProcessEnv) {
   if (opts.mode === 'prod') {
     return spawn(resolveElectron(), ['.', `--remote-debugging-port=${port}`, ...NO_THROTTLE], { cwd: appDir, env, detached: true, stdio: 'ignore' });
   }
-  // dev の腕は `npm run app:dev` を再現しなければならない。その
+  // dev の腕は `pnpm run app:dev` を再現しなければならない。その
   // 最初の2ステップは theme-boot と native-host-bridge のビルドで —
   // electron-vite だけではそれらを作らず、無いとアプリは起動に失敗する。
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  execFileSync(npm, ['run', '_build:theme-boot', '--workspace=app'], { cwd: repoRoot, stdio: 'ignore', shell: process.platform === 'win32' });
-  execFileSync(npm, ['run', '_build:native-host-bridge', '--workspace=app'], { cwd: repoRoot, stdio: 'ignore', shell: process.platform === 'win32' });
+  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  execFileSync(pnpm, ['--filter', '@apricot-cake/dot', 'run', '_build:theme-boot'], { cwd: repoRoot, stdio: 'ignore', shell: process.platform === 'win32' });
+  execFileSync(pnpm, ['--filter', '@apricot-cake/dot', 'run', '_build:native-host-bridge'], { cwd: repoRoot, stdio: 'ignore', shell: process.platform === 'win32' });
   // bin パスへの require.resolve ではなく、パッケージ自身の package.json 経由で
   // 解決する: electron-vite は `exports` を宣言しているので、そこに列挙されて
   // いないサブパス（bin/ はそこに無い）は、ファイルが実在しても
   // ERR_PACKAGE_PATH_NOT_EXPORTED を投げる。
-  const cli = path.join(path.dirname(require.resolve('electron-vite/package.json', { paths: [repoRoot, appDir] })), 'bin', 'electron-vite.js');
+  const cli = path.join(path.dirname(require.resolve('electron-vite/package.json', { paths: [appDir, repoRoot] })), 'bin', 'electron-vite.js');
   return spawn(process.execPath, [cli, 'dev', `--remoteDebuggingPort=${port}`, '--', ...NO_THROTTLE], { cwd: appDir, env, detached: true, stdio: 'ignore' });
 }
 

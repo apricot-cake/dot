@@ -1,6 +1,6 @@
 'use strict';
 
-// npm run app:deploy。成功したビルドだけを配備し、アプリ自身へ再起動を通知する。
+// pnpm run app:deploy。成功したビルドだけを配備し、アプリ自身へ再起動を通知する。
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
@@ -14,14 +14,14 @@ const previous = path.join(appDir, `.deploy-previous-${id}`);
 const output = path.join(appDir, 'out');
 const lock = path.join(appDir, '.deploy-lock');
 const marker = path.join(appDir, '.deployed-build.json');
-const npmCli = process.env.npm_execpath;
-if (!npmCli) throw new Error('npm run app:deploy から実行してください');
+const pnpmCli = process.env.npm_execpath;
+if (!pnpmCli) throw new Error('pnpm run app:deploy から実行してください');
 // 自分が取得したロックだけを最後に削除する。
 const fd = fs.openSync(lock, 'wx');
 let movedPrevious = false;
 let published = false;
 try {
-  execFileSync(process.execPath, [npmCli, 'run', '_build', '--workspace', 'app'], {
+  execFileSync(pnpmCli, ['--filter', '@apricot-cake/dot', 'run', '_build'], {
     cwd: root,
     env: { ...process.env, DOT_APP_BUILD_OUT: stage },
     stdio: 'inherit',

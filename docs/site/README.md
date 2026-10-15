@@ -7,22 +7,22 @@ Astro の静的ページに、React の操作再生デモを埋め込みます�
 リポジトリのルートで実行します。
 
 ```powershell
-npm run setup
-npm ci --prefix docs/site
-npm run site:dev
+pnpm install --frozen-lockfile
+pnpm run setup
+pnpm run site:dev
 ```
 
-リポジトリのセットアップで、共有モジュールの依存とWXTの型設定を準備します。CIではサイトのビルドに必要な実行時依存だけをインストールします。
+ルートのワークスペースでサイトと共有モジュールの依存、WXT の型設定を準備します。開発環境と CI は同じ `pnpm-lock.yaml` を使います。
 
 公開用ビルドと操作の検証は次のコマンドで行います。
 
 ```powershell
-npm run site:check
-npm run site:build
-npm run site:test
+pnpm run site:check
+pnpm run site:build
+pnpm run site:test
 ```
 
-操作テストは Playwright の Chromium を背面で使います。初回だけ `npm exec --prefix docs/site -- playwright install chromium` で用意してください。日常用 Chrome や開発用プロファイルには接続しません。
+操作テストは Playwright の Chromium を背面で使います。初回だけ `pnpm --dir docs/site exec playwright install chromium` で用意してください。日常用 Chrome や開発用プロファイルには接続しません。
 
 ## ページと素材
 

@@ -3,13 +3,13 @@
 このディレクトリには、Electron の画面とプロセス、拡張機能のブラウザ上の挙動を検証するテストがあります。他のテストとの使い分けは [`docs/テスト.md`](../docs/テスト.md) を参照してください。
 
 ```powershell
-npm run test:e2e:ci            # CI と同じ主要プロジェクトを検証する
-npm run test:e2e:app           # フローだけを検証する
-npm run test:e2e:regression    # UI の詳細回帰とビジュアル検証を手動で実行する
-npm run test:e2e:visual:update # 基準スクリーンショットを更新する
+pnpm run test:e2e:ci            # CI と同じ主要プロジェクトを検証する
+pnpm run test:e2e:app           # フローだけを検証する
+pnpm run test:e2e:regression    # UI の詳細回帰とビジュアル検証を手動で実行する
+pnpm run test:e2e:visual:update # 基準スクリーンショットを更新する
 ```
 
-実行前に `npm run app:build` と `npm run ext:build:test` でアプリとテスト用拡張機能をビルドしてください。アプリのビルド成果物がない場合、`scripts/lib-electron-path.cts` がテストの起動を中止します。
+実行前に `pnpm run app:build` と `pnpm run ext:build:test` でアプリとテスト用拡張機能をビルドしてください。アプリのビルド成果物がない場合、`scripts/lib-electron-path.cts` がテストの起動を中止します。
 
 ## テストプロジェクト
 

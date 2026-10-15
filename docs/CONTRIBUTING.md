@@ -4,32 +4,35 @@
 
 ## 準備
 
-Windows、Chrome、Node.js 22.18.0 が必要です。対応するバージョン管理ツールでは、リポジトリ直下の `.node-version` を読みます。手動で設定する場合も同じバージョンを使ってください。
+Windows、Chrome、Node.js 24.16.0 が必要です。対応するバージョン管理ツールでは、リポジトリ直下の `.node-version` を読みます。手動で設定する場合も同じバージョンを使ってください。
+
+pnpm 12.11.2 を使います。Windows で未導入の場合は、[公式のインストール手順](https://pnpm.io/installation)に従って `npx get-pnpm` を実行してください。バージョンはルートの `package.json` の `packageManager` で固定しています。
 
 リポジトリのルートで、最初に次を実行します。
 
 ```powershell
-npm run setup
+pnpm install --frozen-lockfile
+pnpm run setup
 ```
 
-このコマンドはルートと `extension/` の依存関係を準備し、Electron の実行環境も取得します。現在は npm と依存関係の組み合わせに回避策が必要なため、通常の準備には `npm install` ではなく `npm run setup` を使います。新しいワークツリーでも、そのワークツリーごとに実行してください。
+`pnpm install` はルート、`app/`、`extension/`、`docs/site/` を一つのワークスペースとして準備します。Electron Forge の配布処理に合わせて `nodeLinker: hoisted` を使い、`hoistingLimits: workspaces` で各プロジェクトの依存関係をそれぞれのディレクトリ内に配置します。依存関係はルートの `pnpm-lock.yaml` で管理し、依存パッケージのビルド許可は `pnpm-workspace.yaml` の `allowBuilds` で指定します。`pnpm run setup` は Electron の実行環境を準備します。新しいワークツリーでも、そのワークツリーごとに両方を実行してください。
 
 アプリを起動したまま依存関係を更新しないでください。使用中のネイティブモジュールを更新すると、インストールが失敗したり依存関係が不完全になったりします。
 
 ## 文章とスペルのチェック
 
-Markdown の検査には `markdownlint-cli2`、ソースと文書のスペル検査には `typos` を使います。Markdown の依存関係は `npm run setup` で入ります。typos は [公式リリース](https://github.com/crate-ci/typos/releases/tag/v1.50.3) の v1.50.3 を PATH の通った場所に配置するか、Rust 環境で次を実行してください。
+Markdown の検査には `markdownlint-cli2`、ソースと文書のスペル検査には `typos` を使います。Markdown の依存関係は `pnpm install` で入ります。typos は [公式リリース](https://github.com/crate-ci/typos/releases/tag/v1.50.3) の v1.50.3 を PATH の通った場所に配置するか、Rust 環境で次を実行してください。
 
 ```powershell
 cargo install typos-cli --version 1.50.3 --locked
 ```
 
 ```powershell
-npm run lint:markdown
-npm run lint:typos
+pnpm run lint:markdown
+pnpm run lint:typos
 ```
 
-`npm run lint` と `npm run check` でも両方を実行します。CI では markdownlint を既存のチェックに含め、typos は公式 Action で実行します。検査はファイルを書き換えません。Markdown の自動修正は `npm run lint:markdown:fix` で実行できます。
+`pnpm run lint` と `pnpm run check` でも両方を実行します。CI では markdownlint を既存のチェックに含め、typos は公式 Action で実行します。検査はファイルを書き換えません。Markdown の自動修正は `pnpm run lint:markdown:fix` で実行できます。
 
 設定は `.markdownlint-cli2.jsonc` と `_typos.toml` にあります。生成物・依存物は Git の除外設定に従い、第三者ライセンスの原文とロックファイルはスペル検査から除外します。日本語の段落や表を文字数だけで折り返さないため、Markdown の行長制限は無効にしています。意図的な誤字を使う検索テストは、テストファイルに限って例外を設定します。
 
@@ -44,25 +47,25 @@ npm run lint:typos
 普段のライブラリを使う開発版は、リポジトリのルートで起動します。
 
 ```powershell
-npm start
+pnpm start
 ```
 
-このコマンドは、すでに配備された `app/out/` を起動します。初回、またはソースを変更した後は、先に `npm run app:deploy` を実行してください。`scripts/start-dot.cmd` も同じ起動を行います。PowerToys のコマンドパレットなどから起動する場合は、この `.cmd` ファイルをそのまま登録してください。すでに開発版が起動している場合は、新しいウィンドウを作らず既存のウィンドウを前面に出します。
+このコマンドは、すでに配備された `app/out/` を起動します。初回、またはソースを変更した後は、先に `pnpm run app:deploy` を実行してください。`scripts/start-dot.cmd` も同じ起動を行います。PowerToys のコマンドパレットなどから起動する場合は、この `.cmd` ファイルをそのまま登録してください。すでに開発版が起動している場合は、新しいウィンドウを作らず既存のウィンドウを前面に出します。
 
 開発版を起動して CDP 接続も確認する場合は、次を使います。
 
 ```powershell
-npm run app:debug
+pnpm run app:debug
 ```
 
 このコマンドは起動中の開発版を通常終了し、普段のライブラリを使うアプリを背面で起動します。CDP はコマンドが所有する継承 pipe で接続し、TCP ポートは公開しません。Ctrl+C でアプリと HMR サーバーを通常終了します。実ライブラリを扱うため、検証用データを保存する操作には使わないでください。
 
-画面を撮る場合は `npm run app:debug -- shot`、式を評価する場合は `npm run app:debug -- eval "<式>"` を使います。操作後にセッションを通常終了します。連続した操作は `run <モジュール>` で `run(session, args)` を export する検証モジュールを実行してください。画像は既定で `%LOCALAPPDATA%\dot\verification` に保存されます。リポジトリ内を出力先には指定できません。実ライブラリを表示したキャプチャは、公開物へ添付しないでください。
+画面を撮る場合は `pnpm run app:debug shot`、式を評価する場合は `pnpm run app:debug eval "<式>"` を使います。操作後にセッションを通常終了します。連続した操作は `run <モジュール>` で `run(session, args)` を export する検証モジュールを実行してください。画像は既定で `%LOCALAPPDATA%\dot\verification` に保存されます。リポジトリ内を出力先には指定できません。実ライブラリを表示したキャプチャは、公開物へ添付しないでください。
 
 画面を継続的に調整し、レンダラーの HMR を使う場合だけは次を実行します。
 
 ```powershell
-npm run app:dev
+pnpm run app:dev
 ```
 
 通常の起動に開発サーバーは必要ありません。
@@ -72,10 +75,10 @@ npm run app:dev
 チェックアウトの変更を、普段使う開発版へ反映するときは次を実行します。
 
 ```powershell
-npm run app:deploy
+pnpm run app:deploy
 ```
 
-成功したビルドだけを `app/out/` に配備します。起動中のアプリは、取り込みやバックアップなどの処理が終わった後に再起動します。アプリを閉じている場合は、次回の起動から新しい出力を使います。`npm run app:build` はビルドだけを行い、起動中のアプリには反映しません。
+成功したビルドだけを `app/out/` に配備します。起動中のアプリは、取り込みやバックアップなどの処理が終わった後に再起動します。アプリを閉じている場合は、次回の起動から新しい出力を使います。`pnpm run app:build` はビルドだけを行い、起動中のアプリには反映しません。
 
 ### 隔離した環境で確認する
 
@@ -104,7 +107,7 @@ node scripts/sandbox-app.cts start --real
 拡張機能を変更したら、共有のリリースビルドを配備します。
 
 ```powershell
-npm run ext:deploy
+pnpm run ext:deploy
 ```
 
 このコマンドは `extension/.output/chrome-mv3/` にビルドを作り、同じ開発用プロファイルを背面で起動して読み込み直します。終了時に開発用 Chrome を通常終了します。日常用 Chrome には、ネイティブ メッセージングホスト経由で更新を通知します。
@@ -112,7 +115,7 @@ npm run ext:deploy
 開発用 Chrome の初回準備では、開発用ネイティブ メッセージングホストを登録します。
 
 ```powershell
-npm run ext:dev:register
+pnpm run ext:dev:register
 ```
 
 このコマンドは HKCU と開発用設定ディレクトリへ書き込みます。Chrome と同じ Windows ユーザーで実行してください。
@@ -120,7 +123,7 @@ npm run ext:dev:register
 開発用プロファイルを開くには、次を実行します。
 
 ```powershell
-npm run ext:dev:open
+pnpm run ext:dev:open
 ```
 
 開発用 Chrome は管理ランチャーが非表示のセッションを pipe 接続で操作し、TCP の CDP 接続口を公開しません。コマンド終了時に Chrome も通常終了します。ログインと保存先を維持し、次の起動で前回のタブを復元しますが、ページ内の一時的な状態は引き継げません。セッションを保持したコマンドがある場合は、Ctrl+C で終了してから次のコマンドを実行してください。
@@ -138,7 +141,7 @@ node scripts/verify-extension-tab.cts <投稿 URL>
 開発用 Chrome への接続状態とプロファイルの場所は、次で確認できます。
 
 ```powershell
-npm run ext:dev:status
+pnpm run ext:dev:status
 ```
 
 日常用 Chrome や一般的なブラウザ操作用の拡張機能には接続しません。
@@ -148,29 +151,29 @@ npm run ext:dev:status
 通常の変更後は、次を実行します。
 
 ```powershell
-npm run check
+pnpm run check
 ```
 
 拡張機能のソース、マニフェスト、またはバンドル方法を変更した場合は、次を実行します。
 
 ```powershell
-npm run check:ext
+pnpm run check:ext
 ```
 
 保存、IPC、ネイティブ メッセージング、アプリの起動に関わる変更では、さらに次を実行します。
 
 ```powershell
-npm run test:integration
+pnpm run test:integration
 ```
 
 画面の操作や見た目に影響する変更では、アプリをビルドして画面 E2E も実行します。
 
 ```powershell
-npm run app:build
-npm run test:e2e:ci
+pnpm run app:build
+pnpm run test:e2e:ci
 ```
 
-実機確認に入る前に、変更した対象を配備してください。アプリだけを変更した場合は `npm run app:deploy`、拡張機能だけを変更した場合は `npm run ext:deploy`、両方を変更した場合は両方を実行します。
+実機確認に入る前に、変更した対象を配備してください。アプリだけを変更した場合は `pnpm run app:deploy`、拡張機能だけを変更した場合は `pnpm run ext:deploy`、両方を変更した場合は両方を実行します。
 
 ## 配布物を作る
 
@@ -179,23 +182,23 @@ npm run test:e2e:ci
 Chrome ウェブストアへ提出する成果物を作る前に、次を実行します。
 
 ```powershell
-npm run release:ext:verify
+pnpm run release:ext:verify
 ```
 
-出力先は `extension/.output/chrome-mv3-release/` です。ZIP が必要な場合は `npm run ext:package` を実行します。
+出力先は `extension/.output/chrome-mv3-release/` です。ZIP が必要な場合は `pnpm run ext:package` を実行します。
 
 ### デスクトップアプリ
 
 Windows 向けの配布物は Electron Forge で作ります。
 
 ```powershell
-npm run app:make
+pnpm run app:make
 ```
 
 Squirrel.Windows のインストーラー `dotSetup.exe` が `app/artifacts/` 以下に出力されます。GitHub Releases の下書きまで作る場合は、次を実行します。
 
 ```powershell
-npm run app:publish
+pnpm run app:publish
 ```
 
 配布前には、クリーンな Windows 環境でアプリの起動、拡張機能からの保存、ライブラリの作成と既存ライブラリの読み込みを確認してください。

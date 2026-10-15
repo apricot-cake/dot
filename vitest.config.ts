@@ -22,9 +22,14 @@ const ctsAsTypeScript = (): Plugin => ({
 export default defineConfig({
   plugins: [ctsAsTypeScript()],
   test: {
+    // ルートの結合テストも、アプリと同じ依存をモックする。
+    alias: {
+      electron: require.resolve('electron', { paths: [path.resolve(__dirname, 'app')] }),
+      sonner: require.resolve('sonner', { paths: [path.resolve(__dirname, 'app')] }),
+    },
     include: ['app/**/*.test.ts', 'extension/**/*.test.ts', 'native-host/**/*.test.ts', 'scripts/**/*.test.ts', 'tests/integration/**/*.test.ts'],
     // ビルド済みの Chrome 拡張機能を読むテストは、通常テストから分ける。
-    // `npm run test:ext` がテスト専用出力を作ってから実行する。
+    // `pnpm run test:ext` がテスト専用出力を作ってから実行する。
     exclude: ['**/*.extension-bundle.test.ts', '**/node_modules/**', 'app/artifacts/**', 'app/dist/**'],
     // Nodeが既定。ブラウザ側の拡張機能コードを試す4つのスイートは、ファイル
     // ごとに`@vitest-environment jsdom`のdocblockでjsdomを選ぶ。

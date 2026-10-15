@@ -4,7 +4,7 @@
 // 到着・完了を記録している。この開発用コマンドはその既存ログだけを読み、
 // どの区間で待ったかを集計する。保存経路には参加しない。
 //
-//   npm run diag:capture -- [投稿 URL の一部]
+//   pnpm run diag:capture [投稿 URL の一部]
 
 const fs = require('node:fs');
 const path = require('node:path');

@@ -67,7 +67,7 @@ jobs:
 
           changed="$(git diff --name-only --diff-filter=ACMR "$base" "$HEAD_SHA")"
           printf '%s\n' "$changed"
-          if printf '%s\n' "$changed" | grep -Eq '^(app/|native-image/|extension/|e2e/|\.github/workflows/app-tests\.yml$|\.github/actions/setup-app-tests/|package(-lock)?\.json$|extension/package(-lock)?\.json$|\.node-version$|\.npmrc$|playwright\.config\.ts$|tsconfig[^/]*\.json$|scripts/(setup|build-extension|build-test-extension|prepare-meilisearch|lib-wait)\.cts$|scripts/(prepare-meilisearch|prepare-avif-validator)\.mjs$|scripts/build-avif-validator\.ps1$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '^(app/|native-image/|extension/|e2e/|\.github/workflows/app-tests\.yml$|\.github/actions/setup-app-tests/|package\.json$|pnpm-(lock|workspace)\.yaml$|\.node-version$|\.npmrc$|playwright\.config\.ts$|tsconfig[^/]*\.json$|scripts/(setup|build-extension|build-test-extension|prepare-meilisearch|lib-wait)\.cts$|scripts/(prepare-meilisearch|prepare-avif-validator)\.mjs$|scripts/build-avif-validator\.ps1$)'; then
             choose_all 'アプリまたは E2E に関係する変更'
           else
             echo 'relevant=false' >> "$GITHUB_OUTPUT"
@@ -96,7 +96,7 @@ jobs:
       - name: Prepare
         uses: ./.github/actions/setup-app-tests
       - name: App harnesses, extension e2e and overlay tests
-        run: npm run test:e2e:process -- --shard=${{ matrix.shard }}/2
+        run: pnpm run test:e2e:process --shard=${{ matrix.shard }}/2
 
   # シャード3＝Playwright の層（#14）。`flow` プロジェクトだけを走らせる。`visual` の
   # 方は開発機で撮ってコミットしたベースラインと比べるもので、ランナーのフォント・
@@ -114,7 +114,7 @@ jobs:
       - name: Prepare
         uses: ./.github/actions/setup-app-tests
       - name: Electron E2E (user flows)
-        run: npx playwright test --project=flow
+        run: pnpm exec playwright test --project=flow
 
   # シャードが失敗または中止された場合も結果を一つに集約するため `always()` を使う。
   # App tests を必須チェックにしても、対象外の変更では成功として完了させる。

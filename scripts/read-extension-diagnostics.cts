@@ -20,7 +20,7 @@ function profileDirectory(kind: string): string {
     const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
     return path.join(localAppData, 'Google', 'Chrome', 'User Data', 'Default');
   }
-  throw new Error('使い方: npm run diag:extension -- [daily|development]');
+  throw new Error('使い方: pnpm run diag:extension [daily|development]');
 }
 
 function storageDirectory(kind: string): string {

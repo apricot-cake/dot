@@ -142,9 +142,10 @@ async function runPreCommit(options: HookOptions = {}): Promise<void> {
       try {
         const libc = process.platform === 'linux' && !(process.report.getReport() as { header: { glibcVersionRuntime?: string } }).header.glibcVersionRuntime ? '-musl' : '';
         const binary = process.env.BIOME_BINARY || `@biomejs/cli-${process.platform}-${process.arch}${libc}/${process.platform === 'win32' ? 'biome.exe' : 'biome'}`;
-        formatter = { command: require.resolve(binary, { paths: [root] }), args: [] };
+        const biomeDir = path.dirname(require.resolve('@biomejs/biome/package.json', { paths: [root] }));
+        formatter = { command: require.resolve(binary, { paths: [biomeDir, root] }), args: [] };
       } catch {
-        console.error('[dot] Biome が未インストールのため整形を省略します。npm run setup を実行してください。');
+        console.error('[dot] Biome が未インストールのため整形を省略します。pnpm install --frozen-lockfile を実行してください。');
         await finish();
         return;
       }

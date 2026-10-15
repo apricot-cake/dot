@@ -255,9 +255,9 @@ async function start(opts: StartOptions, operation = (session: any) => require('
   });
   const { cleanDebugEnvironment, withAppSession } = require('./lib-app-session.cts');
   const safeEnv = cleanDebugEnvironment(env);
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  for (const task of ['_build:theme-boot', '_build:native-host-bridge']) execFileSync(npm, ['run', task, '--workspace=app'], { cwd: repoRoot, env: safeEnv, stdio: 'ignore', shell: process.platform === 'win32', windowsHide: true });
-  const cli = path.join(path.dirname(require.resolve('electron-vite/package.json', { paths: [repoRoot, appDir] })), 'bin', 'electron-vite.js');
+  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+  for (const task of ['_build:theme-boot', '_build:native-host-bridge']) execFileSync(pnpm, ['--filter', '@apricot-cake/dot', 'run', task], { cwd: repoRoot, env: safeEnv, stdio: 'ignore', shell: process.platform === 'win32', windowsHide: true });
+  const cli = path.join(path.dirname(require.resolve('electron-vite/package.json', { paths: [appDir, repoRoot] })), 'bin', 'electron-vite.js');
   // main/preload と同じ出力先でビルドし、renderer HMR は所有セッションが提供する。
   const build = spawn(process.execPath, [cli, 'build'], { cwd: appDir, env: safeEnv, windowsHide: true, stdio: 'inherit' });
   await new Promise<void>((resolve, reject) => {

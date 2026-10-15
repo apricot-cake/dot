@@ -2,15 +2,7 @@
 // 実際にElectronのバイナリがどこにあるか。実際のアプリをspawnするハーネス向けで、
 // それら全てが共有する前提条件も併せ持つ: アプリはビルド済みでなければならない。
 //
-// 全ての呼び出し元は以前require(app/node_modules/electron)をハードコードして
-// いた。それはリポジトリが制御できる場所ではない: app/はnpmワークスペースなので、
-// 衝突するバージョンを固定するものが何も無い限り、npmはその依存関係をリポジトリの
-// ルートへ引き上げる＝それが素のルートでの`npm install`が生むもの。すると、
-// ハードコードしたパスはハーネスが検証を1つも実行する前にMODULE_NOT_FOUNDを
-// 投げる。
-//
-// まずapp/から解決し（それがappの宣言済み依存関係だから）、リポジトリのルートへ
-// フォールバックする。どちらの配置でも動くように。
+// Electron は app が宣言する依存として解決する。インストール先を固定しない。
 //
 // ビルド検査が存在するのは、それを省くとコストを払うのが「実行」ではなく
 // 「ユーザー」だから: まっさらなworktreeにはapp/outが無い（gitignore対象の
@@ -49,7 +41,7 @@ function buildArtifactError(dir: string = appDir): string | null {
   if (fs.existsSync(entry)) return null;
   return `Electronの起動を拒否します: アプリがビルドされていません。
   無い場所: ${entry}
-  直し方:   npm run app:build
+  直し方:   pnpm run app:build
 これが無いまま起動すると、ElectronはケースごとにOSのエラーダイアログを出し、画面を占有します。`;
 }
 

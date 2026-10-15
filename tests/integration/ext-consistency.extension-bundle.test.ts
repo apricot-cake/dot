@@ -18,7 +18,7 @@
 //      （i18n-parity.test.ts が見るのは「二言語の表どうし」だけ＝
 //      「実際に使われているもの」との突合はここにしかない）
 //
-// これはテスト専用の Chrome ビルド出力を読む。`npm run test:ext` が
+// これはテスト専用の Chrome ビルド出力を読む。`pnpm run test:ext` が
 // 現在のソースから出力を作ってから、このスイートを実行する。
 
 import crypto from 'node:crypto';

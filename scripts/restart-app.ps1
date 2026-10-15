@@ -1,5 +1,5 @@
 ﻿# dot の個人ライブラリを使う HMR 開発版を再起動する。
-# 検証は npm run app:debug の所有 pipe セッションで行う。
+# 検証は pnpm run app:debug の所有 pipe セッションで行う。
 #
 # STOPPING: the app is asked to quit; nothing is hunted down and killed.
 #
@@ -57,10 +57,7 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $app      = Join-Path $repoRoot 'app'
 $logFile  = Join-Path $HOME '.dot\restart-app.log'
 
-# electron lives under app/node_modules or the repo root, depending on how npm
-# felt like hoisting: app/ is a workspace, so npm lifts its dependencies to the
-# root whenever nothing pins a conflicting version. Both are normal, so probe
-# both rather than baking one in.
+# Electron は app から解決する。pnpm の hoisted 配置も確認する。
 $electron = @(
   (Join-Path $app 'node_modules\electron\dist\electron.exe'),
   (Join-Path $repoRoot 'node_modules\electron\dist\electron.exe')
@@ -87,7 +84,7 @@ function Stop-WithError($message) {
 
 if (-not $electron) {
   Stop-WithError("electron.exe が見つかりません（app/node_modules と リポジトリ直下の node_modules の両方を確認しました）。`n" +
-    "npm run setup を実行してください（npm rebuild electron は成功と表示しますがダウンロードしません）")
+    "pnpm run setup を実行してください")
 }
 
 # Refuse to spawn anything when the app is not built, BEFORE the stop loop rather than at
@@ -97,7 +94,7 @@ if (-not $electron) {
 # precondition scripts/lib-electron-path.cts enforces for the test harnesses (#460).
 $appEntry = Join-Path $app 'out\main\index.js'
 if (-not (Test-Path $appEntry)) {
-  Stop-WithError("app がビルドされていません（$appEntry が有りません）。npm run app:build を実行してください")
+  Stop-WithError("app がビルドされていません（$appEntry が有りません）。pnpm run app:build を実行してください")
 }
 
 # Give the app the environment a clean launch needs. Start-Process inherits THIS shell's
@@ -145,7 +142,7 @@ do {
   # would just repeat it — app/src/main/restart-signal.ts owns these numbers.
   if ($probe.ExitCode -eq 0) { $stopped = $true; break }
   if ($probe.ExitCode -ne 3) {
-    Stop-WithError("終了の合図に予期しない終了コードが返りました（$($probe.ExitCode)）。app のビルドが壊れている可能性があります: npm run app:build")
+    Stop-WithError("終了の合図に予期しない終了コードが返りました（$($probe.ExitCode)）。app のビルドが壊れている可能性があります: pnpm run app:build")
   }
   $signalled = $true
   Start-Sleep -Milliseconds 250
@@ -160,10 +157,10 @@ if (-not $stopped) {
   Start-Sleep -Milliseconds 500
 }
 
-$npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue).Source
-if (-not $npm) { Stop-WithError('npm が見つかりません。npm run setup を実行した環境で起動してください') }
+$pnpm = (Get-Command pnpm.cmd -ErrorAction SilentlyContinue).Source
+if (-not $pnpm) { Stop-WithError('pnpm が見つかりません。pnpm run setup を実行した環境で起動してください') }
 try {
-  Start-Process -FilePath $npm -ArgumentList 'run app:dev' -WorkingDirectory $repoRoot -WindowStyle Hidden -ErrorAction Stop
+  Start-Process -FilePath $pnpm -ArgumentList 'run app:dev' -WorkingDirectory $repoRoot -WindowStyle Hidden -ErrorAction Stop
 } catch { Stop-WithError("dot の起動に失敗しました: $($_.Exception.Message)") }
 # 非同期の HMR ランチャーの開始と、アプリの準備完了は区別する。
 # 同じバイナリのサンドボックスを準備完了と誤認しない。

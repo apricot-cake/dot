@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["package-lock.json", "extension/package-lock.json", "app/third-party-licenses/**"]
+extend-exclude = ["pnpm-lock.yaml", "app/third-party-licenses/**"]
 
 [default]
 # コメントに記載したコミットの短縮ハッシュ。

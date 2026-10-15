@@ -20,7 +20,7 @@ name: Link check
 # 増やしたら、ここに足す必要がある。
 #
 # remark-validate-links（npm 側の同等品）ではなく lychee を使う: ジョブの中で
-# `npm ci` が要らないので、文書だけの push が1分ではなく数秒で済み、package.json に
+# `pnpm install` が要らないので、文書だけの push が1分ではなく数秒で済み、package.json に
 # 依存も増えない。代償は、これがこのリポジトリで最初のサードパーティのアクションに
 # なること＝ここでの actions/* の使い方と同じく SHA で固定してあり、Dependabot は
 # github-actions のエコシステムを既に見ている。

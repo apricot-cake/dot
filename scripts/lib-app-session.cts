@@ -37,8 +37,8 @@ async function openAppSession(options: any = {}, dependencies: any = {}) {
   let context: any;
   try {
     if (options.hmr) {
-      const { resolveConfig } = require('electron-vite');
-      const { createServer } = require('vite');
+      const { resolveConfig } = require(require.resolve('electron-vite', { paths: [appDir] }));
+      const { createServer } = require(require.resolve('vite', { paths: [appDir] }));
       const resolved = await resolveConfig({ root: appDir }, 'serve', 'development');
       server = await createServer({ ...resolved.config.renderer, root: path.resolve(appDir, resolved.config.renderer.root || 'src/renderer'), server: { ...resolved.config.renderer.server, host: '127.0.0.1', port: 0 } });
       await server.listen();

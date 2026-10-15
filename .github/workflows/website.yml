@@ -14,6 +14,12 @@ on:
       - 'extension/utils/overlay/constants.ts'
       - 'extension/utils/tokens.source.css'
       - '.github/workflows/website.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.node-version'
+      - '.npmrc'
+      - 'extension/package.json'
   pull_request:
     paths: *website-paths
   workflow_dispatch:
@@ -30,30 +36,22 @@ jobs:
     name: ページと操作デモの検証
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: docs/site
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@c9883cc79df532ad1a7b81bf9ab944ceb090d65c # v2.0.0
         with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: |
-            docs/site/package-lock.json
-            extension/package-lock.json
-            package-lock.json
-      - name: 共有モジュールの実行時依存を準備
-        run: npm ci --prefix ../.. --omit=dev --workspaces=false --ignore-scripts --legacy-peer-deps
-      - name: 共有モジュールの生成済み型設定を準備
-        run: npm ci --prefix ../../extension
-      - run: npm ci
-      - run: npm run check
-      - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm test
+          node-version-file: .node-version
+          cache: true
+          install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - run: pnpm run site:check
+      - run: pnpm run site:build
+      - run: pnpm --dir docs/site exec playwright install --with-deps chromium
+      - run: pnpm run site:test
       - name: 公開用ファイルを保存
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

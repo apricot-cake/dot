@@ -15,12 +15,12 @@
     "ignoreUnknown": true,
     // .claude is anchored (no leading **/) on purpose. Task worktrees live in
     // .claude/worktrees/<name>/, so a `**/.claude/**` exclusion swallows the
-    // ENTIRE checkout when biome runs inside one — `npm run lint` then reports
+    // ENTIRE checkout when biome runs inside one — `pnpm run lint` then reports
     // "Checked 0 files" and exits green, which reads exactly like a clean repo.
     // Anchoring keeps the repo-root .claude (skills, hooks, settings) excluded
     // while leaving a worktree's own files linted. The other entries keep **/
     // because they name build output that only ever appears at those paths.
-    "includes": ["**", "!**/app/out", "!**/extension/.output", "!**/app/src/renderer/public/vendor", "!**/package-lock.json", "!**/package.json", "!.claude"]
+    "includes": ["**", "!**/app/out", "!**/extension/.output", "!**/app/src/renderer/public/vendor", "!**/pnpm-lock.yaml", "!**/package.json", "!.claude"]
   },
   // import 並べ替えは今はしない（チャーン優先度が低い・必要なら別途）
   "assist": { "actions": { "source": { "organizeImports": "off" } } },
@@ -175,7 +175,7 @@
         // メッセージ）の契約として意図的に置いたものを含むため、有効化するなら段階的な
         // 型付けとセットで行う。⚠️ここは「380件」と書いてあったが実測は3.8倍だった
         // ＝**この設定のどの件数も手で維持しない**。判断し直すときは測り直す:
-        //   npx biome lint --only=<group>/<rule> .
+        //   pnpm exec biome lint --only=<group>/<rule> .
         // （--only は設定で off の規則も強制的に有効化して数えられる）
         "noExplicitAny": "off",
         // forEach コールバックが値を返すのを禁じる新ルール（2.x 新規）。noForEach

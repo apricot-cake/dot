@@ -35,9 +35,9 @@ import { test } from '@playwright/test';
 //   leave        — ポインタが空白のページ領域へ移動: すべてのコントロールが
 //                  消える。
 //
-//   npx playwright test --project=extension overlay-flicker
+//   pnpm exec playwright test --project=extension overlay-flicker
 //
-// 先に拡張機能をビルドすること（`npm run test:ext:overlay:flicker` は両方やる）。
+// 先に拡張機能をビルドすること（`pnpm run test:ext:overlay:flicker` は両方やる）。
 // 失敗した時はその段階のイベントタイムラインが出力される。修正ループにとっての
 // デバッグ材料は成否の1ビットではなく、そのタイムラインの方。
 

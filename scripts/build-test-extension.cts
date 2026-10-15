@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, '..');
 const OUTPUT = path.join(ROOT, 'extension', '.output', 'chrome-mv3-test');
 const REQUIRED = ['manifest.json', 'background.js', 'bulk.js', 'read-meta.js', path.join('content-scripts', 'resident.js')];
 
-execFileSync('npm --prefix extension run build:chrome', {
+execFileSync('pnpm --dir extension run build:chrome', {
   cwd: ROOT,
   shell: true,
   stdio: 'inherit',

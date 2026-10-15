@@ -67,7 +67,7 @@ function replaceNativeHostName(directory: string, nativeHostName: string): void 
 
 function stageExtension(options: StageExtensionOptions = {}): string {
   if (!fs.existsSync(path.join(SOURCE_EXTENSION, 'manifest.json'))) {
-    throw new Error(`${SOURCE_EXTENSION} に拡張機能のビルドが無い — 先に \`npm run ext:build:test\` を実行すること`);
+    throw new Error(`${SOURCE_EXTENSION} に拡張機能のビルドが無い — 先に \`pnpm run ext:build:test\` を実行すること`);
   }
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), options.tempPrefix || 'dot-extension-e2e-'));
   copyDirectory(SOURCE_EXTENSION, directory);

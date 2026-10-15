@@ -5,10 +5,10 @@ import { describe, expect, test } from 'vitest';
 const ROOT = path.join(import.meta.dirname, '../..');
 const packageJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const scripts: Record<string, string> = packageJson.scripts;
-const invokesReleaseBuild = (command: string): boolean => /npm run ext:build(?=\s|$|&&)|node scripts[\\/]build-extension\.cts/.test(command);
+const invokesReleaseBuild = (command: string): boolean => /pnpm run ext:build(?=\s|$|&&)|node scripts[\\/]build-extension\.cts/.test(command);
 
 describe('通常検証とリリース操作の境界', () => {
-  test('リリースビルドを呼ぶ npm script は明示的なリリース検証だけ', () => {
+  test('リリースビルドを呼ぶ package script は明示的なリリース検証だけ', () => {
     expect(
       Object.entries(scripts)
         .filter(([name, command]) => name !== 'ext:build' && invokesReleaseBuild(command))

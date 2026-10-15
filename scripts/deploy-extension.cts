@@ -155,7 +155,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
             } catch (syncError) {
               recoveryErrors.push(syncError);
             }
-            const retry = `npm run ext:deploy（保持中: current=${location}, backup=${hadOutput ? backup : 'なし'}, stamp=${options.stamp}）`;
+            const retry = `pnpm run ext:deploy（保持中: current=${location}, backup=${hadOutput ? backup : 'なし'}, stamp=${options.stamp}）`;
             throw new AggregateError([...reasons, ...recoveryErrors], `旧状態へ戻せないため検証済み新版を保持しました。再試行: ${retry}`);
           };
 
@@ -170,7 +170,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
             // Windows の EPERM/EBUSY で最初の rename 自体が失敗した場合、新版は
             // まだ output にある。旧 stamp のままにせず、新版へ同期して退避を残す。
             if (fs.existsSync(options.output)) return await syncNew(options.output, [error, moveError]);
-            throw new AggregateError([error, moveError], `新版の退避にも失敗しました。再試行: npm run ext:deploy（backup=${backup}, output=${options.output}, stamp=${options.stamp}）`);
+            throw new AggregateError([error, moveError], `新版の退避にも失敗しました。再試行: pnpm run ext:deploy（backup=${backup}, output=${options.output}, stamp=${options.stamp}）`);
           }
 
           try {
@@ -180,7 +180,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
               fs.renameSync(failed, options.output);
             } catch (replaceError) {
               keepStage = true;
-              throw new AggregateError([error, restoreError, replaceError], `配備と整合復旧に失敗しました。再試行: npm run ext:deploy（backup=${backup}, failed=${failed}, output=${options.output}, stamp=${options.stamp}）`);
+              throw new AggregateError([error, restoreError, replaceError], `配備と整合復旧に失敗しました。再試行: pnpm run ext:deploy（backup=${backup}, failed=${failed}, output=${options.output}, stamp=${options.stamp}）`);
             }
             // 旧版へ戻せなくても、新版を公開位置へ戻せたなら stamp と CDP を
             // 実内容へ揃える。backup は次の手動・自動再試行のため保持する。
@@ -199,7 +199,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
             restoreErrors.push(restoreError);
           }
           if (restoreErrors.length) {
-            throw new AggregateError([error, ...restoreErrors], `旧ビルドは ${options.output} へ復元しましたが stamp/CDP の復旧が完了しません。再試行: npm run ext:deploy（failed=${failed}, stamp=${options.stamp}）`);
+            throw new AggregateError([error, ...restoreErrors], `旧ビルドは ${options.output} へ復元しましたが stamp/CDP の復旧が完了しません。再試行: pnpm run ext:deploy（failed=${failed}, stamp=${options.stamp}）`);
           }
           try {
             fs.rmSync(failed, { recursive: true, force: true });
@@ -223,7 +223,7 @@ async function deployExtension(options: DeployOptions): Promise<{ buildId: strin
 }
 
 async function main(): Promise<void> {
-  assertWindowsUserContext('npm run ext:deploy');
+  assertWindowsUserContext('pnpm run ext:deploy');
   const publish = shouldPublish();
   let developmentOpen = false;
   let developmentChecked = false;

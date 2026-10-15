@@ -10,8 +10,8 @@
 // 設定とログを分ける。保存先は既存設定を維持し、初回だけ普段のライブラリに揃える。
 // テスト保存の隔離は verify-extension-tab.cts のタブ専用ホストが担当する。
 //
-//   npm run ext:dev:register                             登録する
-//   npm run ext:dev:register -- uninstall                再び取り除く
+//   pnpm run ext:dev:register                             登録する
+//   pnpm run ext:dev:register uninstall                再び取り除く
 //   node scripts/register-dev-native-host.cts [uninstall]  npmを使わず同じこと
 //
 // 登録はHKCUへの書き込みで、これは以前、パッケージ化されたデスクトップアプリが
@@ -104,7 +104,7 @@ function reportRegistry(expected: string | null): void {
   }
 }
 
-assertWindowsUserContext(process.argv[2] === 'uninstall' ? 'npm run ext:dev:register -- uninstall' : 'npm run ext:dev:register');
+assertWindowsUserContext(process.argv[2] === 'uninstall' ? 'pnpm run ext:dev:register uninstall' : 'pnpm run ext:dev:register');
 
 if (process.argv[2] === 'uninstall') {
   installer.uninstall();

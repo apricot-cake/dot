@@ -44,7 +44,7 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 
 保存先は `<configDir>/config.json` に記録します。既定の場所は `%APPDATA%\dot\config.json` です。
 
-開発用ホストの設定は `%APPDATA%\dot-Dev\config.json` に分けます。`npm run ext:dev:register` で登録し、必要な場合は `DOT_DEV_CONFIG_DIR` で設定ディレクトリを指定できます。Squirrel インストーラーはアプリ本体を `%LOCALAPPDATA%\dot` に配置します。
+開発用ホストの設定は `%APPDATA%\dot-Dev\config.json` に分けます。`pnpm run ext:dev:register` で登録し、必要な場合は `DOT_DEV_CONFIG_DIR` で設定ディレクトリを指定できます。Squirrel インストーラーはアプリ本体を `%LOCALAPPDATA%\dot` に配置します。
 
 ```json
 { "saveFolder": "D:\\dot" }
@@ -57,7 +57,7 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 手動登録には、`PATH` から実行できる Node.js が必要です。先にホストをバンドルしてください。バンドルがない場合、`install.mts` は登録を中止します。
 
 ```powershell
-npm run app:build
+pnpm run app:build
 node native-host/install.mts <extensionId>
 node native-host/install.mts uninstall
 ```

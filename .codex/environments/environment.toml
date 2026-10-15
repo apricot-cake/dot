@@ -2,29 +2,29 @@ version = 1
 name = "ローカル"
 
 [setup]
-script = "npm run setup"
+script = "pnpm install --frozen-lockfile && pnpm run setup"
 
 [[actions]]
 name = "検証"
 icon = "test"
-command = "npm run check"
+command = "pnpm run check"
 
 [[actions]]
 name = "アプリを起動"
 icon = "run"
-command = "npm run app:dev"
+command = "pnpm run app:dev"
 
 [[actions]]
 name = "拡張機能を開発"
 icon = "debug"
-command = "npm run dev:ext"
+command = "pnpm run ext:dev:open"
 
 [[actions]]
 name = "拡張機能をビルド"
 icon = "tool"
-command = "npm run build:ext"
+command = "pnpm run ext:build"
 
 [[actions]]
 name = "拡張機能を型検査"
 icon = "test"
-command = "npm --prefix extension run typecheck"
+command = "pnpm --dir extension run typecheck"

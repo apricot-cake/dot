@@ -1,7 +1,7 @@
 'use strict';
 
 // 実際の Electron IPC と Windows の 画像 を確認し、元のクリップボードを復元する。
-// node e2e/harness/cases/test-app-copy-image.cts（事前に npm run build --workspace app）
+// node e2e/harness/cases/test-app-copy-image.cts（事前に pnpm --filter @apricot-cake/dot run build）
 
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');

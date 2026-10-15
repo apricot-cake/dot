@@ -17,19 +17,6 @@ updates:
           - "minor"
           - "patch"
 
-  - package-ecosystem: "npm"
-    directory: "/extension"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "依存更新"
-    groups:
-      minor-and-patch:
-        applies-to: version-updates
-        update-types:
-          - "minor"
-          - "patch"
-
   # ワークフローの `uses:` は SHA で固定してある（タグは差し替え可能＝
   # サプライチェーンの穴・GitHub Docs "Security hardening for GitHub Actions"）。
   # 固定したまま更新を受け取る経路がこれ＝Dependabot が SHA と `# vX.Y.Z`
@@ -48,15 +35,3 @@ updates:
         applies-to: version-updates
         patterns:
           - "*"
-  - package-ecosystem: "npm"
-    directory: "/docs/site"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "依存更新"
-    groups:
-      minor-and-patch:
-        applies-to: version-updates
-        update-types:
-          - "minor"
-          - "patch"

@@ -39,7 +39,7 @@ async function run(session: any, args: string[] = []) {
     const operation = require(path.resolve(arg));
     if (typeof operation.run !== 'function') throw new Error('検証モジュールは run(session, args) を export してください。');
     return operation.run(session, args.slice(2));
-  } else throw new Error('使い方: npm run app:debug -- hold | eval <式> | shot [出力先] | run <モジュール>');
+  } else throw new Error('使い方: pnpm run app:debug hold | eval <式> | shot [出力先] | run <モジュール>');
 }
 
 module.exports = { run };

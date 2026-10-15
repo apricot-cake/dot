@@ -81,19 +81,15 @@ jobs:
         run: exit 1
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Setup Node
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@c9883cc79df532ad1a7b81bf9ab944ceb090d65c # v2.0.0
         with:
           node-version-file: .node-version
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            extension/package-lock.json
-      # `npm ci` にしない: 上流の2つの問題（better-sqlite3・electron-vite と vite の
-      # peer 範囲）のせいで、素の install は追加のフラグ無しには失敗する。このリポジトリ
-      # 自身の導入経路が、いま何のフラグが要るかを既に知っていて、extension/ の別の
-      # lockfile も面倒を見る。scripts/setup.cts を参照。
+          cache: true
+          install: false
       - name: Install dependencies
-        run: npm run setup
+        run: pnpm install --frozen-lockfile
+      - name: Prepare development environment
+        run: pnpm run setup
       - name: Lint, typecheck, test
-        run: npm run check:ci
+        run: pnpm run check:ci
