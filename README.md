@@ -2,15 +2,7 @@
 
 ## 公式サイト
 
-[dot の公式サイト](https://apricot-cake.com/dot/)
-
-[ページの開発と検証](docs/site/README.md)
-
-## 紹介動画
-
-## 使い方
-
-（Wikiをリンク）
+https://apricot-cake.com/dot
 
 ## 環境構築からビルドまで
 
