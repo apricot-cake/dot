@@ -330,7 +330,7 @@ function createWindow(show = true, opts?: { secondary?: boolean }) {
 }
 
 // ウィンドウをアクティブにせずに z 順の一番下へ移す。使うのは下の DOT_START_INACTIVE の
-// 検証経路だけなので、koffi は devDependency で、require は意図して遅延させてある。パッケージ
+// 検証経路だけなので require は意図して遅延させてある。パッケージ
 // 済みのビルドがこの行に届くことはないし、万一届いても、アプリが死ぬのではなくウィンドウが
 // そのままの場所に留まるだけ。HWND は void* ではなく uintptr_t として渡す＝
 // getNativeWindowHandle() が返すのはハンドルを保持する Buffer で、void* の引数にすると

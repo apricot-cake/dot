@@ -19,8 +19,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 import { configDir } from './paths.mts';
+import { getWindowsPackageData } from './windows-app-data.mts';
+import { MSIX_NATIVE_HOST, WORKSPACE_NATIVE_HOST, SANDBOX_NATIVE_HOST, nativeHostName } from './host-environment.mts';
 import { assertWindowsUserContext } from './windows-user-context.mts';
 
 // 登録するホストの名前。configDir()（paths.mts）とまったく同じ理由で環境変数に従う。
@@ -29,8 +32,8 @@ import { assertWindowsUserContext } from './windows-user-context.mts';
 // ばならない。さもないと2つが黙って半分だけ登録された状態になる。Native Messaging は
 // この名前で経路を決めるので、開発中に取ったキャプチャを本物のライブラリの外に留めるのは、
 // 2つ目の拡張機能の id ではなくこの名前だ。
-export const DEFAULT_HOST_NAME = 'com.dot.host';
-export const HOST_NAME = process.env.DOT_NATIVE_HOST_NAME || DEFAULT_HOST_NAME;
+export const DEFAULT_HOST_NAME = WORKSPACE_NATIVE_HOST;
+export const HOST_NAME = nativeHostName();
 // ソースではなくバンドル（bridge.mts とそのローカルのモジュールを1ファイルにしたもの）
 // ＝app/build-native-host-bridge.mjs が作る。deployBridge() を参照。
 export const BRIDGE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), 'dist', 'bridge.js');
@@ -88,7 +91,7 @@ export function launcherPath(): string {
 }
 
 export function manifestPath(): string {
-  return path.join(configDir(), `${HOST_NAME}.json`);
+  return path.join(configDir(), 'NativeMessaging', `${HOST_NAME}.json`);
 }
 
 // リンクされた Git の worktree は .git がファイル（本体のリポジトリを指す）で、本体の
@@ -119,7 +122,9 @@ interface PreserveSharedRegistrationArgs {
 // worktree を標準ホストへ登録すると、削除後に通常の保存が失敗する。隔離環境の登録は
 // DOT_NATIVE_HOST_NAME で別の名前を明示した場合だけ許す。
 export function shouldPreserveSharedRegistration({ exe, runAsNode, configDirOverride = process.env.DOT_CONFIG_DIR, hostName = HOST_NAME }: PreserveSharedRegistrationArgs): boolean {
-  return hostName === DEFAULT_HOST_NAME && (Boolean(configDirOverride) || (runAsNode && isLinkedWorktreeRuntime(exe)));
+  if (hostName === MSIX_NATIVE_HOST) return !getWindowsPackageData();
+  if (hostName === SANDBOX_NATIVE_HOST) return !configDirOverride || process.env.DOT_NATIVE_HOST_NAME !== SANDBOX_NATIVE_HOST;
+  return Boolean(configDirOverride) || (runAsNode && isLinkedWorktreeRuntime(exe));
 }
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: \x00-\x7F is the deliberate full-ASCII range check
@@ -163,13 +168,23 @@ function writeLauncher({ exe, runAsNode, bridgePath }: WriteLauncherArgs): strin
   fs.mkdirSync(configDir(), { recursive: true });
   const p = launcherPath();
   const exeRef = asciiExeRef(exe);
-  const lines = ['@echo off'];
+  const require = createRequire(new URL('../app/package.json', import.meta.url));
+  const modules = path.dirname(path.dirname(require.resolve('koffi')));
+  let modulesRef = modules;
+  if (!isAscii(modules)) {
+    const link = path.join(configDir(), 'modules');
+    if (!fs.existsSync(link)) fs.symlinkSync(modules, link, 'junction');
+    modulesRef = link;
+  }
+  const lines = ['@echo off', `set "NODE_PATH=${modulesRef}"`];
   // Chrome はこのランチャーを、インストーラが走った環境ではなくブラウザの環境で
   // 起動する。だから隔離したインストールは、自分の設定ディレクトリを必ず焼き込まな
   // ければならない。さもないと開発用のホストが、本物の設定ディレクトリ
   // （%APPDATA%\dot）を解決して本物のライブラリに書き込むブリッジを起動して
   // しまう（#732）。
-  if (process.env.DOT_CONFIG_DIR) lines.push(`set "DOT_CONFIG_DIR=${configDir()}"`);
+  // workspace はブラウザ側の検証設定を継承しない。sandbox だけ固定の隔離先を渡す。
+  lines.push(`set "DOT_CONFIG_DIR=${HOST_NAME === SANDBOX_NATIVE_HOST ? configDir() : ''}"`);
+  lines.push(`set "DOT_NATIVE_HOST_NAME=${HOST_NAME}"`);
   if (runAsNode) lines.push('set ELECTRON_RUN_AS_NODE=1');
   lines.push(`"${exeRef}" "${bridgePath}" %*`);
   fs.writeFileSync(p, lines.join('\r\n') + '\r\n', 'utf8');
@@ -199,6 +214,7 @@ function writeManifest(launcher: string, extensionId: string | null): string {
     allowed_origins: allowedOrigins,
   };
   const p = manifestPath();
+  fs.mkdirSync(path.dirname(p), { recursive: true });
   fs.writeFileSync(p, JSON.stringify(manifest, null, 2), 'utf8');
   return p;
 }
@@ -230,7 +246,9 @@ function persistExtensionId(id: string | null): void {
     }
     if (cfg.extensionId !== id) {
       cfg.extensionId = id;
-      fs.writeFileSync(p, JSON.stringify(cfg, null, 2), 'utf8');
+      const temporary = `${p}.${process.pid}.tmp`;
+      fs.writeFileSync(temporary, JSON.stringify(cfg, null, 2), 'utf8');
+      fs.renameSync(temporary, p);
     }
   } catch {
     /* できる範囲で＝登録を止めることは決してしない */
@@ -245,9 +263,10 @@ interface InstallOptions {
   exe?: string;
   runAsNode?: boolean;
   extensionId?: unknown;
+  aliasPath?: string;
 }
 
-export function install({ exe = process.execPath, runAsNode = false, extensionId }: InstallOptions = {}) {
+export function install({ exe = process.execPath, runAsNode = false, extensionId, aliasPath }: InstallOptions = {}) {
   if (process.platform !== 'win32') throw new Error(`Unsupported platform: ${process.platform}`);
   if (shouldPreserveSharedRegistration({ exe, runAsNode })) {
     const launcher = launcherPath();
@@ -261,8 +280,14 @@ export function install({ exe = process.execPath, runAsNode = false, extensionId
   const extId = sanitizeExtensionId(extensionId);
   if (extId) persistExtensionId(extId); // 明示された id（CLI やアプリから）→ 消えない形にする
   const id = extId || readExtensionId();
-  const bridgePath = deployBridge();
-  const launcher = writeLauncher({ exe, runAsNode, bridgePath });
+  let launcher: string;
+  if (getWindowsPackageData()) {
+    launcher = aliasPath ?? path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'dot-native-host.exe');
+    if (!path.isAbsolute(launcher) || !fs.existsSync(launcher)) throw new Error(`Native host App Execution Alias is unavailable: ${launcher}`);
+  } else {
+    const bridgePath = deployBridge();
+    launcher = writeLauncher({ exe, runAsNode, bridgePath });
+  }
   const manifest = writeManifest(launcher, id);
 
   for (const key of windowsRegistryKeys()) {
@@ -308,7 +333,7 @@ export function uninstall(): void {
   // ようにする。古くなったマニフェストを消すことにも意味がある。app/src/main/index.ts が
   // existsSync(manifestPath()) で登録のゲートをかけているので、マニフェストが残っていると、
   // 後の起動が古い allowed_origins のまま登録し直しを飛ばしてしまう。
-  const leftovers = [path.join(configDir(), DEPLOYED_BRIDGE), launcherPath(), manifestPath()];
+  const leftovers = getWindowsPackageData() ? [manifestPath()] : [path.join(configDir(), DEPLOYED_BRIDGE), launcherPath(), manifestPath()];
   for (const f of leftovers) {
     try {
       fs.unlinkSync(f);
@@ -321,7 +346,7 @@ export function uninstall(): void {
 // deployBridge() がバンドルを置く場所。診断（scripts/self-test）が、自前で書き下した
 // パスではなく、ランチャーが実際に走らせるファイルを確かめられるように export している。
 export function deployedBridgePath(): string {
-  return path.join(configDir(), DEPLOYED_BRIDGE);
+  return getWindowsPackageData() ? BRIDGE_PATH : path.join(configDir(), DEPLOYED_BRIDGE);
 }
 
 // このモジュール自身がプロセスの入口のときだけ CLI として振る舞う。`require.main ===

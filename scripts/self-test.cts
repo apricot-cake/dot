@@ -25,7 +25,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { configDir, defaultLibraryDir } = require('../native-host/paths.mts');
+const { configDir, logsDir, defaultLibraryDir } = require('../native-host/paths.mts');
 const install = require('../native-host/install.mts');
 
 // installがデプロイするのはビルド済みバンドルの方だ――bridge.mtsと比較すると、
@@ -136,18 +136,10 @@ function checkWritable() {
 }
 
 // --- チェック4: ネイティブホストの登録（win32） ---
-// configDir()（Windows: %APPDATA%\dot）下のMANIFESTファイルをハードチェックする。
-// HKCUポインタは別枠で、ハード失敗にはせずソフトなINFO行として報告する
-// （checkRegistryPointer）。元々の理由は2026-08-06（#1003）に無くなった＝MSIXの
-// コンテナ下のシェルはかつて仮想ハイブを読んでいて、`reg query`の結果は何であれ意味を
-// 成さなかった。今はそのコンテナに包まれておらず、ハイブは本物だ――だからこれは
-// ハードチェックに昇格させられる。ホストを一度も登録したことのないマシン（新しい
-// worktreeなど）で誤発火しないと誰かが確認するまでは、ソフトのままにしておく。
-// 「キャプチャは動いているか」の権威ある兆候は、実際のChromeでのキャプチャと、
-// 設定ディレクトリのbridge.log / capture.log（Windows: %APPDATA%\dot）のままだ。
+// manifest は共有インストーラーと同じ配置を確認する。実際の通信は保存とログで別途確認する。
 function checkRegistration() {
   if (process.platform !== 'win32') return { name: 'ホスト登録', ok: true, soft: true, detail: 'スキップ（非win32）' };
-  const manifestPath = path.join(configDir(), `${install.HOST_NAME}.json`);
+  const manifestPath = install.manifestPath();
   if (!fs.existsSync(manifestPath)) {
     return { name: 'ホスト登録', ok: false, detail: `manifestが無い（${manifestPath}）――実行: node native-host/install.mts` };
   }
@@ -168,9 +160,7 @@ function checkRegistration() {
 function checkRegistryPointer() {
   if (process.platform !== 'win32') return { name: 'HKCUポインタ（情報）', ok: true, soft: true, detail: 'スキップ（非win32）' };
   const key = `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${install.HOST_NAME}`;
-  // 2026-08-06（#1003）までは「これは仮想ハイブを読んでいる」だった――MSIXコンテナは
-  // もうこのプロセスを包んでいないので、以下の値は実際のChromeが参照するものそのものだ。
-  const caveat = '2026-08-06以降は本物のハイブを報告する。キャプチャ＋設定ディレクトリのbridge.logが依然としてエンドツーエンドの証拠';
+  const caveat = 'このプロセスから見える登録値。実際の通信は保存と Logs の bridge.log で確認する';
   try {
     const out = execFileSync('reg', ['query', key, '/ve'], { encoding: 'utf8' });
     const m = out.match(/REG_SZ\s+(.+?)\s*$/m);
@@ -228,7 +218,7 @@ function deployedBridgePing() {
 
 // --- 情報: capture.log ---
 function captureLogInfo() {
-  const p = path.join(configDir(), 'capture.log');
+  const p = path.join(logsDir(), 'capture.log');
   if (!fs.existsSync(p)) return { name: 'capture.log', ok: true, soft: true, detail: `まだ無い（${p}）` };
   return { name: 'capture.log', ok: true, soft: true, detail: `${p}（${fs.statSync(p).size}バイト）` };
 }

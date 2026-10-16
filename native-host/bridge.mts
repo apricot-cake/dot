@@ -27,7 +27,7 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { acquireExactRequestLock } from './request-lock.mts';
 
-import { configDir, defaultLibraryDir, extensionBuildStampPath, extensionContactPath } from './paths.mts';
+import { configDir, cacheDir, logsDir, defaultLibraryDir, extensionBuildStampPath, extensionContactPath } from './paths.mts';
 // できる範囲で働く遠隔画像のダウンロード（元のメディアとアバター）は共有のモジュールに
 // 置く。そうすればキャプチャでも取り込みでも埋め戻しでも、SSRF の防ぎとサイズの上限が
 // 同一になる。media-download.mts を参照。
@@ -39,6 +39,8 @@ import { resolveSaveFolder } from './config-recovery.mts';
 // URL から同一性のキーへの唯一の規則。レンダラーのまとめ方と共有する。post-key.mts と、
 // 下の保存済み投稿の索引を参照。
 import { postKeyOf } from './post-key.mts';
+import { buildSavedIndex as buildLibrarySavedIndex } from './saved-index.mts';
+import { listTrashIndexRecords } from './trash-index.mts';
 import { alreadySaved } from './save-guard.mts';
 // 共有のレコードの形と正規化の組み立て役（#5 St2 / #295）。だからブリッジが作ったレコード
 // は、DB の書き手が期待する欄をそっくりそのまま持つ。
@@ -75,7 +77,8 @@ type RequestReceipt = import('./protocol.mts').RequestReceipt;
 // 働き、決して例外を投げてはいけない（ログのエラーがキャプチャを壊してはいけない）。
 function logLine(msg: string): void {
   try {
-    fs.appendFileSync(path.join(configDir(), 'bridge.log'), `${new Date().toISOString()} [pid ${process.pid}] ${msg}\n`);
+    fs.mkdirSync(logsDir(), { recursive: true });
+    fs.appendFileSync(path.join(logsDir(), 'bridge.log'), `${new Date().toISOString()} [pid ${process.pid}] ${msg}\n`);
   } catch {
     /* 無視する＝ログは無くても困らない */
   }
@@ -127,7 +130,8 @@ const CAPTURE_LOG_MAX = 2 * 1024 * 1024;
 
 export function appendLog(entry: Record<string, unknown>): void {
   try {
-    const file = path.join(configDir(), 'capture.log');
+    fs.mkdirSync(logsDir(), { recursive: true });
+    const file = path.join(logsDir(), 'capture.log');
     try {
       if (fs.statSync(file).size > CAPTURE_LOG_MAX) fs.renameSync(file, `${file}.1`);
     } catch {
@@ -627,10 +631,10 @@ function mergeSavedEntry(keys: Map<string, IndexEntry>, key: string, id: string,
 }
 
 function savedIndexPath(): string {
-  return path.join(configDir(), SAVED_INDEX_FILE);
+  return path.join(cacheDir(), SAVED_INDEX_FILE);
 }
 function journalPath(): string {
-  return path.join(configDir(), JOURNAL_FILE);
+  return path.join(cacheDir(), JOURNAL_FILE);
 }
 
 function statMtimeMs(p: string): number {
@@ -652,6 +656,7 @@ export function noteSaved(url: unknown, captureId: string, media?: unknown, tota
   if (savedIndexCache?.folder === folder) mergeSavedEntry(savedIndexCache.keys, key, captureId, urls, undefined, total, post, individualMedia);
   try {
     fs.mkdirSync(configDir(), { recursive: true });
+    fs.mkdirSync(cacheDir(), { recursive: true });
     fs.appendFileSync(journalPath(), JSON.stringify({ saveFolder: path.resolve(folder), k: key, id: captureId, m: urls, n: total, post, individualMedia, t: Date.now() }) + '\n', 'utf8');
     // 追記でジャーナルの mtime が動いた。それを取り込んでおくので、次の問い合わせが
     // 自分の書き込みを「誰かが変えた」と読んで組み直すことがない。
@@ -723,7 +728,7 @@ function readJournal(folder: string, savedIndexMtimeMs: number): Array<{ k: stri
 // 付きで読む。ファイルごとに stat せず、ファイル名から保存の時刻を読む
 // （INBOX_ENVELOPE_NAME を参照）＝#299 より前に scanRecentSidecars が使っていたのと同じ
 // 手だ。
-function scanRecentInbox(folder: string, sinceMs: number, keys: Map<string, IndexEntry>): void {
+function scanRecentInbox(folder: string, sinceMs: number, keys: Map<string, IndexEntry>, limit = RECENT_SCAN_CAP, imported?: (eventId: string) => boolean): void {
   let files: string[];
   try {
     files = fs.readdirSync(inboxNewDir(folder));
@@ -737,11 +742,11 @@ function scanRecentInbox(folder: string, sinceMs: number, keys: Map<string, Inde
     if (captureId && Number(captureId[1]) >= sinceMs) fresh.push(f);
   }
   fresh.sort().reverse();
-  for (const f of fresh.slice(0, RECENT_SCAN_CAP)) {
+  for (const f of fresh.slice(0, limit)) {
     try {
       const raw = fs.readFileSync(path.join(inboxNewDir(folder), f), 'utf8');
       const parsed = parseInboxEnvelope(raw);
-      if (!parsed.ok) continue; // 壊れている・書きかけ・未知のバージョン＝飛ばす。問い合わせを落とさない
+      if (!parsed.ok || imported?.(parsed.envelope.eventId)) continue; // 壊れている・書きかけ・未知のバージョン＝飛ばす。問い合わせを落とさない
       // URL だけの保存も所有 ID を返す。post:false が再取得を妨げない。
       const key = postKeyOf(parsed.envelope.record.url);
       if (key)
@@ -769,6 +774,52 @@ function readTrashedEntry(value: unknown): TrashedEntry | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const v = value as { id?: unknown; deletedAt?: unknown };
   return { id: typeof v.id === 'string' ? v.id : '', deletedAt: typeof v.deletedAt === 'string' && v.deletedAt ? v.deletedAt : null };
+}
+
+// LocalCache の消失・破損後は、アプリを起動せずに正本と未取込キューから再構築する。
+// DB は読み取り専用のトランザクションで参照し、受領済みの古い envelope を再保存扱いにしない。
+async function rebuildSavedIndexIfNeeded(folder: string): Promise<void> {
+  const target = savedIndexPath();
+  const modified = statMtimeMs(target);
+  if (modified >= 0 && savedIndexCache?.folder === folder && savedIndexCache.savedIndexMtimeMs === modified) return;
+  try {
+    const current = JSON.parse(fs.readFileSync(target, 'utf8'));
+    if (current.saveFolder === path.resolve(folder) && current.entries && typeof current.entries === 'object') return;
+  } catch {
+    /* 再作成できる索引だけを再構築する */
+  }
+  let db: DatabaseSync | undefined;
+  try {
+    const database = path.join(folder, 'dot.db');
+    // DB のない初回保存は未取込キューとジャーナルから直接答える。
+    // 別ライブラリのスナップショットを空データで上書きしない。
+    if (!fs.existsSync(database)) return;
+    db = new DatabaseSync(database, { readOnly: true, timeout: 1000 });
+    db.exec('BEGIN');
+    const connection = db;
+    const snapshot = buildLibrarySavedIndex({ name: database, prepare: (sql) => connection.prepare(sql) }, await listTrashIndexRecords(path.join(folder, '.trash')));
+    const keys = new Map<string, IndexEntry>(Object.entries(snapshot.entries).map(([key, value]) => [key, { ...value, owners: value.owners ?? value.media.map(() => value.id), total: value.total ?? null }]));
+    const receipt = db.prepare('SELECT 1 FROM inbox_events WHERE eventId = ?');
+    scanRecentInbox(folder, -1, keys, Number.POSITIVE_INFINITY, (id) => !!receipt.get(id));
+    snapshot.entries = Object.fromEntries([...keys].map(([key, entry]) => [key, { ...entry, post: entry.post ?? false, individualMedia: entry.individualMedia ?? [] }]));
+    db.exec('COMMIT');
+    fs.mkdirSync(cacheDir(), { recursive: true });
+    const temporary = `${target}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
+    try {
+      fs.writeFileSync(temporary, JSON.stringify(snapshot), 'utf8');
+      fs.renameSync(temporary, target);
+    } finally {
+      try {
+        fs.unlinkSync(temporary);
+      } catch {
+        /* rename 済み */
+      }
+    }
+  } catch (error) {
+    logLine(`saved-index rebuild failed: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    db?.close();
+  }
 }
 
 function buildSavedIndex(folder: string): SavedIndex {
@@ -813,7 +864,7 @@ function buildSavedIndex(folder: string): SavedIndex {
     // ＝trustedSnapshotMtimeMs は -1 のままなので、下の読み直しが、上限まで取込キューの
     // ばらけたエンベロープ全体を覆う。
   }
-  scanRecentInbox(folder, trustedSnapshotMtimeMs, keys);
+  scanRecentInbox(folder, trustedSnapshotMtimeMs, keys, trustedSnapshotMtimeMs < 0 ? Number.POSITIVE_INFINITY : RECENT_SCAN_CAP);
   for (const e of readJournal(folder, trustedSnapshotMtimeMs)) mergeSavedEntry(keys, e.k, e.id, e.m, undefined, e.n, e.post, e.individualMedia);
   return { folder, savedIndexMtimeMs, journalMtimeMs: statMtimeMs(journalPath()), keys, trashed };
 }
@@ -855,6 +906,7 @@ export async function handleQuery(req: QueryRequest): Promise<QueryAck> {
     if (receipt) requests[requestId] = receipt;
   }
   if (!urls.length) return { ok: true, saveFolder, results, trashed, requests };
+  await rebuildSavedIndexIfNeeded(saveFolder);
   const index = savedIndex(saveFolder);
   for (const u of urls) {
     if (typeof u !== 'string' || !u) continue;
@@ -1213,6 +1265,7 @@ async function guardSave<T extends SavePostAck | SaveMediaAck>(folder: string, r
   if (!key) return save();
   fs.mkdirSync(folder, { recursive: true });
   // 保存直前に、キャッシュを使わず索引と未反映の取込データを読み直す。
+  await rebuildSavedIndexIfNeeded(folder);
   savedIndexCache = null;
   const known = savedIndex(folder).keys.get(key);
   const scope = req.type === 'saveMedia' ? 'media' : req.metadata.saveScope === 'media' ? 'media' : 'post';

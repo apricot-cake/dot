@@ -1,4 +1,5 @@
 import { app, utilityProcess } from 'electron';
+import { getSaveFolder } from './lib-config';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -181,6 +182,7 @@ export async function recoverCompleteArchiveImports(): Promise<number> {
           await worker.stop();
         }
       },
+      path.join(getSaveFolder(), '.dot-inbox'),
     );
   } finally {
     active = false;

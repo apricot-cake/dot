@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import os from 'node:os';
+import { temporaryDir } from '../../../native-host/paths.mts';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type Database from 'better-sqlite3';
@@ -308,7 +308,7 @@ async function assertNoLinksInStage(directory: string) {
 
 // Electron 非依存テストも実製品と同じ prepare / apply を通す。
 export async function importCompleteZipToDb(sqlite: Database.Database, zipPath: string, destination: string) {
-  const stage = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'dot-archive-import-'));
+  const stage = await fs.promises.mkdtemp(path.join(temporaryDir(), 'dot-archive-import-'));
   try {
     const result = await prepareArchiveImport(zipPath, stage);
     return result.ok ? await applyArchiveImport(sqlite, stage, destination) : result;

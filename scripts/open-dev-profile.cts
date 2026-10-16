@@ -27,7 +27,7 @@ async function main(dependencies: any = {}): Promise<void> {
       console.log(`[dot] 共有リリースビルドを読み込み直しました: ${configured.path}`);
       if (process.argv.includes('--marker')) await session.marker();
     } else throw new Error(`共有リリースビルドがありません。先に pnpm run ext:deploy を実行してください: ${options.output}`);
-    console.log('[dot] 開発用 Chrome: 既存 Default、管理された pipe、Native Host: com.dot.host.dev');
+    console.log('[dot] 開発用 Chrome: 既存 Default、管理された pipe、Native Host: com.dot.host.workspace');
     if (process.argv.includes('--keep-open')) {
       console.log('[dot] 開発用 Chrome を保持しています。Ctrl+C で通常終了します');
       await waitForInterrupt();

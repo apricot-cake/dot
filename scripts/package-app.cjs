@@ -16,6 +16,8 @@ async function packageApp() {
   const stage = path.join(root, '.sandbox', `package-app-${randomUUID()}`);
   const pnpmCli = process.env.npm_execpath;
   if (!pnpmCli) throw new Error('pnpm run app:package から実行してください');
+  if (process.platform !== 'win32') throw new Error('dot の配布パッケージは Windows 上で作成してください。');
+  execFileSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts', 'build-native-host-launcher.ps1')], { cwd: root, stdio: 'inherit', windowsHide: true });
   await fs.mkdir(path.dirname(stage), { recursive: true });
   try {
     execFileSync(pnpmCli, ['--filter', '@apricot-cake/dot', 'deploy', '--prod', stage], { cwd: root, stdio: 'inherit', windowsHide: true });
@@ -31,7 +33,12 @@ async function packageApp() {
       overwrite: true,
       prune: false,
       ignore: [/^\/(?!assets(?:\/|$)|node_modules(?:\/|$)|out(?:\/|$)|package\.json$).*/],
-      afterComplete: [({ buildPath }) => fs.cp(path.join(appDir, 'third-party-licenses'), path.join(buildPath, 'resources', 'licenses'), { recursive: true })],
+      afterComplete: [
+        async ({ buildPath }) => {
+          await fs.cp(path.join(appDir, 'third-party-licenses'), path.join(buildPath, 'resources', 'licenses'), { recursive: true });
+          await fs.copyFile(path.join(appDir, 'vendor', 'native-host-launcher', 'dot-native-host.exe'), path.join(buildPath, 'dot-native-host.exe'));
+        },
+      ],
     };
     const outputs = await packager(packageOptions);
     for (const output of outputs) console.log(output);

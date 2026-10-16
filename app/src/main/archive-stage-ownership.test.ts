@@ -169,3 +169,20 @@ test('128回を超えるstale失敗再試行でも旧actorを退役して後で�
   await expect(acquireArchiveActor(stage.stage, oldActor)).rejects.toThrow('unregistered');
   expect(await recover()).toBe(1);
 }, 20000);
+
+test('既定の復旧ステージはライブラリ内に復旧記録を保持する', async () => {
+  const stage = await createArchiveStage(profile, library, 'library-one');
+  held.push(stage);
+  expect(stage.stage.toLowerCase().startsWith((path.join(library, '.dot-inbox') + path.sep).toLowerCase())).toBe(true);
+  await stage.close();
+  held.pop();
+  const cleanup = vi.fn();
+  expect(await recoverArchiveStages(profile, async () => true, cleanup, path.join(library, '.dot-inbox'))).toBe(1);
+  expect(cleanup).toHaveBeenCalledOnce();
+});
+
+test('存在しないライブラリを復旧領域のために再作成しない', async () => {
+  const missing = path.join(root, 'missing-library');
+  await expect(createArchiveStage(profile, missing, 'library-one')).rejects.toMatchObject({ code: 'ENOENT' });
+  await expect(fs.stat(missing)).rejects.toMatchObject({ code: 'ENOENT' });
+});

@@ -12,7 +12,7 @@ const inboxNew = () => path.join(saveFolder, '.dot-inbox', 'new');
 const envelopeExists = (base: string) => fs.existsSync(path.join(inboxNew(), `${base}.json`));
 const journal = () => {
   try {
-    return fs.readFileSync(path.join(configDir, 'bridge-journal.jsonl'), 'utf8');
+    return fs.readFileSync(path.join(configDir, 'Cache', 'bridge-journal.jsonl'), 'utf8');
   } catch {
     return '';
   }

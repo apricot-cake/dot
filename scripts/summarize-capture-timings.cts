@@ -9,7 +9,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { configDir } = require('../native-host/paths.mts');
+const { logsDir } = require('../native-host/paths.mts');
 
 type SaveTiming = {
   saveId: string;
@@ -75,7 +75,7 @@ function summarize(entries: any[], query: string | undefined) {
 
 function main() {
   const query = process.argv.slice(2).join(' ') || undefined;
-  const file = path.join(configDir(), 'capture.log');
+  const file = path.join(logsDir(), 'capture.log');
   const rows = summarize(readEntries(file), query);
   if (!rows.length) {
     console.log(JSON.stringify({ file, query: query || null, saves: [] }, null, 2));

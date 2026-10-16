@@ -43,7 +43,7 @@ fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolde
 const POST_URL = 'https://x.com/trashnotice/status/158158158';
 const CAPTURE_ID = 'dummy-158';
 const IMAGE = `${CAPTURE_ID}.jpg`;
-const SNAPSHOT_FILE = path.join(configDir, 'bridge-saved-index.json');
+const SNAPSHOT_FILE = path.join(configDir, 'Cache', 'bridge-saved-index.json');
 
 // 本物のメディアファイルが実在しなければならない: delete-post はこの
 // キャプチャのファイルを .trash/ へ移し、restore-post はそれを戻す。ディスク

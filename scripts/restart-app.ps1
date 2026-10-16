@@ -115,7 +115,6 @@ foreach ($debugKey in @('REMOTE_DEBUGGING_PORT', 'ELECTRON_RUN_AS_NODE', 'NODE_O
 }
 $env:APPDATA = [Environment]::GetFolderPath('ApplicationData')
 
-$configDir = Join-Path $env:APPDATA 'dot'
 
 # FALLBACK ONLY — see the header. Front-anchored on the resolved $electron path (Windows
 # quotes the exe in the command line when nothing forces it not to, but not always, so match

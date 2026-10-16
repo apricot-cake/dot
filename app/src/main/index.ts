@@ -3,8 +3,6 @@ import { searchFields, type SearchCandidate } from '../shared/search-fields.ts';
 ('use strict');
 
 import { app, BrowserWindow, dialog, protocol } from 'electron';
-import squirrelStartup from 'electron-squirrel-startup';
-import { updateElectronApp } from 'update-electron-app';
 import { receivePostLink, registerPostLinkProtocol } from './post-link.ts';
 import chokidar, { type FSWatcher } from 'chokidar';
 import log from 'electron-log/main';
@@ -40,8 +38,9 @@ import { establishWatcherAndFinalDrain, notifyOrganizationAfterRelocation, waitF
 // 各モジュールのヘッダに、何を持って行き、何を意図して残したかが書いてある。ここに残るのは
 // 組み立てと、そのすべてが共有するレコードのパイプライン（設定 → DB → 取込キュー →
 // レンダラー）。
-import { configDir, defaultLibraryDir, installer, pixivRefererFor, downloadAvatar, clearAllBlockReason } from './native-host.ts';
+import { configDir, getWindowsPackageData, cacheDir, logsDir, defaultLibraryDir, installer, pixivRefererFor, downloadAvatar, clearAllBlockReason } from './native-host.ts';
 import { checkForRedirect } from './lib-storage-redirect-guard.ts';
+import { configureAppPaths } from './lib-app-paths.ts';
 import { readConfig, writeConfig, getSaveFolder, readSavePointer, initSaveFolderRedundancy, isConfigCorrupt, invalidateConfigCache, saveFolderStatus, migrateLibrarySettings } from './lib-config.ts';
 import { mimeForFile, registerImageProtocol } from './lib-thumbnails.ts';
 import { createLibrarySafety, latestRestorableSnapshot, readIntegrityStatus, validateSaveFolder } from './lib-library-safety.ts';
@@ -66,16 +65,10 @@ import type { IpcContext } from './ipc-context.ts';
 // userData を、Native Messaging ブリッジが設定を読むのと同じディレクトリに固定する。ブリッジ
 // （Chrome が起動する素の Node）とこのアプリの見ている先が常に一致するように。
 // app が ready になる前に走らせる必要がある。
-app.setPath('userData', configDir());
+configureAppPaths(app);
 
-// Squirrel の更新・削除時は、アプリ本体を起動せずその処理へ渡す。
-if (squirrelStartup) app.quit();
-
-// 診断は Electron の AppData 既定ではなく、ブリッジと共有している設定の隣に置く。説明の対象で
-// ある設定と別の場所にあるログは、設定と突き合わせて読みにくい。（元は MSIX のストレージ仮想化が
-// 両者を引き離すという話だった＝2026-08-06 以降は起きない、#1003＝が、設定の隣というのは
-// それとは関係なく正しい置き場。）
-log.transports.file.resolvePathFn = () => path.join(configDir(), 'logs', 'main.log');
+// 診断ログは設定やライブラリと分け、OS別のアプリ用ログ領域に保存する。
+log.transports.file.resolvePathFn = () => path.join(logsDir(), 'main.log');
 // preload のブリッジはこちらが持っているので、electron-log にセッションごとの2本目の preload
 // スクリプトを登録させない。代わりに app/src/preload/index.ts が electron-log/preload を
 // import する。
@@ -380,7 +373,7 @@ async function writeSavedIndexNow(handle: { sqlite: any }) {
     // 新ライブラリの共有スナップショットへ書かない。
     if (dbHandle?.sqlite !== handle.sqlite) return;
     const data = buildSavedIndex(handle.sqlite, trash);
-    const dir = configDir();
+    const dir = cacheDir();
     fs.mkdirSync(dir, { recursive: true });
     writeFileAtomicSync(path.join(dir, SAVED_INDEX_FILE), JSON.stringify(data));
   } catch {
@@ -579,7 +572,7 @@ app.on('web-contents-created', (_e, contents) => {
   contents.once('destroyed', () => _deltaBySender.delete(contents.id));
 });
 
-const searchEngine = new SearchEngine(app.isPackaged ? path.join(process.resourcesPath, 'meilisearch', 'meilisearch.exe') : path.join(app.getAppPath(), 'vendor', 'meilisearch', 'meilisearch.exe'), path.join(configDir(), 'search-v1'));
+const searchEngine = new SearchEngine(app.isPackaged ? path.join(process.resourcesPath, 'meilisearch', 'meilisearch.exe') : path.join(app.getAppPath(), 'vendor', 'meilisearch', 'meilisearch.exe'), path.join(cacheDir(), 'search-v1'));
 async function searchFullText(query: string, limit?: number) {
   const folder = getSaveFolder();
   const handle = ensurePostsSynced();
@@ -1231,7 +1224,7 @@ if (!gotSingleInstanceLock) {
 
   app.whenReady().then(() => {
     // #1009: 何より先に。ほかの何かが configDir や保存先フォルダに触れる前（すぐ下の
-    // eventLogger の行自体が configDir/logs への書き込み）。
+    // eventLogger の行自体が logsDir() への書き込み）。
     if (haltIfStorageRedirected()) return;
     if (!app.isPackaged && !DEV_SERVER_URL && !SMOKE) {
       const stopWatching = watchAppDeployment(
@@ -1249,10 +1242,8 @@ if (!gotSingleInstanceLock) {
     // ではなく）こちらのウィンドウアイコンを出すようにする。インストール済みの exe には
     // Forge がこれを設定する。ここで設定するのは restart-app.ps1 の開発実行を
     // 覆うため。
-    app.setAppUserModelId('com.dot.app');
-    if (app.isPackaged) {
-      updateElectronApp({ repo: 'apricot-cake/dot', updateInterval: '1 hour' });
-    }
+    const packageData = getWindowsPackageData();
+    app.setAppUserModelId(packageData ? `${packageData.familyName}!App` : 'com.dot.app');
     log.eventLogger.startLogging();
     log.info('Starting dot', { packaged: app.isPackaged, version: app.getVersion() });
     // 冗長化した保存先フォルダのポインタの回復・更新を最初にやる。起動の残り（監視、listPosts、

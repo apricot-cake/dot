@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
+
 import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { acquireExactRequestLock, type RequestLock } from '../../../native-host/request-lock.mts';
@@ -59,10 +59,17 @@ async function lock(root: string, key: string): Promise<RequestLock> {
   if (!result) throw new Error('archive-stage-lock-unavailable');
   return result;
 }
-export async function archiveStageRoot(profile: string, temporary = os.tmpdir(), create = true) {
+export async function archiveStageRoot(profile: string, storageBase: string, create = true) {
   const realProfile = canonical(await fs.realpath(profile));
-  const root = path.join(temporary, `dot-archive-stages-${createHash('sha256').update(realProfile).digest('hex')}`);
-  if (create) await fs.mkdir(root, { recursive: true });
+  const root = path.join(storageBase, `dot-archive-stages-${createHash('sha256').update(realProfile).digest('hex')}`);
+  await regular(storageBase, true);
+  if (create) {
+    try {
+      await fs.mkdir(root);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+  }
   await regular(root, true);
   const marker = path.join(root, 'owner.json');
   try {
@@ -90,8 +97,18 @@ export interface OwnedArchiveStage {
   manifest: ArchiveStageManifest;
   close(): Promise<void>;
 }
-export async function createArchiveStage(profile: string, destination: string, libraryId: string, temporary = os.tmpdir()): Promise<OwnedArchiveStage> {
-  const owner = await archiveStageRoot(profile, temporary);
+export async function createArchiveStage(profile: string, destination: string, libraryId: string, storageBase?: string): Promise<OwnedArchiveStage> {
+  const realDestination = canonical(await fs.realpath(destination));
+  await regular(realDestination, true);
+  if (!storageBase) {
+    storageBase = path.join(realDestination, '.dot-inbox');
+    try {
+      await fs.mkdir(storageBase);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    }
+  }
+  const owner = await archiveStageRoot(profile, storageBase);
   const creation = await lock(owner.root, 'archive-stage-creation');
   let lease: RequestLock | undefined;
   try {
@@ -151,10 +168,10 @@ export async function removeOwnedArchiveStage(stage: string) {
   }
   await fs.unlink(path.join(root, `${id}.json`));
 }
-export async function recoverArchiveStages(profile: string, verify: (manifest: ArchiveStageManifest) => Promise<boolean>, cleanup: (stage: string, manifest: ArchiveStageManifest) => Promise<void>, temporary = os.tmpdir()) {
+export async function recoverArchiveStages(profile: string, verify: (manifest: ArchiveStageManifest) => Promise<boolean>, cleanup: (stage: string, manifest: ArchiveStageManifest) => Promise<void>, storageBase: string) {
   let owner: Awaited<ReturnType<typeof archiveStageRoot>>;
   try {
-    owner = await archiveStageRoot(profile, temporary, false);
+    owner = await archiveStageRoot(profile, storageBase, false);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 0;
     throw error;

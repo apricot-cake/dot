@@ -17,7 +17,7 @@ const { evalSource } = require('../../../scripts/lib-wait.cts');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-logging-'));
 const configDir = path.join(tmp, 'dot');
-const logPath = path.join(configDir, 'logs', 'main.log');
+const logPath = path.join(configDir, 'Logs', 'main.log');
 
 // throwはインラインで発生させるのではなくスケジュールする: 検証対象は
 // 「キャッチされない」レンダラーのエラーがログへ届くことで、インラインの

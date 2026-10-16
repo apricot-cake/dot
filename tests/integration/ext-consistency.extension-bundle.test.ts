@@ -207,7 +207,7 @@ describe('manifest とコードが名指しするファイルは出力に在る'
   test('共有バンドルは両方の Native Host とプロファイル設定を持つ', () => {
     const worker = fs.readFileSync(path.join(OUT, 'background.js'), 'utf8');
     expect(worker).toContain('com.dot.host');
-    expect(worker).toContain('com.dot.host.dev');
+    expect(worker).toContain('com.dot.host.workspace');
     expect(worker).toContain('nativeHost.profile.v1');
   });
 

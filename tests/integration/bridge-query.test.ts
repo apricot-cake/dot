@@ -49,7 +49,8 @@ function writeSavedIndex(records: Array<{ captureId: string; url: string; media?
     if (key) entries[key] = { id: rec.captureId, media: rec.media || [], ...(rec.total == null ? {} : { total: rec.total }) };
   }
   fs.mkdirSync(configDir, { recursive: true });
-  const p = path.join(configDir, 'bridge-saved-index.json');
+  fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+  const p = path.join(configDir, 'Cache', 'bridge-saved-index.json');
   fs.writeFileSync(p, JSON.stringify({ format: 'dot-bridge-saved-index', version: 2, saveFolder, generatedAt: new Date(mtimeMs).toISOString(), entries }), 'utf8');
   fs.utimesSync(p, new Date(mtimeMs), new Date(mtimeMs));
 }
@@ -128,7 +129,7 @@ describe('4. ジャーナル＝このプロセスが保存した直後', async (
   });
 
   test('ジャーナルは configDir に書かれる', async () => {
-    expect(fs.existsSync(path.join(configDir, 'bridge-journal.jsonl'))).toBe(true);
+    expect(fs.existsSync(path.join(configDir, 'Cache', 'bridge-journal.jsonl'))).toBe(true);
   });
 });
 
@@ -200,8 +201,8 @@ describe('8. 保存フォルダ・スナップショットが無い', async () =
   });
 
   test('スナップショット自体が無ければ throw せず「保存されていない」と答える', async () => {
-    fs.rmSync(path.join(configDir, 'bridge-saved-index.json'), { force: true });
-    fs.rmSync(path.join(configDir, 'bridge-journal.jsonl'), { force: true });
+    fs.rmSync(path.join(configDir, 'Cache', 'bridge-saved-index.json'), { force: true });
+    fs.rmSync(path.join(configDir, 'Cache', 'bridge-journal.jsonl'), { force: true });
     _resetSavedIndex();
 
     expect(await askId('https://x.com/someone/status/111')).toBeNull();
@@ -277,7 +278,8 @@ describe('9. 保存済みの絵を投稿ごとに答える', async () => {
   test('v1 のスナップショット（captureId だけの文字列）も読める', async () => {
     const legacy = 'https://x.com/legacy/status/88';
     const key = postKeyOf(legacy) as string;
-    const p = path.join(configDir, 'bridge-saved-index.json');
+    fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+    const p = path.join(configDir, 'Cache', 'bridge-saved-index.json');
     const mtime = new Date(Date.now() + 360_000);
     fs.writeFileSync(p, JSON.stringify({ format: 'dot-bridge-saved-index', version: 1, saveFolder, generatedAt: mtime.toISOString(), entries: { [key]: '1700000024000-e6' } }), 'utf8');
     fs.utimesSync(p, mtime, mtime);
@@ -300,7 +302,8 @@ describe('10. ゴミ箱の告知', async () => {
   // 明示して書く＝スナップショットに trashed マップを足す。キャッシュを確実に無効化する
   // ため、mtime は他の節と同じ方法で未来に置く。
   function writeIndexWithTrash(entries: Record<string, unknown>, trashed: Record<string, unknown>, offsetMs: number) {
-    const p = path.join(configDir, 'bridge-saved-index.json');
+    fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+    const p = path.join(configDir, 'Cache', 'bridge-saved-index.json');
     const mtime = new Date(Date.now() + offsetMs);
     fs.writeFileSync(p, JSON.stringify({ format: 'dot-bridge-saved-index', version: 4, saveFolder, generatedAt: mtime.toISOString(), entries, trashed }), 'utf8');
     fs.utimesSync(p, mtime, mtime);
@@ -374,12 +377,13 @@ describe('11. 索引とジャーナルを保存先に束縛する', async () => 
   beforeAll(() => {
     otherFolder = path.join(configDir, 'other-library');
     fs.mkdirSync(otherFolder, { recursive: true });
-    fs.rmSync(path.join(configDir, 'bridge-journal.jsonl'), { force: true });
+    fs.rmSync(path.join(configDir, 'Cache', 'bridge-journal.jsonl'), { force: true });
   });
 
   test('別ライブラリの同じ投稿・ゴミ箱を現在のライブラリの結果にしない', async () => {
     const key = postKeyOf(url)!;
-    const p = path.join(configDir, 'bridge-saved-index.json');
+    fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+    const p = path.join(configDir, 'Cache', 'bridge-saved-index.json');
     fs.writeFileSync(p, JSON.stringify({ saveFolder: otherFolder, entries: { [key]: { id: 'other-owner', media: [] } }, trashed: { [key]: { id: 'other-trash', deletedAt: null } } }));
     select(saveFolder);
     _resetSavedIndex();
@@ -396,7 +400,8 @@ describe('11. 索引とジャーナルを保存先に束縛する', async () => 
   test('別ライブラリの新しい索引時刻で現在の inbox とジャーナルを読み飛ばさない', async () => {
     writeInboxEnvelope(`${SNAP_MS + 10}-a1`, url);
     noteSaved('https://x.com/library/status/70002', '1700000000020-a2', [], null, true, [], saveFolder);
-    const p = path.join(configDir, 'bridge-saved-index.json');
+    fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+    const p = path.join(configDir, 'Cache', 'bridge-saved-index.json');
     const future = new Date(Date.now() + 900_000);
     fs.utimesSync(p, future, future);
     _resetSavedIndex();
@@ -417,15 +422,17 @@ describe('11. 索引とジャーナルを保存先に束縛する', async () => 
   test('帰属不明の旧索引・ジャーナルを現在のライブラリの保存証拠にしない', async () => {
     const unknown = 'https://x.com/library/status/70004';
     const k = postKeyOf(unknown)!;
-    fs.writeFileSync(path.join(configDir, 'bridge-saved-index.json'), JSON.stringify({ entries: { [k]: 'unknown-owner' } }));
-    fs.appendFileSync(path.join(configDir, 'bridge-journal.jsonl'), JSON.stringify({ k, id: 'unknown-owner', t: Date.now() + 900_000 }) + '\n');
+    fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+    fs.writeFileSync(path.join(configDir, 'Cache', 'bridge-saved-index.json'), JSON.stringify({ entries: { [k]: 'unknown-owner' } }));
+    fs.appendFileSync(path.join(configDir, 'Cache', 'bridge-journal.jsonl'), JSON.stringify({ k, id: 'unknown-owner', t: Date.now() + 900_000 }) + '\n');
     _resetSavedIndex();
     expect(await askId(unknown)).toBeNull();
     expect(await askId(url)).toBe(`${SNAP_MS + 10}-a1`);
   });
 
   test('現在の索引に取り込んだ行を圧縮しても、別ライブラリと帰属不明の行は残す', async () => {
-    const p = path.join(configDir, 'bridge-journal.jsonl');
+    fs.mkdirSync(path.join(configDir, 'Cache'), { recursive: true });
+    const p = path.join(configDir, 'Cache', 'bridge-journal.jsonl');
     const foreign = { saveFolder: otherFolder, k: postKeyOf('https://x.com/library/status/70005'), id: 'other-journal', t: SNAP_MS };
     const unknown = { k: postKeyOf('https://x.com/library/status/70006'), id: 'unknown-journal', t: SNAP_MS };
     const covered = { saveFolder, k: postKeyOf(url), id: 'covered', t: SNAP_MS, padding: 'x'.repeat(1024) };
@@ -455,7 +462,7 @@ describe('11. 索引とジャーナルを保存先に束縛する', async () => 
     select(saveFolder);
     _resetSavedIndex();
     // 正規化した帰属は、索引の未来時刻による圧縮対象になる前に確認する。
-    fs.rmSync(path.join(configDir, 'bridge-saved-index.json'), { force: true });
+    fs.rmSync(path.join(configDir, 'Cache', 'bridge-saved-index.json'), { force: true });
     expect(await askId(journalUrl)).toBe('1700000000070-a7');
   });
 });

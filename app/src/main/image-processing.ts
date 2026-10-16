@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { imageSize } from 'image-size';
-import { configDir } from './native-host';
+import { cacheDir } from './native-host';
 import { createJobPool } from './lib-job-pool';
 import { superviseProcess } from './utility-process-supervisor';
 import { IMAGE_PROCESSING_LIMITS as limits, ImageProcessingRequestSchema, type ImageProcessingResult } from './image-processing-contract';
@@ -45,7 +45,7 @@ const CACHE_FILES = 128;
 
 async function getCacheDirectory(): Promise<string> {
   cacheDirectory ??= (async () => {
-    const root = path.join(configDir(), 'prepared-images-v1');
+    const root = path.join(cacheDir(), 'prepared-images-v1');
     await fs.mkdir(root, { recursive: true });
     // プロセスごとに分け、別のアプリが使用中のファイルを上書きしない。
     ownedCacheDirectory = await fs.mkdtemp(path.join(root, 'session-'));

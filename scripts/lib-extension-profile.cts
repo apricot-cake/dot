@@ -4,7 +4,7 @@ const path = require('node:path');
 const { waitFor } = require('./lib-wait.cts');
 const EXPECTED_EXTENSION_ID = 'keggmjkemfcekcffohnpaojacdakpejh';
 const NATIVE_HOST_PROFILE_KEY = 'nativeHost.profile.v1';
-const DEVELOPMENT_NATIVE_HOST_PROFILE = 'development';
+const WORKSPACE_NATIVE_HOST_PROFILE = 'workspace';
 
 async function extensionWorker(context: any): Promise<any> {
   let worker: any;
@@ -40,7 +40,7 @@ async function configureDevelopmentExtension(extensionDir: string, context: any,
       async ({ key, value }: { key: string; value: string }) => {
         await (globalThis as any).chrome.storage.local.set({ [key]: value });
       },
-      { key: NATIVE_HOST_PROFILE_KEY, value: DEVELOPMENT_NATIVE_HOST_PROFILE },
+      { key: NATIVE_HOST_PROFILE_KEY, value: WORKSPACE_NATIVE_HOST_PROFILE },
     );
     const second = await cdp.send('Extensions.loadUnpacked', { path: absolute });
     if (second?.id !== EXPECTED_EXTENSION_ID) throw new Error('開発用プロファイルで拡張機能を再読み込みできませんでした');
@@ -49,7 +49,7 @@ async function configureDevelopmentExtension(extensionDir: string, context: any,
     if (!loaded?.enabled || path.resolve(loaded.path).toLowerCase() !== absolute.toLowerCase()) throw new Error(`開発用プロファイルが共有リリースビルドを読み込んでいません: ${loaded?.path || 'not loaded'}`);
     const verifyWorker = await extensionWorker(context);
     const data = await verifyWorker.evaluate(async (key: string) => (globalThis as any).chrome.storage.local.get(key), NATIVE_HOST_PROFILE_KEY);
-    if (data?.[NATIVE_HOST_PROFILE_KEY] !== DEVELOPMENT_NATIVE_HOST_PROFILE) throw new Error('開発用 Native Host のプロファイル設定を確認できませんでした');
+    if (data?.[NATIVE_HOST_PROFILE_KEY] !== WORKSPACE_NATIVE_HOST_PROFILE) throw new Error('開発用 Native Host のプロファイル設定を確認できませんでした');
     return { id: EXPECTED_EXTENSION_ID, path: absolute };
   } finally {
     await cdp.detach();
@@ -80,4 +80,4 @@ async function reloadDevelopmentPages(extensionDir: string, context: any): Promi
     );
   return pages.length;
 }
-module.exports = { DEVELOPMENT_NATIVE_HOST_PROFILE, EXPECTED_EXTENSION_ID, NATIVE_HOST_PROFILE_KEY, extensionWorker, configureDevelopmentExtension, reloadDevelopmentPages, selectDevelopmentPages };
+module.exports = { WORKSPACE_NATIVE_HOST_PROFILE, EXPECTED_EXTENSION_ID, NATIVE_HOST_PROFILE_KEY, extensionWorker, configureDevelopmentExtension, reloadDevelopmentPages, selectDevelopmentPages };

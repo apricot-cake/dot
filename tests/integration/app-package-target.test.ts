@@ -12,13 +12,15 @@ const appPackage = JSON.parse(fs.readFileSync(path.join(root, 'app', 'package.js
 const forgeConfig = require(path.join(root, 'app', 'forge.config.cjs'));
 
 describe('desktop package targets', () => {
-  test('Windows は Squirrel のセットアップだけを作る', () => {
+  test('Windows は公式 Maker により MSIX を作る', () => {
     expect(appPackage.scripts._make).toBe('pnpm run _package && electron-forge make --from-package');
     expect(forgeConfig.makers).toHaveLength(1);
     expect(forgeConfig.makers[0]).toMatchObject({
-      name: '@electron-forge/maker-squirrel',
-      config: { name: 'dot', title: 'dot', exe: 'dot.exe', setupExe: 'dotSetup.exe', noMsi: true },
+      name: '@electron-forge/maker-msix',
     });
+    expect(typeof forgeConfig.makers[0].config).toBe('function');
+    expect(appPackage.devDependencies['@electron-forge/maker-msix']).toBe('8.0.1');
+    expect(forgeConfig.publishers).toEqual([]);
   });
 
   test('配布物は asar とネイティブモジュールの展開を両立する', async () => {
@@ -102,16 +104,16 @@ describe('desktop package targets', () => {
     if (process.platform === 'win32') {
       vi.stubEnv('DOT_CONFIG_DIR', '');
       try {
-        expect(path.basename(configDir())).toBe('dot');
+        expect(path.basename(configDir())).toBe('dot-Workspace');
       } finally {
         vi.unstubAllEnvs();
       }
     }
     expect(path.basename(path.dirname(defaultLibraryDir()))).toBe('dot');
-    expect(DEFAULT_HOST_NAME).toBe('com.dot.host');
+    expect(DEFAULT_HOST_NAME).toBe('com.dot.host.workspace');
     expect(POST_LINK_SCHEME).toBe('dot');
     expect(appPackage.name).toBe('@apricot-cake/dot');
     expect(appPackage.repository).toBe('https://github.com/apricot-cake/dot');
-    expect(forgeConfig.publishers[0].config.repository).toEqual({ owner: 'apricot-cake', name: 'dot' });
+    expect(forgeConfig.publishers).toEqual([]);
   });
 });

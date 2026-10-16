@@ -1,73 +1,24 @@
 'use strict';
 
-// 開発用のnative messagingホストを登録する（#732）。
-//
-// これが何を買うか。開発用のChromeプロファイルは日常使いのものと同じ拡張機能
-// idで動く＝署名鍵は意図的に固定されている。だから隔離はidからは来ない。
-// ホスト名から来る。共有リリースビルドは、開発用プロファイルの設定に従って
-// `com.dot.host.dev`（extension/utils/native-host.ts）を求め、それがこの登録に解決される。その
-// ランチャーはDOT_CONFIG_DIRを%APPDATA%/dot-Devに固定する。それより下流の
-// 設定とログを分ける。保存先は既存設定を維持し、初回だけ普段のライブラリに揃える。
-// テスト保存の隔離は verify-extension-tab.cts のタブ専用ホストが担当する。
-//
-//   pnpm run ext:dev:register                             登録する
-//   pnpm run ext:dev:register uninstall                再び取り除く
-//   node scripts/register-dev-native-host.cts [uninstall]  npmを使わず同じこと
-//
-// 登録はHKCUへの書き込みで、これは以前、パッケージ化されたデスクトップアプリが
-// その子プロセスを置いたMSIXコンテナから逃れるため、使い捨てのスケジュール
-// タスク経由で行っていた: 内側からの書き込みはパッケージごとのハイブへ行き、
-// 実際のChromeはそれを決して読まないので、登録は成功したように見えて何もして
-// いなかった。OS側の仮想化は2026-08-06に失効した（#1003）が、開発コマンドを
-// 実行するエージェントのサンドボックスは別のWindowsユーザー領域を使いうる。
-// 下の実行ユーザー検査でその状態を登録前に拒み、その後のレジストリレポートで
-// Chromeと同じHKCUに書いた値を読み戻す。
-//
-// 緑のレポートが証明するのは、依然としてChromeがそのホストを「見つける」こと
-// だけ。エンドツーエンドの証明は、開発プロファイルからのcaptureと
-// %APPDATA%/dot-Dev/bridge.log。
-
+// 管理された Chrome と普段のライブラリを接続する workspace ホストを登録する。
+// Chrome プロファイルごとの独立した設定・ライブラリは作らない。
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 
 // 開発用と日常用のプロファイルが共有する唯一の拡張機能id（署名鍵は
 // extension/wxt.config.tsにある）。導出するのではなく直書きする＝鍵が足元で
 // 変わったとき、登録が声高に失敗するように。
 const EXTENSION_ID = 'keggmjkemfcekcffohnpaojacdakpejh';
-const DEV_HOST_NAME = 'com.dot.host.dev';
-const DEV_CONFIG_DIR = process.env.DOT_DEV_CONFIG_DIR || path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'dot-Dev');
+const DEV_HOST_NAME = 'com.dot.host.workspace';
 const { assertWindowsUserContext } = require('../native-host/windows-user-context.mts');
 
 // installerをrequireする「前」に設定する: ホスト名とconfigディレクトリはどちらも
 // モジュール読み込み時に読まれる。paths.mtsがDOT_CONFIG_DIRを読むのと
 // ちょうど同じように。
-process.env.DOT_CONFIG_DIR = DEV_CONFIG_DIR;
 process.env.DOT_NATIVE_HOST_NAME = DEV_HOST_NAME;
 
 const installer = require('../native-host/install.mts');
-
-function seedConfig(): void {
-  fs.mkdirSync(DEV_CONFIG_DIR, { recursive: true });
-  const { defaultLibraryDir } = require('../native-host/paths.mts');
-  const usualConfigFile = path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'dot', 'config.json');
-  const usualConfig = fs.existsSync(usualConfigFile) ? JSON.parse(fs.readFileSync(usualConfigFile, 'utf8').replace(/^\uFEFF/, '')) : {};
-  const library = usualConfig.saveFolder || defaultLibraryDir();
-  fs.mkdirSync(library, { recursive: true });
-  const file = path.join(DEV_CONFIG_DIR, 'config.json');
-  let config: Record<string, unknown> = {};
-  try {
-    config = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')) || {};
-  } catch {
-    /* まっさらなサンドボックス */
-  }
-  // 再登録では利用者が設定した保存先を変えない。
-  if (!config.saveFolder) {
-    config.saveFolder = library;
-    fs.writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
-  }
-}
 
 // NativeMessagingHostsのキー1つの既定値。キーが無ければnull。native messagingは
 // まさにこれらのキーを通してホスト名を解決し、無いか古いキーはブラウザ側で
@@ -111,14 +62,13 @@ if (process.argv[2] === 'uninstall') {
   console.log(`開発用native messagingホスト "${DEV_HOST_NAME}" を削除しました。`);
   reportRegistry(null);
 } else {
-  seedConfig();
   const result = installer.install({ extensionId: EXTENSION_ID });
   console.log(`開発用native messagingホスト "${DEV_HOST_NAME}" をインストールしました。`);
   console.log(`  extensionId: ${result.extensionId}`);
   console.log(`  launcher:    ${result.launcher}`);
   console.log(`  manifest:    ${result.manifest}`);
-  console.log(`  config:      ${path.join(DEV_CONFIG_DIR, 'config.json')}`);
-  console.log(`  library:     ${JSON.parse(fs.readFileSync(path.join(DEV_CONFIG_DIR, 'config.json'), 'utf8').replace(/^\uFEFF/, '')).saveFolder}`);
+  console.log(`  config:      ${path.join(result.configDir, 'config.json')}`);
+  console.log(`  library:     ${JSON.parse(fs.readFileSync(path.join(result.configDir, 'config.json'), 'utf8').replace(/^\uFEFF/, '')).saveFolder}`);
   reportRegistry(result.manifest);
-  console.log(`  エンドツーエンド: 開発プロファイルからcaptureし、${path.join(DEV_CONFIG_DIR, 'bridge.log')} を読んでください。`);
+  console.log(`  エンドツーエンド: 開発プロファイルからcaptureし、${path.join(require('../native-host/paths.mts').logsDir(), 'bridge.log')} を読んでください。`);
 }

@@ -24,7 +24,7 @@ test('共有ビルドを二度読み込み、worker の chrome.storage.local で
   const context = { serviceWorkers: () => [worker], browser: () => ({ newBrowserCDPSession: async () => ({ send, detach }) }) };
   try {
     expect(await configureDevelopmentExtension(dir, context)).toEqual({ id: EXPECTED_EXTENSION_ID, path: dir });
-    expect(saved).toEqual({ [NATIVE_HOST_PROFILE_KEY]: 'development' });
+    expect(saved).toEqual({ [NATIVE_HOST_PROFILE_KEY]: 'workspace' });
     expect(send.mock.calls.filter(([method]) => method === 'Extensions.loadUnpacked')).toHaveLength(2);
     expect(detach).toHaveBeenCalledOnce();
   } finally {

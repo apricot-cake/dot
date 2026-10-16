@@ -1,57 +1,79 @@
-// Native Messaging ブリッジ（Chrome が起動する素の Node）と Electron デスクトップ
-// アプリの両方が使う、共有の設定ディレクトリを解決する。
-//
-// ブリッジは Electron に userData の位置を問い合わせられない。だから両側が独立に、
-// 必ず同じ絶対パスを解決しなければならない。Electron アプリは起動時に
-// app.setPath('userData', configDir()) を呼んでここに固定する。つまりこのディレクトリ
-// には自前のファイルだけでなく、Chromium 自身が userData に置くもの（Cache、
-// Local Storage、Preferences、…）も入る。
-//
-// 優先順: DOT_CONFIG_DIR（明示指定）が勝ち、無ければ Windows の既定である
-// %APPDATA%\dot（Roaming AppData＝Electron 自身の既定）を使う。
-//
-// Windows はかつて MSIX のストレージ仮想化を避けるため ~/.dot（ホーム直下の
-// ドットファイル）を既定にしていた。MSIX パッケージ化されたデスクトップアプリの
-// ホストの中から起動されると、
-// 子プロセスの %APPDATA%/HKCU への書き込みがパッケージ専用の LocalCache へ黙って
-// 逸らされ、ユーザーの実物のアプリや Chrome が見ているものとずれた（2026-06 の保存
-// フォルダのずれ、約9082件）。この環境ではもうその仮想化は起きていない（2026-08-06、
-// #1003）＝パッケージ化されたホストがパッケージの外に移り、FS と HKCU の読み書きが
-// 実物だと実測できた。そこで回避策は #232 で取り下げ、Windows の OS 標準の位置を使う。
-// ホストの構成が元に戻ったときは、#1009 の
-// 起動時の防ぎ（app/src/main/lib-storage-redirect-guard.ts）が LocalCache に逸らされた
-// configDir() や保存フォルダを検出し、また黙ってずれる代わりに起動を拒む。
-//
-// #232 は移行コードを意図して入れずに出した。リリース前なので、既存の設定ディレクトリは
-// 作者自身のマシンにしかなく、一度だけ手で運用作業として移した（アプリが持ち続ける
-// 設計ではない）。新しい位置が空のときに旧 ~/.dot を読む退避を足してはいけない。
-// 同じ形の以前の試み（migrateConfigDirFromAppData、891a6ba で削除）は、恒久的に何も
-// しないまま居座ったうえに実害があった。設定前の起動が、置き去りにされた古い設定を
-// 拾いかねなかった。
-//
-// DOT_CONFIG_DIR 自体は今や別の理由で残っている。仮想化避けではなく、テストの
-// 隔離（テストやサンドボックスの実行ごとに自前の mkdtemp ディレクトリを指す）。
-//
-// ライブラリの既定は別の話で、動かさない。#232 を参照＝その理由づけはこの話ではなく
-// 既にプロダクトとしての判断になっている。
-
+// 設定・再生成可能なキャッシュ・セッション・一時領域はライブラリから分ける。
+// MSIX は Windows Package Identity と ApplicationData API に従い、
+// 主作業ツリーは dot-Workspace、明示 DOT_CONFIG_DIR は隔離検証に使う。
+import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { getWindowsPackageData } from './windows-app-data.mts';
+import type { WindowsPackageData } from './windows-app-data.mts';
 
 export const APP_NAME = 'dot';
+const WORKSPACE_NAME = 'dot-Workspace';
 const LIBRARY_DIR_NAME = 'Library';
 
-export function configDir(): string {
-  if (process.env.DOT_CONFIG_DIR) return process.env.DOT_CONFIG_DIR;
-  if (process.platform === 'win32') {
-    // homedir() + 'AppData/Roaming' を繋ぐのではなく環境変数から読む。フォルダ
-    // リダイレクトや移動プロファイルは %APPDATA% をその既定の相対パスから動かすので、
-    // 繋いで作ったパスは黙って外す。
-    return path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), APP_NAME);
-  }
-  throw new Error(`Unsupported platform: ${process.platform}`);
+export interface AppStoragePaths {
+  config: string;
+  cache: string;
+  session: string;
+  logs: string;
+  temporaryRoot: string;
+  packaged: boolean;
 }
 
+export function resolveAppStoragePaths({ env, home, packageData }: { env: NodeJS.ProcessEnv; home: string; packageData: WindowsPackageData | null }): AppStoragePaths {
+  if (env.DOT_CONFIG_DIR) {
+    const root = env.DOT_CONFIG_DIR;
+    return { config: root, cache: path.join(root, 'Cache'), session: path.join(root, 'Session'), logs: path.join(root, 'Logs'), temporaryRoot: path.join(root, 'Temp'), packaged: false };
+  }
+  if (packageData)
+    return {
+      config: packageData.localState,
+      cache: packageData.localCache,
+      // sessionData にはCookie/localStorageを含む。消去可能なキャッシュと区別する。
+      session: path.join(packageData.localState, 'Session'),
+      logs: path.join(packageData.localCache, 'Logs'),
+      temporaryRoot: packageData.tempState,
+      packaged: true,
+    };
+  const roaming = env.APPDATA || path.join(home, 'AppData', 'Roaming');
+  const local = env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
+  const runtime = path.join(local, WORKSPACE_NAME);
+  return { config: path.join(roaming, WORKSPACE_NAME), cache: path.join(runtime, 'Cache'), session: path.join(runtime, 'Session'), logs: path.join(runtime, 'Logs'), temporaryRoot: env.TEMP || env.TMP || os.tmpdir(), packaged: false };
+}
+
+export function appStoragePaths(): AppStoragePaths {
+  if (!process.env.DOT_CONFIG_DIR && process.platform !== 'win32') throw new Error(`Unsupported platform: ${process.platform}`);
+  return resolveAppStoragePaths({ env: process.env, home: os.homedir(), packageData: process.env.DOT_CONFIG_DIR ? null : getWindowsPackageData() });
+}
+export { getWindowsPackageData };
+
+export const configDir = () => appStoragePaths().config;
+export const cacheDir = () => appStoragePaths().cache;
+export const sessionDir = () => appStoragePaths().session;
+export const logsDir = () => appStoragePaths().logs;
+
+let temporary: string | undefined;
+export function temporaryDir(): string {
+  if (!temporary) {
+    const root = appStoragePaths().temporaryRoot;
+    fs.mkdirSync(root, { recursive: true });
+    temporary = fs.mkdtempSync(path.join(root, 'dot-'));
+  }
+  return temporary;
+}
+export function cleanupTemporaryDir(): void {
+  if (!temporary) return;
+  const owned = temporary;
+  temporary = undefined;
+  fs.rmSync(owned, { recursive: true, force: true });
+}
+process.once('exit', () => {
+  try {
+    cleanupTemporaryDir();
+  } catch {
+    /* OSの一時領域に残り、永続保存には使わない。 */
+  }
+});
 // ライブラリ（キャプチャ）の既定フォルダ＝Windows のホーム直下にある dot/Library。ユーザーが
 // 保存フォルダを明示的に選ぶまで、ブリッジとアプリの両方がこれを使う。configDir() とは
 // 必ず分ける。ライブラリは元のメディアを蓄積して大きくなりうるので、

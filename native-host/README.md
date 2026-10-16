@@ -11,7 +11,7 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 .dot-inbox/    アプリがデータベースへ反映する取り込みキュー
 ```
 
-ホストは既存の項目ファイルを変更しません。削除、編集、索引の更新はデスクトップアプリが担当します。
+ホストは既存の項目ファイルを変更しません。削除、編集、DB の更新はデスクトップアプリが担当します。保存済み判定用の索引はアプリが更新し、消失・破損した場合はホストが DB を読み取り専用で開いて再構築します。
 
 ## 主なファイル
 
@@ -20,7 +20,9 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 | `bridge.mts` | 標準入出力でネイティブメッセージングの JSON を読み書きするエントリーポイントです。 |
 | `item-storage.mts` | `items/<captureId>/` のディレクトリと安全な相対パスを作ります。 |
 | `protocol.mts` | 拡張機能とホストが共有するリクエスト、応答、エラー、プロトコルバージョンを定義します。 |
-| `paths.mts` | Electron アプリと共通の設定ディレクトリを解決します。 |
+| `paths.mts` | アプリとホストで設定・キャッシュ・ログの保存先を解決します。 |
+| `saved-index.mts` | アプリとホストで共有する保存済み索引の構築規則です。 |
+| `host-environment.mts` | MSIX・主作業ツリー・隔離検証のホスト名を分離します。 |
 | `media-download.mts` | メディアをダウンロードし、接続先、サイズ、件数、時間を制限します。 |
 | `config-recovery.mts` | 保存先を復旧し、破壊的な操作を防ぎます。 |
 | `install.mts` | Chrome 用のホストマニフェストを登録または削除します。 |
@@ -36,15 +38,27 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 
 ## ビルドと配置
 
-`app/build-native-host-bridge.mjs` は、`bridge.mts` とその依存関係を `native-host/dist/bridge.js` へバンドルします。Node.js の組み込みモジュールは外部依存として残します。`install.mts` はソースではなく、このバンドルと生成したランチャーを設定ディレクトリへ配置します。配置後のホストは、実行時に npm パッケージを解決しません。ホストのソースを変更した場合は、バンドルを作り直して再登録します。
+`app/build-native-host-bridge.mjs` は `bridge.mts` と依存関係を `native-host/dist/bridge.js` へバンドルします。主作業ツリーでは設定ディレクトリにバンドルとランチャーを配置します。Windows API を呼ぶ Koffi はネイティブ依存として残し、ランチャーの `NODE_PATH` でアプリの依存を参照します。
+
+MSIX 版では、パッケージ内の専用コンソール入口を `dot-native-host.exe` の App Execution Alias から起動します。入口は同じパッケージの Electron を `ELECTRON_RUN_AS_NODE` モードで実行し、標準入出力を継承して `resources/native-host/dist/bridge.js` を開始します。ホストのコードを `LocalState` へ複写しません。
 
 同じビルドスクリプトは、`media-download.mts` を `native-host/dist/media-download.js` へ個別にバンドルします。パッケージ化した Electron アプリは、投稿をインポートするときのメディア取得にこのファイルを使います。パッケージ内には隣接する `node_modules` がないため、依存関係もバンドルへ含めます。開発時のアプリはソースを直接読み込むため、このバンドルを使いません。
 
 ## 設定
 
-保存先は `<configDir>/config.json` に記録します。既定の場所は `%APPDATA%\dot\config.json` です。
+保存先は `<configDir>/config.json` に記録します。実行環境ごとの登録と設定を分けます。
 
-開発用ホストの設定は `%APPDATA%\dot-Dev\config.json` に分けます。`pnpm run ext:dev:register` で登録し、必要な場合は `DOT_DEV_CONFIG_DIR` で設定ディレクトリを指定できます。Squirrel インストーラーはアプリ本体を `%LOCALAPPDATA%\dot` に配置します。
+| 実行環境 | ホスト名 | 設定 |
+| --- | --- | --- |
+| 主作業ツリー | `com.dot.host.workspace` | `%APPDATA%\dot-Workspace\config.json` |
+| 隔離検証 | `com.dot.host.sandbox` | 検証コマンドが所有する `DOT_CONFIG_DIR` |
+| MSIX | `com.dot.host` | Windows API が返す `LocalState\config.json` |
+
+ホスト manifest は設定ディレクトリ内の `NativeMessaging` に配置します。保存済み索引とジャーナルは `cacheDir()`、ログは `logsDir()` を使います。MSIX ではそれぞれ `LocalCache` と `LocalState\Logs` です。主作業ツリーでは `%LOCALAPPDATA%\dot-Workspace` 内に分けます。
+
+`pnpm run ext:dev:register` は普段のライブラリへ接続する workspace ホストを登録します。ローカル配備した共有拡張機能も workspace を既定に使います。検証用タブは sandbox ホストへ接続し、検証コマンドが排他所有して終了時に登録を解除します。Store 用拡張機能の既定は MSIX ホストです。
+
+既存の設定やライブラリを自動移動する処理はありません。
 
 ```json
 { "saveFolder": "D:\\dot" }
@@ -66,6 +80,6 @@ node native-host/install.mts uninstall
 
 ## 拡張機能 ID
 
-ホストマニフェストの `allowed_origins` には、接続を許可する拡張機能 ID が必要です。`extension/wxt.config.ts` に署名鍵を保持しているため、展開済み拡張機能を別のディレクトリから読み込んでも ID は変わりません。ID は `chrome://extensions` で確認できます。
+ホストマニフェストの `allowed_origins` には、接続を許可する拡張機能 ID が必要です。ローカル拡張機能は `extension/wxt.config.ts` の署名鍵で ID を固定します。Store の拡張機能 ID は登録後に確定し、その ID による製品版の接続確認は別途必要です。ID は `chrome://extensions` で確認できます。
 
 デスクトップアプリに ID を設定すると、`config.json` の `extensionId` に保存されます。アプリはホストマニフェストの接続元を `chrome-extension://<id>/` に更新します。ID を設定するまで `allowed_origins` は空で、Chrome は接続を拒否します。

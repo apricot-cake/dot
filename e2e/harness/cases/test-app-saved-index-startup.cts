@@ -32,7 +32,7 @@ fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ saveFolde
 
 const POST_URL = 'https://x.com/EGOBJ4/status/2079187119311118431';
 const CAPTURE_ID = 'dummy-466';
-const SNAPSHOT_FILE = path.join(configDir, 'bridge-saved-index.json');
+const SNAPSHOT_FILE = path.join(configDir, 'Cache', 'bridge-saved-index.json');
 
 // writePost（lib-seed-library.cts）経由でDBへ直接シードする。inboxを一度も
 // 経由せず、回復すべきorphanも無い＝アプリのライフタイム全体でscheduleSavedIndexWrite

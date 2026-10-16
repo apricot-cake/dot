@@ -195,11 +195,9 @@ Windows 向けの配布物は Electron Forge で作ります。
 pnpm run app:make
 ```
 
-Squirrel.Windows のインストーラー `dotSetup.exe` が `app/artifacts/` 以下に出力されます。GitHub Releases の下書きまで作る場合は、次を実行します。
+公式 MSIX Maker により、`app/artifacts/make/msix/x64/` に MSIX が出力されます。既定は署名のない検証専用パッケージです。必要な Windows SDK、検証版の更新方法、Store 用の識別情報は [MSIX の作成](../app/msix/README.md) を参照してください。
 
-```powershell
-pnpm run app:publish
-```
+Store へのアップロード・審査提出・公開は、パッケージの作成とは別の操作です。現在は提出を保留しています。登録・認証と承認の手順は [ストア操作](ストア操作.md) にまとめています。
 
 配布前には、クリーンな Windows 環境でアプリの起動、拡張機能からの保存、ライブラリの作成と既存ライブラリの読み込みを確認してください。
 

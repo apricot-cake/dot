@@ -67,8 +67,10 @@ test('別ライブラリの同じ投稿を保存済みとして採用せず、�
   fs.mkdirSync(folderA, { recursive: true });
   fs.mkdirSync(folderB, { recursive: true });
   fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ saveFolder: folderA }));
-  fs.writeFileSync(path.join(config, 'bridge-saved-index.json'), JSON.stringify({ saveFolder: folderB, entries: { [k]: { id: '1789500000003-b444', media: [], post: true } } }));
-  fs.writeFileSync(path.join(config, 'bridge-journal.jsonl'), JSON.stringify({ saveFolder: folderB, k, id: '1789500000003-b444', t: Date.now() + 60_000 }) + '\n');
+  fs.mkdirSync(path.join(config, 'Cache'), { recursive: true });
+  fs.writeFileSync(path.join(config, 'Cache', 'bridge-saved-index.json'), JSON.stringify({ saveFolder: folderB, entries: { [k]: { id: '1789500000003-b444', media: [], post: true } } }));
+  fs.mkdirSync(path.join(config, 'Cache'), { recursive: true });
+  fs.writeFileSync(path.join(config, 'Cache', 'bridge-journal.jsonl'), JSON.stringify({ saveFolder: folderB, k, id: '1789500000003-b444', t: Date.now() + 60_000 }) + '\n');
   const result = await save(config, '1789500000004-a555', url);
   expect(result.ok).toBe(true);
   expect(result.captureId).toBe('1789500000004-a555');

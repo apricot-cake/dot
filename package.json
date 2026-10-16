@@ -79,7 +79,6 @@
     "app:build": "pnpm --filter @apricot-cake/dot run _build",
     "app:package": "pnpm --filter @apricot-cake/dot run _package",
     "app:make": "pnpm --filter @apricot-cake/dot run _make",
-    "app:publish": "pnpm --filter @apricot-cake/dot run _publish",
     "diag:capture": "node scripts/summarize-capture-timings.cts",
     "diag:extension": "node scripts/read-extension-diagnostics.cts",
     "diag:api:collect": "node scripts/collect-api-responses.cts",

@@ -3,11 +3,11 @@ import { expect, test, vi } from 'vitest';
 const { createVerificationTab, VERIFICATION_TAB_CAPABILITY, VERIFICATION_TAB_CAPABILITY_KEY } = require('./lib-verification-tab.cts');
 
 const url = 'https://x.com/alice/status/123';
-const host = 'com.dot.host.verify.0123456789ab';
+const host = 'com.dot.host.sandbox';
 const key = 'verification.tab.42';
 
 function environment(capability: unknown = VERIFICATION_TAB_CAPABILITY) {
-  const stored: Record<string, string> = { 'verification.tab.99': 'com.dot.host.verify.abcdef012345', ordinaryPreference: 'unchanged' };
+  const stored: Record<string, string> = { 'verification.tab.99': 'com.dot.host.sandbox', ordinaryPreference: 'unchanged' };
   const calls: string[] = [];
   const chrome = {
     tabs: {
@@ -58,7 +58,7 @@ test('対応検査から作成まで同じ evaluate で行い binding 確認後�
   expect(env.chrome.tabs.create).toHaveBeenCalledWith({ url: 'about:blank', active: false });
   expect(env.calls).toEqual(['create', 'persist', 'readback', 'navigate']);
   expect(env.chrome.tabs.update).toHaveBeenCalledWith(42, { url });
-  expect(env.stored).toEqual({ [key]: host, 'verification.tab.99': 'com.dot.host.verify.abcdef012345', ordinaryPreference: 'unchanged' });
+  expect(env.stored).toEqual({ [key]: host, 'verification.tab.99': 'com.dot.host.sandbox', ordinaryPreference: 'unchanged' });
 });
 
 test('Worker が無い場合は評価もタブ作成もしない', async () => {

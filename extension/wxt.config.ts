@@ -61,6 +61,7 @@ export default defineConfig({
     // はそれを「ローカルビルドは存在しない」と読み、これはこのマシンを
     // 出ていくものすべてにとって正しい答えだ。
     define: {
+      __NATIVE_HOST_DEFAULT__: JSON.stringify(process.env.DOT_EXTENSION_HOST === 'workspace' ? 'workspace' : 'msix'),
       __EXT_BUILD_ID__: JSON.stringify(process.env.DOT_EXT_BUILD_ID || ''),
       // 実ブラウザ E2E が closed shadow 内を拡張機能 world から検査するための
       // 専用境界。release では定数 false になり、listener ごと除去される。

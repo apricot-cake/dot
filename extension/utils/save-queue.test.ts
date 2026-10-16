@@ -74,7 +74,7 @@ test.each([removeQueuedSave, markQueuedSaveUnknown, markQueuedSaveNotSent])('キ
   const target = mediaReq({ requestNonce: 'a'.repeat(32) });
   const variants = [target, mediaReq({ requestNonce: 'b'.repeat(32) }), mediaReq(), mediaReq({ captureId: '1700000000001-bbbb', requestNonce: target.requestNonce })];
   for (const [n, payload] of variants.entries()) store.set(`${SAVE_QUEUE_PREFIX}${n}`, { v: 1, host: RELEASE_NATIVE_HOST, payload, type: payload.type, ts: n, tries: 0, outcomeUnknown: true, attemptedAt: 1 });
-  store.set(`${SAVE_QUEUE_PREFIX}other-host`, { v: 1, host: 'com.dot.host.verify.other', payload: target, type: target.type, ts: 5, tries: 0 });
+  store.set(`${SAVE_QUEUE_PREFIX}other-host`, { v: 1, host: 'com.example.other', payload: target, type: target.type, ts: 5, tries: 0 });
   const untouched = [...store.entries()].slice(1).map(([key, value]) => [key, structuredClone(value)] as const);
   await operation(target, RELEASE_NATIVE_HOST);
   for (const [key, value] of untouched) expect(store.get(key)).toEqual(value);
@@ -106,7 +106,7 @@ describe('stashFailedSave — 退避', () => {
     expect(queueKeys(store)).toEqual([]);
   });
   test('検証先への再試行は通常先の掃き出しで送られない', async () => {
-    const host = 'com.dot.host.verify.0123456789ab';
+    const host = 'com.dot.host.sandbox';
     const store = setupChromeStorage();
     await stashFailedSave(mediaReq(), noopLog, host);
     const send = vi.fn(async () => ({}));
@@ -300,7 +300,7 @@ describe('sweepSaveQueue — 直列再送', () => {
     await stashFailedSave(mediaReq(), noopLog);
     const [key] = queueKeys(store);
     const entry: any = store.get(key);
-    store.set(key, { ...entry, host: 'com.dot.host.dev' });
+    store.set(key, { ...entry, host: 'com.dot.host.workspace' });
     const send = vi.fn().mockResolvedValue({ ok: true });
     await sweepSaveQueue({ send, query: vi.fn().mockResolvedValue({ saved: null, receipt: null, receiptCapable: true, saveFolder: 'C:/library' }), log: noopLog });
     expect(send).not.toHaveBeenCalled();

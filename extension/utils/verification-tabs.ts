@@ -1,6 +1,6 @@
 import { generatedActionBadge } from './tokens.generated';
 
-export const VERIFICATION_HOST = 'com.dot.host.verify';
+export const VERIFICATION_HOST = 'com.dot.host.sandbox';
 export const VERIFICATION_TAB_CAPABILITY = 'verification-host-routing-v1';
 export const VERIFICATION_TAB_CAPABILITY_KEY = '__DOT_VERIFICATION_TAB_CAPABILITY__';
 
@@ -19,7 +19,7 @@ export async function verificationHost(tabId?: number): Promise<string | undefin
   const key = verificationKey(tabId);
   const stored = await chrome.storage.local.get(key);
   if (!Object.hasOwn(stored, key)) return undefined;
-  if (typeof stored[key] !== 'string' || !/^com\.dot\.host\.verify\.[a-f0-9]{12}$/.test(stored[key])) throw new Error('検証用の接続先が無効です。検証タブを開き直してください。');
+  if (typeof stored[key] !== 'string' || !/^com\.dot\.host\.sandbox$/.test(stored[key])) throw new Error('検証用の接続先が無効です。検証タブを開き直してください。');
   return stored[key];
 }
 

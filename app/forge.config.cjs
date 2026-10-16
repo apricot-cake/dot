@@ -1,6 +1,7 @@
 const path = require('node:path');
 
 const root = __dirname;
+const { prepareMsix, cleanMsixOutput } = require('./msix/config.cjs');
 
 module.exports = {
   outDir: path.join(root, 'artifacts'),
@@ -13,31 +14,7 @@ module.exports = {
     extraResource: [path.join(root, '..', 'native-host'), path.join(root, 'vendor', 'meilisearch'), path.join(root, 'vendor', 'avif')],
   },
   rebuildConfig: {},
-  makers: [
-    {
-      name: '@electron-forge/maker-squirrel',
-      config: {
-        name: 'dot',
-        title: 'dot',
-        authors: 'apricot-cake',
-        description: 'dot desktop viewer',
-        exe: 'dot.exe',
-        noMsi: true,
-        setupExe: 'dotSetup.exe',
-        setupIcon: path.join(root, 'assets', 'icon.ico'),
-      },
-    },
-  ],
-  publishers: [
-    {
-      name: '@electron-forge/publisher-github',
-      config: {
-        repository: {
-          owner: 'apricot-cake',
-          name: 'dot',
-        },
-        draft: true,
-      },
-    },
-  ],
+  hooks: { preMake: () => cleanMsixOutput(path.join(root, 'artifacts'), require('./package.json').version) },
+  makers: [{ name: '@electron-forge/maker-msix', config: prepareMsix }],
+  publishers: [],
 };

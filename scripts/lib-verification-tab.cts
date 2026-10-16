@@ -16,7 +16,7 @@ async function openVerificationTabInWorker({ url, host, capabilityKey, capabilit
     if (scope[capabilityKey] !== capability) throw new Error('開発用 Chrome の dot 拡張機能が検証タブの隔離に対応していません。拡張機能を再配備してください。');
   };
   requireCapability();
-  if (!/^com\.dot\.host\.verify\.[a-f0-9]{12}$/.test(host)) throw new Error('検証用の接続先が無効です。');
+  if (!/^com\.dot\.host\.sandbox$/.test(host)) throw new Error('検証用の接続先が無効です。');
   if (!/^https:\/\/(?:x\.com|twitter\.com|bsky\.app|www\.pixiv\.net)\//.test(url)) throw new Error('検証する投稿の HTTPS URL を指定してください。');
   const tab = await chrome.tabs.create({ url: 'about:blank', active: false });
   if (!Number.isInteger(tab?.id) || tab.id < 0) throw new Error('検証用タブを作成できませんでした。');

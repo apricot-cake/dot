@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('electron', () => ({ app: { isPackaged: false, getAppPath: () => mocks.root }, utilityProcess: { fork: mocks.fork }, BrowserWindow: mocks.window }));
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }));
-vi.mock('./native-host.ts', () => ({ configDir: () => mocks.root }));
+vi.mock('./native-host.ts', () => ({ cacheDir: () => mocks.root }));
 
 let processing: typeof import('./image-processing.ts');
 let workers: Array<EventEmitter & { kill: Mock<() => void>; postMessage: ReturnType<typeof vi.fn> }>;

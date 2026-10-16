@@ -273,7 +273,8 @@ test('ロック取得中に設定を切り替えても、要求の保存先と�
     await vi.waitFor(() => expect(fs.existsSync(f.barrier)).toBe(true), { timeout: 5000, interval: 10 });
     fs.writeFileSync(path.join(f.config, 'config.json'), JSON.stringify({ saveFolder: other }));
     const key = (await import('../../native-host/post-key.mts')).postKeyOf(request.metadata.url)!;
-    fs.writeFileSync(path.join(f.config, 'bridge-saved-index.json'), JSON.stringify({ saveFolder: other, entries: { [key]: { id: '1789600000001-beef', media: [request.mediaUrl], owners: ['1789600000001-beef'] } } }));
+    fs.mkdirSync(path.join(f.config, 'Cache'), { recursive: true });
+    fs.writeFileSync(path.join(f.config, 'Cache', 'bridge-saved-index.json'), JSON.stringify({ saveFolder: other, entries: { [key]: { id: '1789600000001-beef', media: [request.mediaUrl], owners: ['1789600000001-beef'] } } }));
     fs.writeFileSync(release, 'resume');
     expect(await host.response()).toMatchObject({ ok: true, saveFolder: f.folder });
     expect(items(f)).toEqual([id]);

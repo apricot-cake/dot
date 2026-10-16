@@ -21,7 +21,7 @@ function releaseOutput(): string {
   fs.writeFileSync(path.join(directory, 'manifest.json'), JSON.stringify({ manifest_version: 3, key, permissions: ['nativeMessaging'], background: { service_worker: 'background.js' } }));
   fs.mkdirSync(path.join(directory, 'content-scripts'));
   for (const file of ['bulk.js', 'content-scripts/resident.js', 'diag.html']) fs.writeFileSync(path.join(directory, file), 'release resource');
-  fs.writeFileSync(path.join(directory, 'background.js'), 'com.dot.host com.dot.host.dev nativeHost.profile.v1');
+  fs.writeFileSync(path.join(directory, 'background.js'), 'com.dot.host com.dot.host.workspace com.dot.host.sandbox nativeHost.profile.v1');
   return directory;
 }
 

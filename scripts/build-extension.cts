@@ -105,8 +105,8 @@ function verifyOutput(browser: string, buildId?: string, output = releaseDir(bro
   }
 
   const worker = fs.readFileSync(path.join(out, CARRIES_TOKEN), 'utf8');
-  if (!/com\.dot\.host(?!\.dev)/.test(worker) || !worker.includes('com.dot.host.dev') || !worker.includes('nativeHost.profile.v1')) {
-    throw new Error(`${browser}: ${CARRIES_TOKEN} が両方の Native Host とプロファイル設定を運んでいません`);
+  if (!/com\.dot\.host(?!\.workspace|\.sandbox)/.test(worker) || !worker.includes('com.dot.host.workspace') || !worker.includes('com.dot.host.sandbox') || !worker.includes('nativeHost.profile.v1')) {
+    throw new Error(`${browser}: ${CARRIES_TOKEN} が3環境の Native Host とプロファイル設定を運んでいません`);
   }
 
   console.log(`[dot] ${browser} リリースを検証しました: ${out}`);
@@ -120,6 +120,7 @@ function run(script: string, buildId: string, output: string) {
     shell: true,
     stdio: 'inherit',
     env: Object.assign({}, process.env, {
+      DOT_EXTENSION_HOST: path.basename(path.resolve(output)) === 'chrome-mv3' ? 'workspace' : 'msix',
       DOT_EXT_BUILD_ID: buildId,
       DOT_EXTENSION_OUTPUT: path.resolve(output),
     }),

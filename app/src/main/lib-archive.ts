@@ -5,7 +5,7 @@ import { exportTagClassification, importClassifiedTagVocabulary, syncWorkTags } 
 
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
+import { temporaryDir } from '../../../native-host/paths.mts';
 import type { Readable } from 'node:stream';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -558,7 +558,7 @@ async function prepareCompleteExport(sqlite: Database.Database, srcFolder: strin
       }
     }
   }
-  const stage = await fs.promises.mkdtemp(path.join(opts.stageParent ?? os.tmpdir(), '.dot-complete-export-'));
+  const stage = await fs.promises.mkdtemp(path.join(opts.stageParent ?? temporaryDir(), '.dot-complete-export-'));
   const dispose = () => fs.promises.rm(stage, { recursive: true, force: true });
   try {
     // 書き手を再開する前にファイルを逐次コピーし、ZIP の遅延読み取りを実ライブラリから切り離す。
