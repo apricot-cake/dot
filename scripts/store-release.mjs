@@ -51,6 +51,7 @@ export async function runStoreOperation({ store, operation, env = process.env })
   if (operation !== 'status') {
     if (env.STORE_SUBMISSIONS_ENABLED !== 'true') throw new Error('ストア変更操作は保留中です');
     manifest = await verifyRelease(env.STORE_ARTIFACT_DIR || 'store-artifacts', env.STORE_APPROVED_COMMIT);
+    if (env.CHROME_EXTENSION_ID !== manifest.chromeExtensionId) throw new Error('提出先と成果物のChrome拡張機能IDが一致しません');
     if (env.GITHUB_REF !== 'refs/heads/main' || env.GITHUB_EVENT_NAME !== 'workflow_dispatch') throw new Error('変更操作はmainの手動実行に限ります');
   }
   if (store === 'chrome') {

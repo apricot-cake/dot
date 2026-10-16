@@ -31,6 +31,20 @@ function verificationRevision(channel, env = process.env) {
   return revision;
 }
 
+function nativeHostDistribution(env = process.env) {
+  const { channel } = packageIdentity(env);
+  verificationRevision(channel, env);
+  if (channel === 'verification') return { schema: 1, channel };
+  if (!/^[a-p]{32}$/.test(env.CHROME_EXTENSION_ID || '')) throw new Error('Store パッケージの作成には正式な CHROME_EXTENSION_ID（a-p の32文字）が必要です。');
+  return { schema: 1, channel, extensionId: env.CHROME_EXTENSION_ID };
+}
+
+async function writeNativeHostDistribution(buildPath, distribution) {
+  const directory = path.join(buildPath, 'resources', 'native-host');
+  await fs.mkdir(directory, { recursive: true });
+  await fs.writeFile(path.join(directory, 'distribution.json'), `${JSON.stringify(distribution, null, 2)}\n`);
+}
+
 function msixVersion(version, revision = 0) {
   if (!Number.isInteger(revision) || revision < 0 || revision > 65535) throw new Error('MSIX の revision は 0..65535 の整数である必要があります。');
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('MSIX の作成には安定版の major.minor.patch が必要です。');
@@ -90,4 +104,4 @@ async function prepareMsix(arch, env = process.env) {
   return { appManifest, packageAssets: assets, sign: false, windowsKitVersion: env.DOT_MSIX_WINDOWS_KIT_VERSION || '10.0.26100.0', outputFileName: msixOutputFileName(version, identity.channel) };
 }
 
-module.exports = { MIN_WINDOWS_VERSION, packageIdentity, verificationRevision, msixVersion, renderManifest, cleanMsixOutput, prepareMsix };
+module.exports = { MIN_WINDOWS_VERSION, packageIdentity, verificationRevision, nativeHostDistribution, writeNativeHostDistribution, msixVersion, renderManifest, cleanMsixOutput, prepareMsix };

@@ -21,6 +21,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       DOT_MSIX_CHANNEL: ${{ inputs.channel }}
+      CHROME_EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
       DOT_MSIX_IDENTITY_NAME: ${{ vars.DOT_MSIX_IDENTITY_NAME }}
       DOT_MSIX_PUBLISHER: ${{ vars.DOT_MSIX_PUBLISHER }}
       DOT_MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.DOT_MSIX_PUBLISHER_DISPLAY_NAME }}

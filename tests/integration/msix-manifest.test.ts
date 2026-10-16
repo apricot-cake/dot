@@ -3,10 +3,36 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, expect, test } from 'vitest';
 
-const { packageIdentity, verificationRevision, msixVersion, renderManifest, cleanMsixOutput } = require('../../app/msix/config.cjs');
+const { packageIdentity, verificationRevision, nativeHostDistribution, writeNativeHostDistribution, msixVersion, renderManifest, cleanMsixOutput } = require('../../app/msix/config.cjs');
 const template = fs.readFileSync(path.resolve(import.meta.dirname, '../../app/msix/AppxManifest.xml.in'), 'utf8');
 
 describe('MSIX identity と manifest', () => {
+  test('正式な拡張機能 ID は Store 包材にだけ含める', () => {
+    const store = { DOT_MSIX_CHANNEL: 'store', DOT_MSIX_IDENTITY_NAME: 'Official.Product', DOT_MSIX_PUBLISHER: 'CN=Official', DOT_MSIX_PUBLISHER_DISPLAY_NAME: 'Official' };
+    expect(nativeHostDistribution({})).toEqual({ schema: 1, channel: 'verification' });
+    expect(nativeHostDistribution({ CHROME_EXTENSION_ID: 'a'.repeat(32) })).toEqual({ schema: 1, channel: 'verification' });
+    expect(nativeHostDistribution({ ...store, CHROME_EXTENSION_ID: 'abcdefghijklmnop'.repeat(2) })).toEqual({ schema: 1, channel: 'store', extensionId: 'abcdefghijklmnop'.repeat(2) });
+    for (const extensionId of [undefined, '', 'a'.repeat(31), 'a'.repeat(33), 'q'.repeat(32), 'A'.repeat(32)]) expect(() => nativeHostDistribution({ ...store, CHROME_EXTENSION_ID: extensionId })).toThrow('CHROME_EXTENSION_ID');
+    for (const field of ['DOT_MSIX_IDENTITY_NAME', 'DOT_MSIX_PUBLISHER', 'DOT_MSIX_PUBLISHER_DISPLAY_NAME']) expect(() => nativeHostDistribution({ ...store, [field]: '', CHROME_EXTENSION_ID: 'a'.repeat(32) })).toThrow(field);
+  });
+
+  test('配布情報をソース側ではなく完成したパッケージの resources へ配置する', async () => {
+    const buildPath = fs.mkdtempSync(path.join(tmpdir(), 'dot-msix-distribution-'));
+    const source = path.resolve(import.meta.dirname, '../../native-host/distribution.json');
+    const before = fs.existsSync(source) ? fs.readFileSync(source, 'utf8') : null;
+    try {
+      const distribution = nativeHostDistribution({ DOT_MSIX_CHANNEL: 'store', DOT_MSIX_IDENTITY_NAME: 'Official.Product', DOT_MSIX_PUBLISHER: 'CN=Official', DOT_MSIX_PUBLISHER_DISPLAY_NAME: 'Official', CHROME_EXTENSION_ID: 'b'.repeat(32) });
+      await writeNativeHostDistribution(buildPath, distribution);
+      const destination = path.join(buildPath, 'resources', 'native-host', 'distribution.json');
+      expect(JSON.parse(fs.readFileSync(destination, 'utf8'))).toEqual(distribution);
+      await writeNativeHostDistribution(buildPath, nativeHostDistribution({}));
+      expect(JSON.parse(fs.readFileSync(destination, 'utf8'))).toEqual({ schema: 1, channel: 'verification' });
+      expect(fs.existsSync(source) ? fs.readFileSync(source, 'utf8') : null).toBe(before);
+    } finally {
+      fs.rmSync(buildPath, { recursive: true, force: true });
+    }
+  });
+
   test('再生成時は今回と同じ版・channel の MSIX だけを整理する', async () => {
     const outDir = fs.mkdtempSync(path.join(tmpdir(), 'dot-msix-output-'));
     const directory = path.join(outDir, 'make', 'msix', 'x64');

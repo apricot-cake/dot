@@ -16,6 +16,9 @@ Store 向けの作成では、次の環境変数に Partner Center の正式な�
 | `DOT_MSIX_IDENTITY_NAME` | Package Identity Name |
 | `DOT_MSIX_PUBLISHER` | `CN=` で始まる完全な Publisher |
 | `DOT_MSIX_PUBLISHER_DISPLAY_NAME` | Publisher Display Name |
+| `CHROME_EXTENSION_ID` | Chrome ウェブストアに登録した正式な拡張機能 ID（`a-p` の32文字） |
+
+Store 用の包材には `resources/native-host/distribution.json` を生成し、正式な拡張機能 ID を同梱します。初回起動時に利用者の設定へ ID がなくても、この値から Chrome の接続許可を登録します。ソースの `native-host/` には生成しません。検証用パッケージには ID を含めず、正式 ID が未登録でも検証を続けられます。Store モードでは上記の設定が揃わなければ、依存展開・ホスト入口のビルドより前に停止します。
 
 署名は自動実行しません。検証用の証明書を暗黙に生成せず、Store 用の識別情報も推定しません。Windows 11 の検証専用 MSIX は `Add-AppxPackage -Path <検証MSIX> -AllowUnsigned` で導入できます。実行ファイルを含むため、この導入には管理者権限が必要です。証明書の信頼登録は行いません。Store モードには unsigned 用 OID を含めず、正式な Publisher をそのまま使います。[unsigned パッケージの公式手順](https://learn.microsoft.com/en-us/windows/msix/package/unsigned-package)
 

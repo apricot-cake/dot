@@ -11,7 +11,7 @@ afterEach(async () => {
   for (const folder of temporary.splice(0)) await fs.rm(folder, { recursive: true, force: true });
 });
 
-async function fixture() {
+async function fixture({ channel = 'store', chromeExtensionId = 'a'.repeat(32) } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dot-release-test-'));
   temporary.push(root);
   const app = path.join(root, 'dot.msix');
@@ -20,13 +20,13 @@ async function fixture() {
   await fs.writeFile(extension, 'verified extension');
   const folder = path.join(root, 'release');
   const commit = 'a'.repeat(40);
-  await writeRelease({ folder, app, extension, commit, channel: 'store' });
+  await writeRelease({ folder, app, extension, commit, channel, chromeExtensionId });
   return { folder, commit };
 }
 
 test('提出前に対象コミットと全成果物のハッシュを確認する', async () => {
   const { folder, commit } = await fixture();
-  await expect(verifyRelease(folder, commit)).resolves.toMatchObject({ commit });
+  await expect(verifyRelease(folder, commit)).resolves.toMatchObject({ commit, chromeExtensionId: 'a'.repeat(32) });
   await expect(verifyRelease(folder, 'b'.repeat(40))).rejects.toThrow('コミット');
   await fs.writeFile(path.join(folder, 'dot.zip'), 'changed');
   await expect(verifyRelease(folder, commit)).rejects.toThrow('ハッシュ');
@@ -87,7 +87,7 @@ test('Microsoftのアップロードは既存下書きの掲載情報を保ち�
   const result = await runStoreOperation({
     store: 'microsoft',
     operation: 'upload',
-    env: { STORE_ACCESS_TOKEN: 'test', STORE_SUBMISSIONS_ENABLED: 'true', STORE_ARTIFACT_DIR: folder, STORE_APPROVED_COMMIT: commit, GITHUB_REF: 'refs/heads/main', GITHUB_EVENT_NAME: 'workflow_dispatch', MICROSOFT_PRODUCT_ID: 'product', MICROSOFT_SUBMISSION_ID: '123' },
+    env: { STORE_ACCESS_TOKEN: 'test', STORE_SUBMISSIONS_ENABLED: 'true', STORE_ARTIFACT_DIR: folder, STORE_APPROVED_COMMIT: commit, GITHUB_REF: 'refs/heads/main', GITHUB_EVENT_NAME: 'workflow_dispatch', MICROSOFT_PRODUCT_ID: 'product', MICROSOFT_SUBMISSION_ID: '123', CHROME_EXTENSION_ID: 'a'.repeat(32) },
   });
   expect(result).toMatchObject({ uploadAccepted: true, committed: false });
   expect(calls.map((item) => item.method)).toEqual(['GET', 'GET', 'PUT', 'PUT']);
@@ -121,4 +121,59 @@ test('Chromeの非同期アップロード完了を確認してから公開待�
   });
   expect(result.state).toBe('PENDING_REVIEW');
   expect(calls.map((url) => url.split(':').at(-1))).toEqual(['fetchStatus', 'upload', 'fetchStatus', 'publish']);
+});
+
+test.each(['', 'z'.repeat(32), 'a'.repeat(31)])('ストア用成果物は正式なChrome拡張機能IDを必須にする: %s', async (chromeExtensionId) => {
+  await expect(fixture({ chromeExtensionId })).rejects.toThrow('Chrome拡張機能ID');
+});
+
+test('検証用成果物はChrome拡張機能IDがなくても作成できる', async () => {
+  const { folder } = await fixture({ channel: 'verification', chromeExtensionId: '' });
+  const manifest = JSON.parse(await fs.readFile(path.join(folder, 'release.json'), 'utf8'));
+  expect(manifest).toMatchObject({ channel: 'verification', chromeExtensionId: null });
+});
+
+test.each([null, 'z'.repeat(32), ['a'.repeat(32)]])('成果物のChrome拡張機能IDの欠落や不正な改ざんを拒む: %s', async (chromeExtensionId) => {
+  const { folder, commit } = await fixture();
+  const file = path.join(folder, 'release.json');
+  const manifest = JSON.parse(await fs.readFile(file, 'utf8'));
+  manifest.chromeExtensionId = chromeExtensionId;
+  await fs.writeFile(file, JSON.stringify(manifest));
+  await expect(verifyRelease(folder, commit)).rejects.toThrow('Chrome拡張機能ID');
+});
+
+test.each(['chrome', 'microsoft'].flatMap((store) => ['upload', 'submit', 'publish'].map((operation) => [store, operation])))('%sの%sは成果物と提出設定のChrome ID不一致・未設定をAPI前に拒む', async (store, operation) => {
+  const { folder, commit } = await fixture();
+  const fetch = vi.fn();
+  vi.stubGlobal('fetch', fetch);
+  for (const chromeExtensionId of [undefined, 'b'.repeat(32)]) {
+    await expect(
+      runStoreOperation({
+        store,
+        operation,
+        env: {
+          STORE_ACCESS_TOKEN: 'test',
+          STORE_SUBMISSIONS_ENABLED: 'true',
+          STORE_ARTIFACT_DIR: folder,
+          STORE_APPROVED_COMMIT: commit,
+          GITHUB_REF: 'refs/heads/main',
+          GITHUB_EVENT_NAME: 'workflow_dispatch',
+          CHROME_EXTENSION_ID: chromeExtensionId,
+          CHROME_PUBLISHER_ID: 'publisher',
+          MICROSOFT_PRODUCT_ID: 'product',
+        },
+      }),
+    ).rejects.toThrow('Chrome拡張機能IDが一致しません');
+  }
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test('Microsoftの状態確認はChrome IDや成果物を要求せずGETだけを使う', async () => {
+  const calls: string[] = [];
+  vi.stubGlobal('fetch', async (url: string, options: RequestInit) => {
+    calls.push(options.method || 'GET');
+    return new Response(JSON.stringify(url.endsWith('/applications/product') ? { pendingApplicationSubmission: { id: '123' } } : { status: 'PendingCommit' }));
+  });
+  await expect(runStoreOperation({ store: 'microsoft', operation: 'status', env: { STORE_ACCESS_TOKEN: 'test', MICROSOFT_PRODUCT_ID: 'product' } })).resolves.toEqual({ status: 'PendingCommit' });
+  expect(calls).toEqual(['GET', 'GET']);
 });

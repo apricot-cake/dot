@@ -11,6 +11,7 @@ export async function verifyRelease(folder, expectedCommit) {
   const manifest = JSON.parse(await fs.readFile(path.join(folder, 'release.json'), 'utf8'));
   if (!/^[a-f0-9]{40}$/.test(expectedCommit || '') || manifest.commit !== expectedCommit) throw new Error('対象コミットと成果物のコミットが一致しません');
   if (manifest.channel !== 'store') throw new Error('検証用パッケージはストアへ提出できません');
+  if (typeof manifest.chromeExtensionId !== 'string' || !/^[a-p]{32}$/.test(manifest.chromeExtensionId)) throw new Error('成果物のChrome拡張機能IDが不正です');
   for (const kind of ['app', 'extension']) {
     const file = manifest[kind];
     if (!file || path.basename(file.file) !== file.file || !/^[a-f0-9]{64}$/.test(file.sha256)) throw new Error('成果物の記録が不正です');
@@ -20,10 +21,11 @@ export async function verifyRelease(folder, expectedCommit) {
   return manifest;
 }
 
-export async function writeRelease({ folder, commit, app, extension, channel }) {
+export async function writeRelease({ folder, commit, app, extension, channel, chromeExtensionId }) {
   if (!['verification', 'store'].includes(channel) || !/^[a-f0-9]{40}$/.test(commit)) throw new Error('チャンネルまたはコミットが不正です');
+  if (channel === 'store' && (typeof chromeExtensionId !== 'string' || !/^[a-p]{32}$/.test(chromeExtensionId))) throw new Error('ストア用成果物には正式なChrome拡張機能IDが必要です');
   await fs.mkdir(folder, { recursive: true });
-  const manifest = { schema: 1, commit, channel };
+  const manifest = { schema: 1, commit, channel, chromeExtensionId: channel === 'store' ? chromeExtensionId : null };
   for (const [kind, source] of Object.entries({ app, extension })) {
     const bytes = await fs.readFile(source);
     const name = path.basename(source);
@@ -40,5 +42,5 @@ export async function writeRelease({ folder, commit, app, extension, channel }) 
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [folder, app, extension] = process.argv.slice(2);
-  await writeRelease({ folder, app, extension, commit: process.env.GITHUB_SHA, channel: process.env.DOT_MSIX_CHANNEL });
+  await writeRelease({ folder, app, extension, commit: process.env.GITHUB_SHA, channel: process.env.DOT_MSIX_CHANNEL, chromeExtensionId: process.env.CHROME_EXTENSION_ID });
 }

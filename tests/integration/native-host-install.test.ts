@@ -10,6 +10,25 @@ vi.mock('../../native-host/windows-app-data.mts', () => ({ getWindowsPackageData
 const platform = Object.getOwnPropertyDescriptor(process, 'platform');
 let root: string;
 
+function packageDistribution(raw: string | null): void {
+  const metadataPath = path.join(path.dirname(process.execPath), 'resources', 'native-host', 'distribution.json');
+  const read = fs.readFileSync.bind(fs);
+  vi.spyOn(fs, 'readFileSync').mockImplementation(((file: fs.PathOrFileDescriptor, options: any) => {
+    if (file === metadataPath) {
+      if (raw === null) throw new Error('ENOENT');
+      return raw;
+    }
+    return read(file, options);
+  }) as typeof fs.readFileSync);
+}
+
+function packagedFixture() {
+  vi.stubEnv('DOT_CONFIG_DIR', '');
+  packageContext.value = { familyName: 'dot_test', localState: path.join(root, 'LocalState'), localCache: path.join(root, 'LocalCache'), tempState: path.join(root, 'TempState') };
+  const aliasPath = path.join(root, 'dot-native-host.exe');
+  fs.writeFileSync(aliasPath, 'fixture');
+  return aliasPath;
+}
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'dot-host-install-'));
   vi.stubEnv('DOT_CONFIG_DIR', path.join(root, 'config'));
@@ -84,6 +103,7 @@ test('明示sandbox登録だけを作成・削除しランチャーへ隔離先�
 });
 
 test('MSIXはLocalState manifestとAliasを使いブリッジやbatを複写しない', async () => {
+  packageDistribution(JSON.stringify({ schema: 1, channel: 'verification' }));
   vi.stubEnv('DOT_CONFIG_DIR', '');
   packageContext.value = { familyName: 'dot_test', localState: path.join(root, 'LocalState'), localCache: path.join(root, 'LocalCache'), tempState: path.join(root, 'TempState') };
   const aliasPath = path.join(root, 'dot-native-host.exe');
@@ -128,4 +148,81 @@ test('workspaceランチャーはブラウザ側の隔離設定を消して通�
   });
   expect(result.status, result.stderr).toBe(0);
   expect(JSON.parse(result.stdout)).toEqual({ override: null, config: path.join(root, 'Roaming', 'dot-Workspace') });
+});
+
+test('Store初回はconfigなしでも同梱Chrome IDだけを許可し設定に複製しない', async () => {
+  const aliasPath = packagedFixture();
+  const bundledId = 'a'.repeat(32);
+  packageDistribution(JSON.stringify({ schema: 1, channel: 'store', extensionId: bundledId }));
+  const installer = await import('../../native-host/install.mts');
+  expect(installer.readExtensionId()).toBe(bundledId);
+  const result = installer.install({ aliasPath });
+  expect(result.extensionId).toBe(bundledId);
+  expect(JSON.parse(fs.readFileSync(result.manifest, 'utf8')).allowed_origins).toEqual([`chrome-extension://${bundledId}/`]);
+  expect(fs.existsSync(path.join(root, 'LocalState/config.json'))).toBe(false);
+});
+
+test('Storeは既存config・install引数・更新引数より同梱IDを優先する', async () => {
+  const aliasPath = packagedFixture();
+  const bundledId = 'a'.repeat(32);
+  const userId = 'b'.repeat(32);
+  packageDistribution(JSON.stringify({ schema: 1, channel: 'store', extensionId: bundledId }));
+  const configPath = path.join(root, 'LocalState/config.json');
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  const original = JSON.stringify({ extensionId: userId, saveFolder: 'unchanged' });
+  fs.writeFileSync(configPath, original);
+  const installer = await import('../../native-host/install.mts');
+  expect(installer.readExtensionId()).toBe(bundledId);
+  const result = installer.install({ aliasPath, extensionId: userId });
+  expect(result.extensionId).toBe(bundledId);
+  for (const override of [userId, '', null]) {
+    const updated = installer.updateAllowedOrigin(override);
+    expect(updated.extensionId).toBe(bundledId);
+    expect(JSON.parse(fs.readFileSync(result.manifest, 'utf8')).allowed_origins).toEqual([`chrome-extension://${bundledId}/`]);
+  }
+  expect(fs.readFileSync(configPath, 'utf8')).toBe(original);
+});
+
+test.each([null, '{broken', JSON.stringify({ schema: 2, channel: 'store', extensionId: 'a'.repeat(32) }), JSON.stringify({ schema: 1, channel: 'store' }), JSON.stringify({ schema: 1, channel: 'store', extensionId: 'invalid' }), JSON.stringify({ schema: 1, channel: 'other' })])(
+  'パッケージの配布情報欠損・破損を拒み許可先を変更しない: %s',
+  async (raw) => {
+    const aliasPath = packagedFixture();
+    packageDistribution(raw);
+    const installer = await import('../../native-host/install.mts');
+    const manifest = installer.manifestPath();
+    fs.mkdirSync(path.dirname(manifest), { recursive: true });
+    const original = JSON.stringify({ allowed_origins: ['chrome-extension://' + 'b'.repeat(32) + '/'] });
+    fs.writeFileSync(manifest, original);
+    expect(() => installer.readExtensionId()).toThrow(/distribution|Store extension ID/);
+    expect(() => installer.install({ aliasPath, extensionId: 'b'.repeat(32) })).toThrow();
+    expect(() => installer.updateAllowedOrigin('b'.repeat(32))).toThrow();
+    expect(fs.readFileSync(manifest, 'utf8')).toBe(original);
+    expect(execFileSync).not.toHaveBeenCalled();
+  },
+);
+
+test('verificationは同梱Store IDを使わず明示IDとconfig IDを使う', async () => {
+  const aliasPath = packagedFixture();
+  const explicitId = 'b'.repeat(32);
+  packageDistribution(JSON.stringify({ schema: 1, channel: 'verification' }));
+  const installer = await import('../../native-host/install.mts');
+  expect(installer.readExtensionId()).toBe(null);
+  const result = installer.install({ aliasPath, extensionId: explicitId });
+  expect(result.extensionId).toBe(explicitId);
+  expect(installer.readExtensionId()).toBe(explicitId);
+  expect(installer.updateAllowedOrigin('c'.repeat(32)).extensionId).toBe('c'.repeat(32));
+});
+
+test.each(['workspace', 'sandbox'])('%sは配布情報を参照せずconfig IDを使う', async (mode) => {
+  const config = mode === 'workspace' ? path.join(root, 'Roaming', 'dot-Workspace') : path.join(root, 'config');
+  if (mode === 'workspace') {
+    vi.stubEnv('DOT_CONFIG_DIR', '');
+    vi.stubEnv('APPDATA', path.join(root, 'Roaming'));
+  }
+  packageDistribution(null);
+  const installer = await import('../../native-host/install.mts');
+  fs.mkdirSync(config, { recursive: true });
+  fs.writeFileSync(path.join(config, 'config.json'), JSON.stringify({ extensionId: 'b'.repeat(32) }));
+  expect(installer.readExtensionId()).toBe('b'.repeat(32));
+  expect(fs.readFileSync).not.toHaveBeenCalledWith(path.join(path.dirname(process.execPath), 'resources', 'native-host', 'distribution.json'), 'utf8');
 });

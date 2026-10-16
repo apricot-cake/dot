@@ -74,9 +74,30 @@ function sanitizeExtensionId(id: unknown): string | null {
   return VALID_EXT_ID.test(trimmed) ? trimmed : null;
 }
 
+// 配布パッケージの許可先は同梱情報から決める。workspace/sandboxでは参照しない。
+// StoreのIDを利用者設定やIPC引数で差し替えることはできない。
+function storeExtensionId(): string | null {
+  if (!getWindowsPackageData()) return null;
+  const distributionPath = path.join(path.dirname(process.execPath), 'resources', 'native-host', 'distribution.json');
+  let distribution: { schema?: unknown; channel?: unknown; extensionId?: unknown };
+  try {
+    distribution = JSON.parse(fs.readFileSync(distributionPath, 'utf8'));
+  } catch {
+    throw new Error(`Native host distribution metadata is unavailable: ${distributionPath}`);
+  }
+  if (!distribution || distribution.schema !== 1 || (distribution.channel !== 'store' && distribution.channel !== 'verification')) {
+    throw new Error(`Native host distribution metadata is invalid: ${distributionPath}`);
+  }
+  if (distribution.channel === 'verification') return null;
+  const id = sanitizeExtensionId(distribution.extensionId);
+  if (!id || id !== distribution.extensionId) throw new Error(`Native host Store extension ID is invalid: ${distributionPath}`);
+  return id;
+}
 // パッケージ化せず読み込んだ拡張機能の id（パスから導かれ、chrome://extensions に出る）。
 // リポジトリに鍵を一切コミットしなくて済むよう、アプリが config.json に保存する。
 export function readExtensionId(): string | null {
+  const storeId = storeExtensionId();
+  if (storeId) return storeId;
   try {
     const cfg = JSON.parse(fs.readFileSync(path.join(configDir(), 'config.json'), 'utf8').replace(/^\uFEFF/, ''));
     if (cfg) return sanitizeExtensionId(cfg.extensionId);
@@ -246,6 +267,7 @@ function persistExtensionId(id: string | null): void {
     }
     if (cfg.extensionId !== id) {
       cfg.extensionId = id;
+      fs.mkdirSync(path.dirname(p), { recursive: true });
       const temporary = `${p}.${process.pid}.tmp`;
       fs.writeFileSync(temporary, JSON.stringify(cfg, null, 2), 'utf8');
       fs.renameSync(temporary, p);
@@ -277,8 +299,9 @@ export function install({ exe = process.execPath, runAsNode = false, extensionId
     return { launcher, manifest, configDir: configDir(), extensionId: readExtensionId(), preserved: true };
   }
 
-  const extId = sanitizeExtensionId(extensionId);
-  if (extId) persistExtensionId(extId); // 明示された id（CLI やアプリから）→ 消えない形にする
+  const storeId = storeExtensionId();
+  const extId = storeId || sanitizeExtensionId(extensionId);
+  if (extId && !storeId) persistExtensionId(extId); // 明示された id（CLI やアプリから）→ 消えない形にする
   const id = extId || readExtensionId();
   let launcher: string;
   if (getWindowsPackageData()) {
@@ -304,7 +327,8 @@ export function updateAllowedOrigin(extensionId: unknown) {
   if (shouldPreserveSharedRegistration({ exe: process.execPath, runAsNode: false })) {
     return { manifest: manifestPath(), extensionId: readExtensionId(), preserved: true };
   }
-  const extId = sanitizeExtensionId(extensionId);
+  const storeId = storeExtensionId();
+  const extId = storeId || sanitizeExtensionId(extensionId);
   const mp = manifestPath();
   let manifest: any;
   try {

@@ -10,8 +10,11 @@ const root = path.join(__dirname, '..');
 const appDir = path.join(root, 'app');
 const forgeConfig = require(path.join(appDir, 'forge.config.cjs'));
 const appPackage = require(path.join(appDir, 'package.json'));
+const { nativeHostDistribution, writeNativeHostDistribution } = require(path.join(appDir, 'msix', 'config.cjs'));
 
 async function packageApp() {
+  // 正式 ID が未登録の状態で Store 用の包材を組み立てない。
+  const distribution = nativeHostDistribution();
   // 開発用の依存を変更せず、配布に必要な依存だけを独立した木へ展開する。
   const stage = path.join(root, '.sandbox', `package-app-${randomUUID()}`);
   const pnpmCli = process.env.npm_execpath;
@@ -37,6 +40,7 @@ async function packageApp() {
         async ({ buildPath }) => {
           await fs.cp(path.join(appDir, 'third-party-licenses'), path.join(buildPath, 'resources', 'licenses'), { recursive: true });
           await fs.copyFile(path.join(appDir, 'vendor', 'native-host-launcher', 'dot-native-host.exe'), path.join(buildPath, 'dot-native-host.exe'));
+          await writeNativeHostDistribution(buildPath, distribution);
         },
       ],
     };
