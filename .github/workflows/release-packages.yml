@@ -1,0 +1,57 @@
+name: 配布パッケージの検証
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: パッケージの用途
+        type: choice
+        options: [verification, store]
+        default: verification
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: release-package-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DOT_MSIX_CHANNEL: ${{ inputs.channel }}
+      DOT_MSIX_IDENTITY_NAME: ${{ vars.DOT_MSIX_IDENTITY_NAME }}
+      DOT_MSIX_PUBLISHER: ${{ vars.DOT_MSIX_PUBLISHER }}
+      DOT_MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.DOT_MSIX_PUBLISHER_DISPLAY_NAME }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 対象コミットのCIを確認
+        shell: pwsh
+        run: |
+          $runs = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs?head_sha=$env:GITHUB_SHA&per_page=100" | ConvertFrom-Json
+          foreach ($name in @('CI', 'App tests')) {
+            $run = $runs.workflow_runs | Where-Object { $_.name -eq $name -and $_.head_branch -eq 'main' -and $_.event -eq 'push' } | Sort-Object run_number -Descending | Select-Object -First 1
+            if (-not $run -or $run.status -ne 'completed' -or $run.conclusion -ne 'success') { throw "$name の完了・成功を確認できません" }
+          }
+      - uses: ./.github/actions/setup-app-tests
+      - name: MSIXと拡張機能ZIPを作成
+        shell: pwsh
+        run: |
+          pnpm run app:make
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          pnpm run ext:package
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $packages = @(Get-ChildItem app/artifacts/make -Recurse -Filter '*.msix')
+          if ($packages.Count -ne 1) { throw 'MSIXの出力が一意ではありません' }
+          node scripts/release-artifacts.mjs app/artifacts/release $packages[0].FullName extension/.output/dot-chrome-mv3.zip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-Content app/artifacts/release/release.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: store-packages-${{ github.sha }}
+          path: app/artifacts/release/
+          if-no-files-found: error
+          retention-days: 14

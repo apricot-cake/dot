@@ -1,0 +1,112 @@
+name: ストア操作
+on:
+  workflow_dispatch:
+    inputs:
+      store:
+        description: 対象ストア
+        type: choice
+        options: [chrome, microsoft]
+        required: true
+      operation:
+        description: 操作（Microsoftの公開はPartner Centerで行う）
+        type: choice
+        options: [status, upload, submit, publish]
+        default: status
+      package_run_id:
+        description: 検証済みパッケージのワークフロー実行ID（変更操作時）
+        type: string
+      commit:
+        description: パッケージの対象コミットSHA（変更操作時）
+        type: string
+      submission_id:
+        description: Microsoft Storeで確認済みの下書きID
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: store-${{ inputs.store }}
+  cancel-in-progress: false
+jobs:
+  store:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.store == 'chrome' && 'chrome-web-store' || 'microsoft-store' }}
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STORE_OPERATION: ${{ inputs.operation }}
+      STORE_APPROVED_COMMIT: ${{ inputs.commit }}
+      STORE_ARTIFACT_DIR: store-artifacts
+      PACKAGE_RUN_ID: ${{ inputs.package_run_id }}
+      STORE_SUBMISSIONS_ENABLED: ${{ vars.STORE_SUBMISSIONS_ENABLED }}
+      CHROME_EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
+      CHROME_PUBLISHER_ID: ${{ vars.CHROME_PUBLISHER_ID }}
+      MICROSOFT_PRODUCT_ID: ${{ vars.MICROSOFT_PRODUCT_ID }}
+      MICROSOFT_SUBMISSION_ID: ${{ inputs.submission_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 操作と承認設定を確認
+        shell: pwsh
+        env:
+          TARGET_STORE: ${{ inputs.store }}
+        run: |
+          if ($env:STORE_OPERATION -ne 'status') {
+            if ($env:STORE_SUBMISSIONS_ENABLED -ne 'true') { throw 'ストア変更操作は保留中です' }
+            if ($env:STORE_APPROVED_COMMIT -notmatch '^[a-f0-9]{40}$' -or $env:PACKAGE_RUN_ID -notmatch '^\d+$') { throw '対象コミットとパッケージ実行IDが必要です' }
+            $run = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:PACKAGE_RUN_ID" | ConvertFrom-Json
+            if ($run.path -ne '.github/workflows/release-packages.yml' -or $run.head_branch -ne 'main' -or $run.event -ne 'workflow_dispatch' -or $run.head_sha -ne $env:STORE_APPROVED_COMMIT -or $run.status -ne 'completed' -or $run.conclusion -ne 'success') { throw '検証済みパッケージの実行を確認できません' }
+          }
+      - uses: pnpm/setup@c9883cc79df532ad1a7b81bf9ab944ceb090d65c # v2.0.0
+        with:
+          runtime: node@24.16.0
+          install: false
+          cache: true
+      - run: pnpm install --frozen-lockfile
+      - name: 検証済み成果物を取得
+        if: inputs.operation != 'status'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.package_run_id }}
+          name: store-packages-${{ inputs.commit }}
+          path: store-artifacts
+      - name: Google OIDC認証
+        if: inputs.store == 'chrome'
+        id: google
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.GOOGLE_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+          create_credentials_file: false
+      - name: Microsoft Entra OIDC認証
+        if: inputs.store == 'microsoft'
+        uses: Azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Chromeウェブストアを操作
+        if: inputs.store == 'chrome'
+        shell: pwsh
+        env:
+          STORE_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
+        run: node scripts/store-release.mjs chrome $env:STORE_OPERATION
+      - name: Microsoft Storeを操作
+        if: inputs.store == 'microsoft'
+        shell: pwsh
+        run: |
+          $token = az account get-access-token --resource https://manage.devcenter.microsoft.com --query accessToken --output tsv
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Output "::add-mask::$token"
+          $env:STORE_ACCESS_TOKEN = $token
+          node scripts/store-release.mjs microsoft $env:STORE_OPERATION
+          exit $LASTEXITCODE

@@ -52,6 +52,10 @@ recordings/
 
 app/vendor/meilisearch/
 app/vendor/avif/
+app/vendor/native-host-launcher/
 
 # 検証ログとコンパイルキャッシュ
 .tmp/
+
+# Google OIDC認証で生成される一時認証情報
+gha-creds-*.json
