@@ -73,4 +73,3 @@ PNG のヘッダーから寸法を実測しました。
 提出履歴はありません。初回下書きに残る作業は、正式 ID の確認、申告の確定、公開 URL の到達確認、掲載画像の制作、開発者連絡先と配布設定の確認、審査用アプリ入手経路の確定です。
 
 [掲載項目の公式説明](https://developer.chrome.com/docs/webstore/cws-dashboard-listing)、[プライバシー申告の公式説明](https://developer.chrome.com/docs/webstore/cws-dashboard-privacy)も入力時に確認します。
-
