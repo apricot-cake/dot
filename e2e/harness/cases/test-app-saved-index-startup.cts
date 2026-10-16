@@ -1,18 +1,15 @@
 'use strict';
 
-// #466のregressionテスト: 起動後、たとえensurePostsSyncedがinboxからdrainする
-// ものが何も無く、orphan回復も一度も走らなかったとしても、bridge-saved-index.json
-// は存在しなければならない＝この2つは以前scheduleSavedIndexWriteを呼ぶ唯一の
-// 機会だった。DBへ直接シードされたライブラリ（移動/復元されたライブラリ、
-// あるいは単に「しばらく何も保存していない」）はどちらの経路にも一度も当たらず、
-// bridgeは既に保存済みの投稿に対する{type:'query'}に、journal + loose-inbox
-// フォールバックだけから答えていた。どちらも自身の上限より古いものは全て
-// 見落とす（#466の2026-07-29の再現）。
+// #466の回帰テスト。inboxやorphanを経由しないDBシードでも、保存済み索引を
+// 復元できることを2経路で確認する。まずアプリ未起動のホスト単独queryでDBから
+// 索引を作り、保存済みIDを返す。次にその索引とホストのメモリキャッシュを消し、
+// アプリ起動だけでも索引が作り直されることを確認する。最後のqueryを呼ぶ前に
+// ファイル内容を検査し、ホストによる再構築でアプリ側の欠落が隠れないようにする。
 //
 //   node e2e/harness/cases/test-app-saved-index-startup.cts
-
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
+const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 
@@ -55,12 +52,23 @@ process.env.DOT_CONFIG_DIR = configDir;
 const bridge = require(path.join(__dirname, '../../../native-host/bridge.mts'));
 
 const snapshotMissingBeforeLaunch = !fs.existsSync(SNAPSHOT_FILE);
-// バグの再現: スナップショットが無いと、bridgeの他の2つの情報源（journal、
-// loose-inboxの再スキャン）はDBへ直接シードされた投稿について何も知らないので、
-// 問い合わせはライブラリが実際に持っている投稿に対して誤って「未保存」と答える。
+function snapshotMatchesSeed() {
+  if (!fs.existsSync(SNAPSHOT_FILE)) return false;
+  const snap = JSON.parse(fs.readFileSync(SNAPSHOT_FILE, 'utf8'));
+  const entries = Object.values(snap.entries || {}) as Array<{ id: string }>;
+  return entries.length === 1 && entries[0].id === CAPTURE_ID;
+}
 async function main() {
+  assert.equal(snapshotMissingBeforeLaunch, true, 'DBシードだけではキャッシュは存在しない');
   const answerBeforeLaunch = (await bridge.handleQuery({ type: 'query', urls: [POST_URL] })).results[POST_URL];
+  assert.equal(answerBeforeLaunch?.id, CAPTURE_ID, 'アプリ未起動のホストがDBから保存済みIDを復元する');
+  const hostSnapshotOk = snapshotMatchesSeed();
+  assert.equal(hostSnapshotOk, true, 'ホスト単独queryが正しい索引ファイルを作成する');
 
+  fs.rmSync(SNAPSHOT_FILE);
+  bridge._resetSavedIndex();
+  const snapshotMissingBeforeApp = !fs.existsSync(SNAPSHOT_FILE);
+  assert.equal(snapshotMissingBeforeApp, true, 'アプリ側の検証はキャッシュなしから開始する');
   const evalJs = evalSource(async ({ sleep }) => {
     await (window as any).dot.listPosts();
     // デバウンスそのものが仕様: scheduleSavedIndexWriteは1500ms待ち、それが
@@ -88,25 +96,18 @@ async function main() {
   child.on('close', async () => {
     const evalOk = /EVAL_RESULT "primed"/.test(out);
     const snapshotWritten = fs.existsSync(SNAPSHOT_FILE);
-    let snapshotOk = false;
-    if (snapshotWritten) {
-      try {
-        const snap = JSON.parse(fs.readFileSync(SNAPSHOT_FILE, 'utf8'));
-        const entries = Object.values(snap.entries || {}) as Array<{ id: string }>;
-        snapshotOk = entries.length === 1 && entries[0].id === CAPTURE_ID;
-      } catch {
-        snapshotOk = false;
-      }
-    }
-
+    // 最後のホストqueryより先に、アプリが書いたファイルを検査する。
+    const snapshotOk = snapshotMatchesSeed();
     bridge._resetSavedIndex();
     const answerAfterLaunch = (await bridge.handleQuery({ type: 'query', urls: [POST_URL] })).results[POST_URL];
     const answerAfterOk = !!answerAfterLaunch && answerAfterLaunch.id === CAPTURE_ID;
 
     fs.rmSync(tmp, { recursive: true, force: true });
 
-    const pass = snapshotMissingBeforeLaunch && answerBeforeLaunch === null && evalOk && snapshotWritten && snapshotOk && answerAfterOk;
-    console.log(`snapshotMissingBefore=${snapshotMissingBeforeLaunch} answerBefore=${JSON.stringify(answerBeforeLaunch)} eval=${evalOk} snapshotWritten=${snapshotWritten} snapshotOk=${snapshotOk} answerAfter=${JSON.stringify(answerAfterLaunch)}`);
+    const pass = snapshotMissingBeforeLaunch && hostSnapshotOk && snapshotMissingBeforeApp && evalOk && snapshotWritten && snapshotOk && answerAfterOk;
+    console.log(
+      `snapshotMissingBefore=${snapshotMissingBeforeLaunch} hostSnapshotOk=${hostSnapshotOk} snapshotMissingBeforeApp=${snapshotMissingBeforeApp} answerBefore=${JSON.stringify(answerBeforeLaunch)} eval=${evalOk} snapshotWritten=${snapshotWritten} snapshotOk=${snapshotOk} answerAfter=${JSON.stringify(answerAfterLaunch)}`,
+    );
     console.log(pass ? 'SAVED_INDEX_STARTUP_PASS' : 'SAVED_INDEX_STARTUP_FAIL');
     process.exit(pass ? 0 : 1);
   });
