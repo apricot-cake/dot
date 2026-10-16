@@ -113,6 +113,12 @@ test('workspaceランチャーはブラウザ側の隔離設定を消して通�
   vi.spyOn(fs, 'existsSync').mockImplementation((file) => file === installer.BRIDGE_PATH || exists(file));
   vi.spyOn(fs, 'copyFileSync').mockImplementation((from, to, flags) => copy(from === installer.BRIDGE_PATH ? source : from, to, flags));
   const installed = installer.install({ exe: process.execPath, extensionId: 'a'.repeat(32) });
+  const launcher = fs.readFileSync(installed.launcher!, 'utf8');
+  expect(launcher).toContain('\r\nset "DOT_CONFIG_DIR="\r\n');
+  expect(launcher).toContain('set "DOT_NATIVE_HOST_NAME=com.dot.host.workspace"');
+  // process.platform は登録処理の検証用に win32 へ差し替えているため、実 OS の値で判定する。
+  // 他の OS でも上の生成内容を検証し、bat の実行は Windows でのみ確認する。
+  if (platform?.value !== 'win32') return;
   const { spawnSync } = await vi.importActual<typeof import('node:child_process')>('node:child_process');
   const result = spawnSync('cmd.exe', ['/d', '/c', installed.launcher!], {
     env: { ...process.env, DOT_CONFIG_DIR: path.join(root, 'poisoned-browser-config') },
