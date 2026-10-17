@@ -75,6 +75,7 @@
     "start": "pnpm run app:launch",
     "app:launch": "pnpm --filter @apricot-cake/dot run _launch",
     "app:debug": "node scripts/local-app.cts verify",
+    "app:shortcut": "node scripts/start-menu-shortcut.cjs",
     "app:dev": "pnpm --filter @apricot-cake/dot run _dev",
     "app:build": "pnpm --filter @apricot-cake/dot run _build",
     "app:package": "pnpm --filter @apricot-cake/dot run _package",
