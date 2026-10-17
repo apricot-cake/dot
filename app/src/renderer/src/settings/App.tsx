@@ -87,13 +87,14 @@ export function App({ store }: { store: OpenStore }) {
               ))}
             </nav>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-5">
               {searching && matchCount === 0 && <div className="text-muted-foreground py-10 text-center text-sm">{t('settingsNoMatch')}</div>}
               {SECTIONS.map((s) => (
                 <Section
                   key={s.id}
                   title={t(s.titleKey)}
                   hidden={isHidden(s.id)}
+                  fill={!searching && s.id === activeId}
                   innerRef={(el) => {
                     sectionRefs.current[s.id] = el;
                   }}

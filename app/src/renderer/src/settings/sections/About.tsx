@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { t } from '../../_shared/i18n.ts';
@@ -45,13 +45,14 @@ export function About() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-1.5 py-6 text-center">
-      <div className="mb-3">
+    // 1ページ表示では Section が残りの高さを渡すので、内容の少ないこの節は縦方向にも中央へ寄せる。
+    <div className="flex flex-1 flex-col items-center justify-center gap-1.5 py-6 text-center">
+      <div className="mb-2">
         {/* biome-ignore lint/a11y/noAriaHiddenOnFocusable: a <canvas> is only focusable
             through fallback CONTENT (interactive children), and this one has none — it
             is a decorative animated logo. The rule's fix (drop aria-hidden) would make a
             screen reader announce an unlabeled canvas, i.e. strictly worse. */}
-        <canvas ref={canvasRef} width={352} height={352} className="size-32 rounded-full" aria-hidden="true" />
+        <canvas ref={canvasRef} width={352} height={352} className="size-24 rounded-full" aria-hidden="true" />
       </div>
       <div className="text-2xl font-semibold tracking-tight">dot</div>
       <div className="text-muted-foreground flex h-6 items-center gap-1 text-sm">
@@ -68,9 +69,9 @@ export function About() {
         )}
       </div>
       <Button
-        variant="link"
+        variant="ghost"
         size="sm"
-        className="mt-4 h-auto p-0"
+        className="text-muted-foreground mt-3"
         render={
           <a
             href={FEEDBACK_URL}
@@ -82,6 +83,7 @@ export function About() {
         }
       >
         {t('aboutLinkFeedback')}
+        <ExternalLink aria-hidden="true" />
       </Button>
     </div>
   );
