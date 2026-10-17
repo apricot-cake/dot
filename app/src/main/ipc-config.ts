@@ -16,6 +16,7 @@ import { app, BrowserWindow } from 'electron';
 import { setTitlebarSymbolDim, updateTitlebars } from './lib-titlebar.ts';
 import { ipcMain } from './activity-ipc.ts';
 import fs from 'node:fs';
+import os from 'node:os';
 import { extensionContactPath } from './native-host.ts';
 import type { IpcContext } from './ipc-context.ts';
 import type { AppInfo, AppPrefs, ConfigSummary, ExtensionContactStatus, LibraryStatus, OkResult, TabsState } from './ipc-payloads.ts';
@@ -99,6 +100,7 @@ function register(ctx: IpcContext) {
       electron: process.versions.electron,
       chromium: process.versions.chrome,
       node: process.versions.node,
+      os: `${process.platform} ${os.release()} ${process.arch}`,
     }),
   );
 

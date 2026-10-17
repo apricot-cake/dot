@@ -1,26 +1,22 @@
 import { useRef, useEffect, useState } from 'react';
+import { Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { t } from '../../_shared/i18n.ts';
+import { dotIpc } from '../../services/ipc.ts';
+import { notify } from '../../services/ui.ts';
 import * as ipc from '../ipc.ts';
 import { mount as mountAboutIcon } from '../../services/about-icon.ts';
+import type { AppInfo } from '../../../../main/ipc-payloads.ts';
 
-// このアプリについて: 名前・バージョン・ビルドの情報の上に、生きたホログラムのアイコン。
-interface AppInfo {
-  version?: string;
-  electron?: string;
-  chromium?: string;
-  node?: string;
+// このアプリについて: 生きたホログラムのアイコン、名前、バージョン、報告への導線だけを置く。
+// ランタイムと OS の情報は画面に出さず、不具合報告に貼るためのコピーにだけ含める。
+// ライセンスはパッケージに同梱し、詳しく知りたい人はリポジトリを見る。
+const FEEDBACK_URL = 'https://github.com/apricot-cake/dot/issues/new/choose';
+
+function versionReport(info: AppInfo): string {
+  return [`dot ${info.version}`, `Electron ${info.electron} / Chromium ${info.chromium} / Node ${info.node}`, info.os].join('\n');
 }
-
-const REPO_URL = 'https://github.com/apricot-cake/dot';
-const LINKS = [
-  { key: 'aboutLinkRepo', url: REPO_URL },
-  { key: 'aboutLinkReleases', url: `${REPO_URL}/releases` },
-  { key: 'aboutLinkFeedback', url: `${REPO_URL}/issues/new/choose` },
-  { key: 'aboutLinkLicense', url: `${REPO_URL}/blob/main/LICENSE` },
-  { key: 'aboutLinkThirdPartyNotices', url: `${REPO_URL}/blob/main/docs/THIRD-PARTY-NOTICES.md` },
-] as const;
 
 export function About() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -41,6 +37,13 @@ export function About() {
       .catch(() => {});
   }, []);
 
+  const copyVersion = () => {
+    if (!info) return;
+    Promise.resolve(dotIpc.copyText(versionReport(info)))
+      .then(() => notify(t('aboutVersionCopied')))
+      .catch(() => {});
+  };
+
   return (
     <div className="flex flex-col items-center gap-1.5 py-6 text-center">
       <div className="mb-3">
@@ -51,31 +54,35 @@ export function About() {
         <canvas ref={canvasRef} width={352} height={352} className="size-32 rounded-full" aria-hidden="true" />
       </div>
       <div className="text-2xl font-semibold tracking-tight">dot</div>
-      <div className="text-muted-foreground text-sm">{info ? t('aboutVersion', { version: info.version || '' }) : ''}</div>
-      <div className="mt-1 max-w-sm text-sm text-balance">{t('aboutTagline')}</div>
-      <div className="text-muted-foreground/70 mt-2 text-xs">{info ? `Electron ${info.electron} · Chromium ${info.chromium} · Node ${info.node}` : ''}</div>
-      <Separator className="my-4 max-w-48" />
-      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-        {LINKS.map(({ key, url }) => (
-          <Button
-            key={key}
-            variant="link"
-            size="sm"
-            className="h-auto p-0"
-            render={
-              <a
-                href={url}
-                onClick={(e) => {
-                  e.preventDefault();
-                  ipc.openExternal(url);
-                }}
-              />
-            }
-          >
-            {t(key)}
-          </Button>
-        ))}
+      <div className="text-muted-foreground flex h-6 items-center gap-1 text-sm">
+        {info && (
+          <>
+            <span>{t('aboutVersion', { version: info.version })}</span>
+            <Tooltip>
+              <TooltipTrigger render={<Button variant="ghost" size="icon-xs" aria-label={t('aboutCopyVersion')} onClick={copyVersion} />}>
+                <Copy />
+              </TooltipTrigger>
+              <TooltipContent>{t('aboutCopyVersion')}</TooltipContent>
+            </Tooltip>
+          </>
+        )}
       </div>
+      <Button
+        variant="link"
+        size="sm"
+        className="mt-4 h-auto p-0"
+        render={
+          <a
+            href={FEEDBACK_URL}
+            onClick={(e) => {
+              e.preventDefault();
+              ipc.openExternal(FEEDBACK_URL);
+            }}
+          />
+        }
+      >
+        {t('aboutLinkFeedback')}
+      </Button>
     </div>
   );
 }

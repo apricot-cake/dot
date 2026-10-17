@@ -101,6 +101,8 @@ export interface AppInfo {
   electron: string;
   chromium: string;
   node: string;
+  /** 不具合報告に添える OS の識別（例: win32 10.0.26200 x64）。 */
+  os: string;
 }
 
 /**
