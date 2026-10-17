@@ -4,7 +4,7 @@
     "description": "Extension name shown in Web Store and browser"
   },
   "extDesc": {
-    "message": "Save content you find on the web — image, text, creator, source and all — into a searchable library on your PC. Private by design.",
+    "message": "Save web posts and artwork to your PC with images, text, creator, and source URL, then search them. Nothing goes to our servers.",
     "description": "Extension description shown in Web Store"
   },
   "actionTitle": {
