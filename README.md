@@ -1,8 +1,5 @@
 # dot
 
-## 公式サイト
-
-[公式サイト](https://apricot-cake.com/dot)
 
 ## 環境構築からビルドまで
 
