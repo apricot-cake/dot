@@ -1,5 +1,6 @@
 # dot
 
+[公式サイト](http://apricot-cake.github.io/dot/)
 
 ## 環境構築からビルドまで
 
