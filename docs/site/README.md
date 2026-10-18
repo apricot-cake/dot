@@ -39,7 +39,7 @@ pnpm run site:test
 
 `.github/workflows/website.yml` がページと共有部品を検査します。main の変更は GitHub Pages へ配信します。リポジトリの Pages の Source を GitHub Actions に設定する必要があります。
 
-予定 URL は `https://apricot-cake.com/dot/` です。ストアの公開 URL が確定するまでは、ストアごとに「公式バッジをここに配置」と書いたプレースホルダーを表示します。紹介動画は未制作のため掲載していません。
+予定 URL は `https://apricot-cake.github.io/dot/` です。ストアの公開 URL が確定するまでは、ストアごとに「公式バッジをここに配置」と書いたプレースホルダーを表示します。紹介動画は未制作のため掲載していません。
 
 公開時には公式配布素材を改変せずに配置します。Microsoftは `https://get.microsoft.com/images/ja%20dark.svg`、Chromeは `https://developer.chrome.com/docs/webstore/branding` のmedium PNG（枠あり）です。商品URLが確定するまでは公式素材を表示せず、配置場所を示します。
 

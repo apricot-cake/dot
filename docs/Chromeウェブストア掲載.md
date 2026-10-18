@@ -60,7 +60,7 @@ Chrome ウェブストアの開発者ダッシュボードへ入力する掲載�
 
 ## URL と開発者情報
 
-プライバシーポリシーの公開 URL は `https://apricot-cake.com/dot/privacy/`、ホームページは `https://apricot-cake.com/dot/` とします。サポート URL は `https://github.com/apricot-cake/dot/issues` を使う案です。
+プライバシーポリシーの公開 URL は `https://apricot-cake.github.io/dot/privacy/`、ホームページは `https://apricot-cake.github.io/dot/` とします。サポート URL は `https://github.com/apricot-cake/dot/issues` を使う案です。
 
 開発者表示名と公開する連絡先メールは、登録済み開発者アカウントの設定を確認して確定します。値を推測して記載しません。
 

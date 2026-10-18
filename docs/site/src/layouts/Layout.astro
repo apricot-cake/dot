@@ -9,7 +9,7 @@ interface Props {
 }
 const { title, description, privacy = false } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-const origin = 'https://apricot-cake.com';
+const origin = Astro.site!.origin;
 const canonical = origin + base + (privacy ? 'privacy/' : '');
 ---
 <!doctype html>

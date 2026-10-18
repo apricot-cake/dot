@@ -4,7 +4,7 @@ import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://apricot-cake.com',
+  site: 'https://apricot-cake.github.io',
   base: '/dot',
   output: 'static',
   trailingSlash: 'always',
