@@ -10,7 +10,19 @@ const MEDIA = /\.(?:png|jpe?g|gif|webp|avif|heic|mp4|m4v|webm|mov|mkv|avi|mp3|wa
 const FORBIDDEN_PATH = /(?:^|\/)(?:tmp|verification|captures?|screenshots?|recordings?|artifacts?|playwright-report|test-results|\.sandbox|\.local-app|\.probe66)(?:\/|$)|(?:^|\/)[^/]+\.library(?:\/|$)|(?:^|\/)(?:dot\.db(?:-(?:wal|shm))?|capture\.log)$/i;
 const ALLOWED_MEDIA = [/^app\/assets\/icon\.png$/, /^assets\/icon(?:-master)?\.png$/, /^extension\/public\/icons\/icon(?:16|32|48|128)\.png$/, /^e2e\/visual\/[^/]+\.spec\.ts-snapshots\/[^/]+\.png$/];
 
-const PAGE_MEDIA = new Set(['docs/site/public/icon.png', 'docs/site/public/og.png', 'docs/site/public/brand/chrome-web-store.png', 'docs/site/public/demo/qingque.webp', 'docs/site/public/demo/nanoka-bookoff.png', 'docs/site/public/demo/herta.png']);
+const PAGE_MEDIA = new Set([
+  'docs/site/public/icon.png',
+  'docs/site/public/og.png',
+  'docs/site/public/brand/chrome-web-store.png',
+  'docs/site/public/demo/qingque.webp',
+  'docs/site/public/demo/nanoka-bookoff.png',
+  'docs/site/public/demo/herta.png',
+  'docs/site/public/demo/anan.webp',
+  'docs/site/public/demo/sherry.webp',
+  'docs/site/public/demo/emma.webp',
+  'docs/site/public/demo/evernight-color.webp',
+  'docs/site/public/demo/original-character-video.webp',
+]);
 
 function normalize(file: string): string {
   return file.replaceAll('\\', '/');

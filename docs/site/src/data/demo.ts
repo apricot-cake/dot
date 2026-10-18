@@ -6,7 +6,7 @@ export const SEARCH_TIMING = { moveEnd: 700, click: 900, typeStart: 1200, typeEn
 export const demoCopy = {
   title: '保存した一枚に、また出会う。',
   steps: ['ワンクリックで保存', '投稿情報から検索', 'フィルタとソート'],
-  author: 'あんず',
+  author: 'みずたま',
   post: '青雀 #崩壊スターレイル',
   saved: '1件保存しました',
   save: '投稿を保存',
@@ -60,26 +60,75 @@ export interface DemoPost {
   alt: string;
   author: string;
   handle: string;
+  avatarHue: number;
   source: string;
   postedAt: string;
   dateLabel: string;
   metrics: DemoMetrics;
 }
-const author = { author: demoCopy.author, handle: '@sample_apricot' };
+const author = { author: demoCopy.author, handle: '@sample_mizutama', avatarHue: 205 };
+const apricot = { author: 'あんず', handle: '@sample_apricot', avatarHue: 28 };
 // 件数・投稿URL・日時は操作デモ用の架空データ。
 export const demoPosts: readonly DemoPost[] = [
-  { id: 'qingque', image: 'qingque.webp', text: demoCopy.post, alt: demoCopy.image, ...author, source: 'https://x.com/sample_apricot/status/1003', postedAt: '2026/10/01 12:00', dateLabel: '10月1日', metrics: { likes: 96, reposts: 7, replies: 4, bookmarks: 18, views: 3200 } },
+  { id: 'qingque', image: 'qingque.webp', text: demoCopy.post, alt: demoCopy.image, ...author, source: 'https://x.com/sample_mizutama/status/1003', postedAt: '2026/10/01 12:00', dateLabel: '10月1日', metrics: { likes: 96, reposts: 7, replies: 4, bookmarks: 18, views: 3200 } },
   {
     id: 'nanoka-bookoff',
     image: 'nanoka-bookoff.png',
     text: 'なのか × BOOKOFF #まのさば',
     alt: 'まのさばのなのかのブックオフコラボのファンアート',
-    ...author,
-    source: 'https://x.com/sample_apricot/status/1001',
+    author: 'ひなた',
+    handle: '@sample_hinata',
+    avatarHue: 45,
+    source: 'https://x.com/sample_hinata/status/1001',
     postedAt: '2026/09/30 12:00',
     dateLabel: '9月30日',
     metrics: { likes: 128, reposts: 12, replies: 8, bookmarks: 26, views: 4600 },
   },
-  { id: 'herta', image: 'herta.png', text: 'ヘルタ #崩壊スターレイル', alt: '崩壊：スターレイルのヘルタのファンアート', ...author, source: 'https://x.com/sample_apricot/status/1002', postedAt: '2026/09/29 18:00', dateLabel: '9月29日', metrics: { likes: 312, reposts: 36, replies: 11, bookmarks: 52, views: 11200 } },
+  {
+    id: 'herta',
+    image: 'herta.png',
+    text: 'ヘルタ #崩壊スターレイル',
+    alt: '崩壊：スターレイルのヘルタのファンアート',
+    author: 'そら',
+    handle: '@sample_sora',
+    avatarHue: 260,
+    source: 'https://x.com/sample_sora/status/1002',
+    postedAt: '2026/09/29 18:00',
+    dateLabel: '9月29日',
+    metrics: { likes: 312, reposts: 36, replies: 11, bookmarks: 52, views: 11200 },
+  },
 ];
 export const demoImages = demoPosts.map((post) => post.image);
+
+// 機能紹介は操作デモとは別の作品を使う。
+export const featurePosts = {
+  origin: {
+    ...demoPosts[2],
+    author: 'こもれび',
+    handle: '@sample_komorebi',
+    avatarHue: 145,
+    id: 'evernight-color',
+    image: 'evernight-color.webp',
+    text: '長夜月 #崩壊スターレイル',
+    alt: '崩壊：スターレイルの長夜月のカラーイラスト',
+    source: 'https://x.com/sample_komorebi/status/1004',
+    workName: '崩壊：スターレイル',
+    characterName: '長夜月',
+  },
+  organize: {
+    ...demoPosts[0],
+    ...apricot,
+    id: 'emma',
+    image: 'emma.webp',
+    text: '描きました',
+    alt: 'まのさばのエマのイラスト',
+    source: 'https://x.com/sample_apricot/status/1005',
+    workName: 'まのさば',
+    characterName: 'エマ',
+  },
+  authors: [
+    { ...demoPosts[0], ...apricot, id: 'anan', image: 'anan.webp', text: 'アンアン #まのさば', alt: 'まのさばのアンアンのイラスト', source: 'https://x.com/sample_apricot/status/1006' },
+    { ...demoPosts[0], ...apricot, id: 'sherry', image: 'sherry.webp', text: 'シェリー #まのさば', alt: 'まのさばのシェリーのイラスト', source: 'https://x.com/sample_apricot/status/1007' },
+    { ...demoPosts[0], ...apricot, id: 'original-character-video', image: 'original-character-video.webp', text: 'うちの子', alt: 'オリジナルキャラクターのイラスト', source: 'https://x.com/sample_apricot/status/1008' },
+  ],
+};

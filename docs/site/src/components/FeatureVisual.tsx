@@ -1,15 +1,14 @@
 import { ChevronDown, Search, Users, X } from 'lucide-react';
 import { Avatar, PostCard, type PostCardModel } from '@/_shared/PostCard';
-import { demoPosts } from '../data/demo';
+import { featurePosts } from '../data/demo';
 import '../styles/feature.css';
 
 export default function FeatureVisual({ mode, base, originImage, authorThumbnails }: { mode: 'origin' | 'organize' | 'authors'; base: string; authorThumbnails?: Record<string, string>; originImage?: { src: string; srcSet: string; width: number; height: number } }) {
   if (mode === 'authors') return <AuthorsVisual base={base} thumbnails={authorThumbnails} />;
-  const post = demoPosts.find((item) => item.id === (mode === 'origin' ? 'herta' : 'qingque'));
-  if (!post) throw new Error('機能説明用の投稿が見つかりません');
+  const post = featurePosts[mode];
   const image = base.replace(/\/$/, '') + '/demo/' + post.image;
-  const work = '崩壊：スターレイル';
-  const character = mode === 'origin' ? 'ヘルタ' : '青雀';
+  const work = post.workName;
+  const character = post.characterName;
   const model: PostCardModel = {
     index: 0,
     selected: false,
@@ -19,7 +18,7 @@ export default function FeatureVisual({ mode, base, originImage, authorThumbnail
     userName: post.author,
     handle: post.handle,
     monogram: '',
-    monoHue: 28,
+    monoHue: post.avatarHue,
     flags: [],
     text: post.text,
     stats: {},
@@ -114,12 +113,8 @@ export default function FeatureVisual({ mode, base, originImage, authorThumbnail
 }
 
 function AuthorsVisual({ base, thumbnails }: { base: string; thumbnails?: Record<string, string> }) {
-  const author = demoPosts[0];
-  const posts = ['qingque', 'nanoka-bookoff', 'herta'].map((id) => {
-    const post = demoPosts.find((item) => item.id === id);
-    if (!post) throw new Error('投稿者の説明用の投稿が見つかりません');
-    return post;
-  });
+  const posts = featurePosts.authors;
+  const author = posts[0];
   return (
     <div className="feature-window authors-visual" data-testid="feature-authors" role="group" aria-label="投稿者一覧からあんずの保存済み投稿を開いた状態">
       <div className="authors-list">
@@ -128,7 +123,7 @@ function AuthorsVisual({ base, thumbnails }: { base: string; thumbnails?: Record
           投稿者
         </div>
         <div className="authors-card" data-slot="poster-card">
-          <Avatar c={{ monogram: '', monoHue: 28 }} className="authors-avatar" discClassName="authors-avatar-disc" />
+          <Avatar c={{ monogram: '', monoHue: author.avatarHue }} className="authors-avatar" discClassName="authors-avatar-disc" />
           <div className="authors-card-meta">
             <strong>{author.author}</strong>
           </div>

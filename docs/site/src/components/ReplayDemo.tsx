@@ -176,7 +176,7 @@ export default function ReplayDemo({ base }: { base: string }) {
     userName: post.author,
     handle: post.handle,
     monogram: '',
-    monoHue: 28,
+    monoHue: post.avatarHue,
     flags: [],
     text: post.text,
     stats: {},
@@ -248,7 +248,7 @@ export default function ReplayDemo({ base }: { base: string }) {
                 <strong>ポスト</strong>
               </div>
               <div className="demo-social-post">
-                <AuthorLine userName={target.author} handle={target.handle} avatar={{ monogram: '', monoHue: 28 }} />
+                <AuthorLine userName={target.author} handle={target.handle} avatar={{ monogram: '', monoHue: target.avatarHue }} />
                 <MoreHorizontal className="demo-social-more" size={19} aria-hidden="true" />
                 <p>{target.text}</p>
                 <div className="demo-post-media">
@@ -431,7 +431,7 @@ export default function ReplayDemo({ base }: { base: string }) {
                 <span className="active">{c.details}</span>
                 <span>{c.tags}</span>
               </div>
-              <AuthorLine userName={target.author} handle={target.handle} avatar={{ monogram: '', monoHue: 28 }} />
+              <AuthorLine userName={target.author} handle={target.handle} avatar={{ monogram: '', monoHue: target.avatarHue }} />
               <p className="demo-post-text" data-testid="replay-saved-text">
                 {target.text}
               </p>

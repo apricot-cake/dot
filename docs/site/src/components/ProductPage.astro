@@ -4,16 +4,17 @@ import FeatureVisual from './FeatureVisual';
 import StoreLinks from './StoreLinks.astro';
 import { Lock } from 'lucide-react';
 import { getImage } from 'astro:assets';
-import hertaArtwork from '../../public/demo/herta.png';
-import qingqueArtwork from '../../public/demo/qingque.webp';
-import nanokaArtwork from '../../public/demo/nanoka-bookoff.png';
+import evernightArtwork from '../../public/demo/evernight-color.webp';
+import ananArtwork from '../../public/demo/anan.webp';
+import sherryArtwork from '../../public/demo/sherry.webp';
+import originalArtwork from '../../public/demo/original-character-video.webp';
 const authorThumbnails = Object.fromEntries(
   await Promise.all(
     (
       [
-        ['qingque', qingqueArtwork],
-        ['nanoka-bookoff', nanokaArtwork],
-        ['herta', hertaArtwork],
+        ['anan', ananArtwork],
+        ['sherry', sherryArtwork],
+        ['original-character-video', originalArtwork],
       ] as const
     ).map(async ([id, artwork]) => {
       const image = await getImage({ src: artwork, width: 384, height: 384, fit: 'cover', format: 'png' });
@@ -21,8 +22,8 @@ const authorThumbnails = Object.fromEntries(
     }),
   ),
 );
-const originVariants = await Promise.all([180, 360, 540].map((width) => getImage({ src: hertaArtwork, width, format: 'png' })));
-const originImage = { src: originVariants[1].src, srcSet: originVariants.map((image, index) => `${image.src} ${[180, 360, 540][index]}w`).join(', '), width: hertaArtwork.width, height: hertaArtwork.height };
+const originVariants = await Promise.all([180, 360, 540].map((width) => getImage({ src: evernightArtwork, width, format: 'png' })));
+const originImage = { src: originVariants[1].src, srcSet: originVariants.map((image, index) => `${image.src} ${[180, 360, 540][index]}w`).join(', '), width: evernightArtwork.width, height: evernightArtwork.height };
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
 <section class="hero section-wrap scroll-reveal">
