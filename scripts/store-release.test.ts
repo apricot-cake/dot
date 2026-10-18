@@ -81,7 +81,7 @@ test('Microsoftのアップロードは既存下書きの掲載情報を保ち�
     if (String(url).endsWith('/applications/product')) return new Response(JSON.stringify({ pendingApplicationSubmission: { id: '123' } }));
     if (String(url).endsWith('/submissions/123') && !options.method)
       return new Response(JSON.stringify({ id: '123', status: 'PendingCommit', targetPublishMode: 'Manual', visibility: 'Public', listings: { ja: { text: '既存の掲載情報' } }, fileUploadUrl: 'https://test.blob.core.windows.net/upload?sig=test', applicationPackages: [] }));
-    if (options.method === 'PUT' && String(url).includes('.blob.core.windows.net')) return new Response('', { status: 201 });
+    if (options.method === 'PUT' && String(url) === 'https://new.blob.core.windows.net/upload?sig=new') return new Response('', { status: 201 });
     return new Response(JSON.stringify({ fileUploadUrl: 'https://new.blob.core.windows.net/upload?sig=new' }));
   });
   const result = await runStoreOperation({
