@@ -20,14 +20,14 @@
     "astro": "7.3.8",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "lucide-react": "1.56.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "lucide-react": "1.57.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "tailwind-merge": "3.7.0"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
-    "@playwright/test": "1.64.0",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
