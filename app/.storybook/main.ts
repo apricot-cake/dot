@@ -6,7 +6,6 @@ import { libraryPreviewPlugin } from './library-server.ts';
 const config: StorybookConfig = {
   stories: ['../src/renderer/src/**/*.stories.tsx'],
   framework: '@storybook/react-vite',
-  staticDirs: ['../src/renderer/public'],
   core: { disableTelemetry: true },
   async viteFinal(config) {
     const { mergeConfig } = await import('vite');
