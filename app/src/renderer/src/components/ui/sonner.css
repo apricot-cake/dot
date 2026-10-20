@@ -1,0 +1,32 @@
+/* Sonner の積み重ね用コンテナを保ち、通知の面だけを内容幅にする。 */
+.toaster[data-sonner-toaster] {
+  max-width: calc(100vw - var(--offset-left) - var(--offset-right));
+}
+
+.toaster[data-sonner-toaster] .cn-toast[data-sonner-toast] {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.toaster .cn-toast[data-x-position='right'] {
+  left: auto;
+  right: 0;
+}
+
+.toaster .cn-toast[data-x-position='left'] {
+  left: 0;
+  right: auto;
+}
+
+.toaster .cn-toast[data-x-position='center'] {
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+}
+
+@media (max-width: 600px) {
+  .toaster[data-sonner-toaster] {
+    width: calc(100vw - var(--mobile-offset-left) - var(--mobile-offset-right));
+    max-width: calc(100vw - var(--mobile-offset-left) - var(--mobile-offset-right));
+  }
+}

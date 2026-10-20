@@ -10,7 +10,7 @@ import { SettingRow } from '../components/SettingRow.tsx';
 import { SettingsGroup } from '../components/SettingsGroup.tsx';
 import { toast } from 'sonner';
 import { t } from '../../_shared/i18n.ts';
-import { notify } from '../../services/ui.ts';
+import { notify, notifyProgress } from '../../services/ui.ts';
 import { getExportReminder, setExportReminderEnabled, setExportReminderThreshold, getIntegrityStatus, runOrphanRecovery, onIntegrityCheckDone, onExportReminderChanged } from '../../services/backup.ts';
 import { createBackupFile } from '../../services/backup-file.ts';
 import { onExportProgress, onSaveFolderProgress, pickSaveFolder, moveSaveFolder, exportComplete, importImages } from '../../services/posts.ts';
@@ -209,10 +209,10 @@ export function Data() {
     // （main の 'export-progress' を onExportProgress 経由で受ける）。保存ダイアログの
     // 待ち時間もこれで覆う。
     const id = 'dot-export';
-    toast.loading(t('exporting'), { id, description: '0%' });
+    notifyProgress(t('exporting'), '0%', id);
     const off = onExportProgress((p) => {
       if (!p || p.done) return;
-      toast.loading(t('exporting'), { id, description: `${p.pct ?? 0}%` });
+      notifyProgress(t('exporting'), `${p.pct ?? 0}%`, id);
     });
     try {
       const res = await exportComplete(mode, false);

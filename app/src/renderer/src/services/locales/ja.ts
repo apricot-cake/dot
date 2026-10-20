@@ -444,7 +444,7 @@ export default {
   aboutCopyVersion: 'バージョン情報をコピー',
   aboutVersionCopied: 'バージョン情報をコピーしました',
   aboutLinkFeedback: '報告・要望',
-  exporting: 'エクスポート中...',
+  exporting: 'エクスポート中',
   exported: 'エクスポートしました',
   importing: 'インポート中...',
   imported: '{count} 件インポートしました',

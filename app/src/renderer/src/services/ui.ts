@@ -25,6 +25,10 @@ export function notify(msg: unknown, action?: NotifyAction | null) {
   toast(text, { action: { label: action.label, onClick: action.onClick } });
 }
 
+export function notifyProgress(message: string, progress: string, id: string) {
+  toast.loading(`${message} ${progress}`, { id });
+}
+
 // innerHTML 経由で置くテキスト向けの、引用符も安全な HTML エスケープ。
 // " と ' もエスケープするので、誤って属性の中で使われた結果でも安全な
 // まま（viewer の旧来の div ベースのエスケープはそれらを未エスケープの

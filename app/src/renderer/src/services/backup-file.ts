@@ -1,14 +1,14 @@
 import { toast } from 'sonner';
 import { t } from '../_shared/i18n.ts';
-import { notify } from './ui.ts';
+import { notify, notifyProgress } from './ui.ts';
 import { exportComplete, onExportProgress } from './posts.ts';
 
 export async function createBackupFile(includeTrash = false) {
   const id = 'dot-export';
-  toast.loading(t('exporting'), { id, description: '0%' });
+  notifyProgress(t('exporting'), '0%', id);
   const off = onExportProgress((progress) => {
     if (!progress || progress.done) return;
-    toast.loading(t('exporting'), { id, description: `${progress.pct ?? 0}%` });
+    notifyProgress(t('exporting'), `${progress.pct ?? 0}%`, id);
   });
   try {
     const result = await exportComplete('full', includeTrash);

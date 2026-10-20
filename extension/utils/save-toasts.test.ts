@@ -39,12 +39,12 @@ test('並行保存を一つに集約し、重複した完了を数えない', ()
   toasts.begin('a');
   toasts.begin('b');
   expect(document.querySelectorAll('[data-dot-save-progress]')).toHaveLength(1);
-  expect(document.body.textContent).toContain('保存中 2件');
+  expect(document.querySelector('[data-dot-save-progress]')?.textContent).toBe('保存中 2件');
   toasts.end('a', true);
   toasts.end('a', true);
-  expect(document.body.textContent).toContain('保存中 1件');
+  expect(document.querySelector('[data-dot-save-progress]')?.textContent).toBe('保存中 1件');
   toasts.end('b', true);
-  expect(document.body.textContent).toContain('2件保存しました');
+  expect(document.querySelector('[data-dot-save-progress]')?.textContent).toBe('2件保存しました');
   vi.advanceTimersByTime(1999);
   expect(document.querySelector('[data-dot-save-progress]')).not.toBeNull();
   vi.advanceTimersByTime(1);
@@ -68,6 +68,33 @@ test('失敗は成功と分離し、時間が経っても残り、該当分だ�
   expect(retryB).not.toHaveBeenCalled();
   expect(document.body.textContent).toContain('アプリに接続できません');
   expect(document.querySelector<HTMLElement>('[data-dot-save-banner]')?.hidden).toBe(false);
+});
+
+test('詳細のない単一の失敗は本文と再試行をまとめ、詳細・部分保存・複数失敗は分けて表示する', () => {
+  const retry = vi.fn();
+  toasts.notice('simple', '', '保存できませんでした', retry);
+  const simple = document.querySelector<HTMLElement>('[data-dot-save-failure-compact]')!;
+  expect(simple.getAttribute('role')).toBe('alert');
+  expect(simple.querySelector('.label')?.textContent).toBe('保存できませんでした');
+  expect(simple.querySelector('[data-toast-focus="retry:simple"]')?.textContent).toBe('再試行');
+  simple.querySelector<HTMLButtonElement>('[data-toast-focus="retry:simple"]')!.click();
+  expect(retry).toHaveBeenCalledTimes(1);
+  expect(document.querySelector('[data-dot-save-banner]')).toBeNull();
+
+  toasts.notice('details', '', '保存できませんでした', vi.fn(), 'error', { url: 'https://example.com/post', savedSummary: 'URLは保存済み' });
+  expect(document.querySelector('[data-dot-save-failure-compact]')).toBeNull();
+  expect(document.querySelector('[data-dot-save-banner]')?.textContent).toContain('URLは保存済み');
+  expect(document.querySelector('[data-dot-save-banner] a')?.getAttribute('href')).toBe('https://example.com/post');
+  toasts.clearFailure('details');
+
+  toasts.notice('partial', '', '動画を保存できませんでした', vi.fn(), 'partial');
+  expect(document.querySelector('[data-dot-save-failure-compact]')).toBeNull();
+  toasts.clearFailure('partial');
+
+  toasts.notice('a', '', '保存できませんでした', vi.fn());
+  toasts.notice('b', '', '保存できませんでした', vi.fn());
+  expect(document.querySelector('[data-dot-save-failure-compact]')).toBeNull();
+  expect(document.querySelectorAll('.toast-failure')).toHaveLength(2);
 });
 
 test('部分保存の理由と内訳と操作を直接表示し、閉じると通知全体が消える', () => {
@@ -146,7 +173,8 @@ test('保存中と成功には閉じるボタンを表示せず、読み上げ�
   expect(document.querySelector('[data-dot-save-progress] button')).toBeNull();
   toasts.end('focus', true);
   expect(document.querySelector('[data-dot-save-progress] button')).toBeNull();
-  expect(document.querySelectorAll('[data-dot-save-progress] .label > span:not([aria-hidden])')).toHaveLength(1);
+  expect(document.querySelector('[data-dot-save-progress]')?.getAttribute('role')).toBe('status');
+  expect(document.querySelector('[data-dot-save-progress]')?.textContent).toBe('1件保存しました');
   vi.advanceTimersByTime(2000);
   expect(document.querySelector('[data-dot-save-progress]')).toBeNull();
 });

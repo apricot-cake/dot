@@ -14,7 +14,6 @@ export interface SaveNoticeDetails {
 export class SaveToasts {
   private active = new Set<string>();
   private completed = 0;
-  private progressCount = 0;
   private progress: StatusSurface | null = null;
   private failures = new Map<string, { target: string; text: string; retry?: () => void; severity: 'error' | 'partial' | 'idle'; details?: SaveNoticeDetails }>();
   private failure: StatusSurface | null = null;
@@ -84,7 +83,6 @@ export class SaveToasts {
     if (!this.active.size && !this.completed) {
       this.progress?.remove();
       this.progress = null;
-      this.progressCount = 0;
       return;
     }
     if (!this.progress) {
@@ -95,21 +93,6 @@ export class SaveToasts {
     }
     const text = this.active.size ? this.t('toastProgress', [this.active.size]) : this.t('toastSaved', [this.completed]);
     this.progress.setState(this.active.size ? 'busy' : 'success', text);
-    this.progressCount = Math.max(this.progressCount, this.active.size + this.completed);
-    const visible = document.createElement('span');
-    visible.textContent = text;
-    const measures = ['toastProgress', 'toastSaved'].map((key) => {
-      const span = document.createElement('span');
-      span.className = 'toast-measure';
-      span.setAttribute('aria-hidden', 'true');
-      span.textContent = this.t(key, [this.progressCount]);
-      return span;
-    });
-    this.progress.label.replaceChildren(visible);
-    const content = document.createElement('div');
-    content.className = 'toast-progress-content';
-    content.append(this.progress.badge, this.progress.label);
-    this.progress.el.replaceChildren(...measures, content);
     this.progress.el.style.pointerEvents = 'auto';
   }
 
@@ -129,7 +112,6 @@ export class SaveToasts {
     this.progress?.exit();
     this.progress = null;
     this.completed = 0;
-    this.progressCount = 0;
   }
 
   private renderFailures() {
@@ -145,6 +127,8 @@ export class SaveToasts {
     surface.el.dataset.dotSaveBanner = '';
     const entries = [...this.failures.values()];
     const text = entries.length === 1 && entries[0] ? entries[0].text : this.t('toastFailed', [entries.length]);
+    const single = entries.length === 1 ? entries[0] : undefined;
+    if (single && severity === 'error' && !single.target && !single.details?.url && (!single.details?.savedSummary || single.details.savedSummary === single.text)) surface.el.dataset.dotSaveFailureCompact = '';
     surface.setState(severity, severity === 'error' ? text : undefined);
     surface.el.dataset.dotSaveFailures = '';
     surface.el.addEventListener('keydown', (event) => {

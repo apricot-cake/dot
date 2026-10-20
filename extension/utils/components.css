@@ -236,12 +236,8 @@
 .surface[data-variant='toast'][data-state='success'] .badge { color: var(--dot-success); }
 .surface[data-variant='toast'][data-state='partial'] .badge { color: var(--dot-warning); }
 .surface[data-variant='toast'][data-state='error'] .badge { color: var(--dot-danger); }
-.surface[data-dot-save-progress] { display: grid; min-height: 0; }
+.surface[data-dot-save-progress] { min-height: 0; }
 .surface[data-dot-save-progress] .label { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.surface[data-dot-save-progress] > * { grid-area: 1 / 1; justify-self: start; }
-.toast-progress-content, .surface[data-dot-save-progress] .toast-measure { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.surface[data-dot-save-progress] .toast-measure { visibility: hidden; }
-.surface[data-dot-save-progress] .toast-measure::before { content: ''; width: 16px; flex: none; }
 .surface[data-dot-bulk-banner] .badge { background: transparent; color: var(--dot-ink-muted); }
 .surface[data-dot-bulk-banner] { border-color: var(--dot-overlay-border); }
 .surface[data-variant='toast'] .spinner { width: 15px; height: 15px; }
@@ -261,6 +257,13 @@
 .toast-failure-actions > a:hover { color: var(--dot-ink); text-decoration: underline; }
 .toast-failure-actions > a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 .toast-failure-actions > .action { flex: none; margin: 0; }
+/* 詳細のない単一の失敗は、本文・再試行・閉じるを同じ行へ収める。 */
+.surface[data-dot-save-failure-compact] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; }
+.surface[data-dot-save-failure-compact] .toast-failure-content,
+.surface[data-dot-save-failure-compact] .toast-failures,
+.surface[data-dot-save-failure-compact] .toast-failure,
+.surface[data-dot-save-failure-compact] .toast-failure-actions { display: contents; }
+.surface[data-dot-save-failure-compact] .toast-close { position: static; order: 1; }
 @media (pointer: coarse) {
   .surface[data-variant='toast'] .toast-close { width: 44px; height: 44px; }
   .surface[data-dot-save-failures] { grid-template-columns: 16px minmax(0, 1fr) 36px; }

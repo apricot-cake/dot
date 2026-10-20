@@ -426,7 +426,7 @@ export default {
   aboutCopyVersion: 'Copy version info',
   aboutVersionCopied: 'Version info copied',
   aboutLinkFeedback: 'Report an issue',
-  exporting: 'Exporting...',
+  exporting: 'Exporting',
   exported: 'Exported',
   importing: 'Importing...',
   importSkipped: '{count} imported ({skipped} skipped as duplicates)',

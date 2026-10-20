@@ -2,6 +2,7 @@ import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon
 import type * as React from 'react';
 import { useSyncExternalStore } from 'react';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
+import './sonner.css';
 
 // このアプリがダークモードを知らせるのは <html> の [data-theme=dark]
 // （services/theme-api.ts）であって next-themes ではない＝useTheme() ではなく、属性を

@@ -16,7 +16,7 @@
 import { collectDroppedPaths, getPathForFile, importDroppedPaths } from './posts.ts';
 import { close as confirmClose, open as confirmOpen, update as confirmUpdate } from './confirm.ts';
 import { loadPosts } from './post-grid-builder.ts';
-import { notify } from './ui.ts';
+import { notify, notifyProgress } from './ui.ts';
 import { t } from '../_shared/i18n.ts';
 import { toast } from 'sonner';
 import type { DropCollectResult, DroppedFile } from '../../../main/ipc-payloads.ts';
@@ -48,7 +48,7 @@ function reportImportError(error: string | undefined): void {
 
 async function runImport(files: DroppedFile[], stackFolders: boolean): Promise<void> {
   const id = 'dot-drop-import';
-  toast.loading(t('importing'), { id, description: t('dropImportProgress', { count: files.length }) });
+  notifyProgress(t('importing'), t('dropImportProgress', { count: files.length }), id);
   try {
     const out = await importDroppedPaths(files, stackFolders);
     if (out.error) {
