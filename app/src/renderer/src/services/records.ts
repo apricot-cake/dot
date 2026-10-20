@@ -494,7 +494,7 @@ export function makeCardModel(deps: {
   likesPercentile(p: DotPost): number | null;
   /** 反応数の絞り込み時だけ、非ゼロの反応数を併記する。 */
 }) {
-  const { t, formatCount, formatDate, compactDate, fileSrc, smokeCapture, shape, imgAspect, gridThumbW, sortMetric, likesPercentile } = deps;
+  const { t, formatCount, compactDate, fileSrc, smokeCapture, shape, imgAspect, gridThumbW, sortMetric, likesPercentile } = deps;
   return function cardModel(g: DotPostGroup, i: number): Record<string, any> {
     const p = g.rep;
     const view = shape();
@@ -517,8 +517,13 @@ export function makeCardModel(deps: {
         stats = { localViews: formatCount(localViewCountOf()) };
         break;
       case 'likes-pct': {
-        const ranked = g.records.filter((record) => likesPercentile(record) !== null).sort((a, b) => (ascending ? 1 : -1) * (likesPercentile(a)! - likesPercentile(b)!));
-        const likes = (ranked[0] || p).likes;
+        const ranked = g.records
+          .flatMap((record) => {
+            const percentile = likesPercentile(record);
+            return percentile === null ? [] : [{ record, percentile }];
+          })
+          .sort((a, b) => (ascending ? 1 : -1) * (a.percentile - b.percentile));
+        const likes = (ranked[0]?.record ?? p).likes;
         stats = { likes: likes == null ? '—' : formatCount(likes) };
         break;
       }

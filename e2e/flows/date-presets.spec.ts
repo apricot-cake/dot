@@ -15,7 +15,9 @@ test('日付プリセットと期間指定の確定を分ける', async ({ launc
     .poll(async () => {
       const triggerBounds = await period.boundingBox();
       const popupBounds = await page.getByRole('listbox').boundingBox();
-      return popupBounds!.y - (triggerBounds!.y + triggerBounds!.height);
+      if (!triggerBounds) throw new Error('期間の選択欄が表示されていません');
+      if (!popupBounds) throw new Error('期間の候補一覧が表示されていません');
+      return popupBounds.y - (triggerBounds.y + triggerBounds.height);
     })
     .toBeGreaterThanOrEqual(0);
   await page.getByRole('option', { name: '期間を指定', exact: true }).click();

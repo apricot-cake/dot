@@ -190,8 +190,10 @@ export function makeListing(deps: ListingDeps) {
       });
     } else if (pSort === 'random') {
       const seed = shuffleSeed();
-      const ranks = new Map(list.map((u) => [u.key, shuffleRank(seed, u.key)]));
-      list.sort((a, b) => ranks.get(a.key)! - ranks.get(b.key)! || a.key.localeCompare(b.key));
+      list = list
+        .map((user) => ({ user, rank: shuffleRank(seed, user.key) }))
+        .sort((a, b) => a.rank - b.rank || a.user.key.localeCompare(b.user.key))
+        .map(({ user }) => user);
     } else if (pSort === 'local-views-desc') {
       list.sort((a, b) => direction * ((b.localViewCount || 0) - (a.localViewCount || 0)) || nameOf(a).localeCompare(nameOf(b)));
     } else if (pSort === 'last-viewed-desc') {

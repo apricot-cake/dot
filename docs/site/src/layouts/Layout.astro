@@ -9,7 +9,8 @@ interface Props {
 }
 const { title, description, privacy = false } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-const origin = Astro.site!.origin;
+if (!Astro.site) throw new Error('Astro の site 設定が必要です。');
+const origin = Astro.site.origin;
 const canonical = origin + base + (privacy ? 'privacy/' : '');
 ---
 <!doctype html>

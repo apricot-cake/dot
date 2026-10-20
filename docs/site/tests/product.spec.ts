@@ -205,7 +205,9 @@ for (const width of [390, 1625]) {
     await expect(page.getByTestId('replay-menu')).toContainText('新しい順');
     const withinScreen = await page.getByTestId('replay-menu').evaluate((menu) => {
       const panel = menu.getBoundingClientRect();
-      const screen = menu.closest('.demo-screen')!.getBoundingClientRect();
+      const screenElement = menu.closest('.demo-screen');
+      if (!screenElement) throw new Error('メニューを含む .demo-screen が見つかりません。');
+      const screen = screenElement.getBoundingClientRect();
       return panel.left >= screen.left && panel.right <= screen.right && panel.bottom <= screen.bottom;
     });
     expect(withinScreen).toBe(true);
@@ -230,10 +232,11 @@ for (const width of [390, 1625]) {
       await expect(demo).toHaveAttribute('data-cursor-target', name);
       expect(
         await page.locator('.demo-cursor').evaluate((cursor, targetName) => {
-          const target = cursor
-            .closest('.demo-screen')!
-            .querySelector('[data-demo-target="' + targetName + '"]')!
-            .getBoundingClientRect();
+          const screen = cursor.closest('.demo-screen');
+          if (!screen) throw new Error('カーソルを含む .demo-screen が見つかりません。');
+          const targetElement = screen.querySelector('[data-demo-target="' + targetName + '"]');
+          if (!targetElement) throw new Error('カーソルの対象が見つかりません: ' + targetName);
+          const target = targetElement.getBoundingClientRect();
           const point = cursor.getBoundingClientRect();
           return Math.abs(point.left - target.left - target.width / 2) < 1 && Math.abs(point.top - target.top - target.height / 2) < 1;
         }, name),
