@@ -15,7 +15,7 @@ test('アプリと拡張機能の JSX にブラウザ標準チップを戻さな
         const preceding = source.slice(0, match.index);
         const tag = [...preceding.matchAll(/<([A-Za-z][\w.]*)\b/g)].at(-1)?.[1];
         // 見出し／読み上げ用の独自プロパティは DOM の title にはならない。
-        if (!['Section', 'Action'].includes(tag || '')) found.push(`${filename}:${preceding.split('\n').length}`);
+        if (!['Section', 'SettingsGroup', 'Action'].includes(tag || '')) found.push(`${filename}:${preceding.split('\n').length}`);
       }
     }
   }
