@@ -63,11 +63,11 @@
     "test:e2e:app": "playwright test --project=flow",
     "test:e2e:regression": "playwright test --project=flow-regression --project=extension-regression --project=visual",
     "test:e2e:visual:update": "playwright test --project=visual --update-snapshots",
-    "typecheck": "pnpm --dir extension run prepare:types && tsc -b",
+    "typecheck": "pnpm --dir extension run prepare:types && tsc -b && pnpm run storybook:check",
     "check": "pnpm run lint && pnpm run typecheck && pnpm test",
     "check:ext": "pnpm run check && pnpm run test:ext",
     "release:ext:verify": "pnpm run ext:build",
-    "check:ci": "pnpm run prepare:search-engine && pnpm run lint:ci && pnpm run typecheck && pnpm test && pnpm run test:ext && pnpm run release:ext:verify",
+    "check:ci": "pnpm run prepare:search-engine && pnpm run lint:ci && pnpm run typecheck && pnpm test && pnpm run test:ext && pnpm run release:ext:verify && pnpm run storybook:build",
     "test:e2e:harness": "playwright test --project=harness --workers=4",
     "test:e2e:process": "playwright test --project=harness --project=extension --workers=4",
     "test:integration": "pnpm run ext:build:test && playwright test --project=harness --project=extension --workers=4",
@@ -87,7 +87,10 @@
     "site:dev": "pnpm --dir docs/site run dev",
     "site:check": "pnpm --dir docs/site run check",
     "site:build": "pnpm --dir docs/site run build",
-    "site:test": "pnpm --dir docs/site test"
+    "site:test": "pnpm --dir docs/site test",
+    "storybook": "pnpm --filter @apricot-cake/dot run storybook",
+    "storybook:build": "pnpm --filter @apricot-cake/dot run storybook:build",
+    "storybook:check": "pnpm --filter @apricot-cake/dot run storybook:check"
   },
   "packageManager": "pnpm@12.11.2"
 }

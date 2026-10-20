@@ -1,0 +1,9 @@
+{
+  "extends": "../extension/tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "typeRoots": ["../extension/node_modules/@types", "../extension/node_modules", "../node_modules/@types"]
+  },
+  "include": [".storybook/extension-notifications.runtime.ts", "src/renderer/src/types/extension-notifications.d.ts", "../extension/.wxt/wxt.d.ts", "../extension/types/globals.d.ts"],
+  "exclude": ["**/*.test.ts"]
+}

@@ -4,6 +4,7 @@ app/node_modules/
 app/dist/
 app/artifacts/
 app/out/
+app/storybook-static/
 # Rebuilt from src/renderer/src/services/theme.ts by `pnpm run build:theme-boot`
 # (part of app's build/dev scripts) — no longer hand-committed (was, pre-#156).
 app/src/renderer/public/theme.js

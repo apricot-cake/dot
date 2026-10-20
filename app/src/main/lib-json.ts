@@ -10,7 +10,7 @@
 // 場合 record:null → reconcile がその captureId をコレクションから恒久的に
 // 消し去る（BACKLOG L3）。BOM だけは許容し、それ以外の不正な形式は引き続き
 // 例外を投げる。
-function parseJsonLoose(text) {
+function parseJsonLoose(text: string) {
   return JSON.parse(typeof text === 'string' && text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 }
 

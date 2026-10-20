@@ -1,38 +1,16 @@
 import { protocol } from 'electron';
 import fs from 'node:fs';
-import path from 'node:path';
 import { Readable } from 'node:stream';
 import { getSaveFolder } from './lib-config.ts';
 import { assetSecurityHeaders } from './asset-headers.ts';
 import { parseAssetByteRange } from './lib-http-range.ts';
 import { getPreparedImage } from './image-processing.ts';
 import { ASSET_STREAM_HEADER_BYTES, canStreamAssetOriginal } from './lib-asset-stream-signature.ts';
+import { mimeForFile } from './lib-media-mime.ts';
+export { mimeForFile } from './lib-media-mime.ts';
 
 export interface ImageProtocolDeps {
   resolveInFolder(name: string): string | null;
-}
-
-const EXT_MIME: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.jfif': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-  '.bmp': 'image/bmp',
-  '.tif': 'image/tiff',
-  '.tiff': 'image/tiff',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-  '.m4v': 'video/x-m4v',
-  '.zip': 'application/zip',
-};
-
-export function mimeForFile(name: string): string {
-  return EXT_MIME[path.extname(name || '').toLowerCase()] || 'application/octet-stream';
 }
 
 export function registerImageProtocol({ resolveInFolder }: ImageProtocolDeps): void {

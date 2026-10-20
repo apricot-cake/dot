@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.web.json",
+  "compilerOptions": {
+    "incremental": false,
+    "types": ["node"]
+  },
+  "include": [".storybook/**/*.ts", "src/renderer/src/**/*"],
+  "exclude": ["**/*.test.ts", ".storybook/extension-notifications.runtime.ts"]
+}

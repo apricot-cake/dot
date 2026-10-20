@@ -28,7 +28,7 @@ function repairParents(list: FolderRecord[]) {
     while (cur && !state.has(cur)) {
       state.set(cur, 'visiting');
       path.push(cur);
-      const parent = cur.parentId == null ? undefined : byId.get(cur.parentId);
+      const parent: FolderRecord | undefined = cur.parentId == null ? undefined : byId.get(cur.parentId);
       if (parent && state.get(parent) === 'visiting') {
         cur.parentId = null;
         break;
