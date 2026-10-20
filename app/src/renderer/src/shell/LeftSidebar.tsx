@@ -1,15 +1,15 @@
-import { ChevronRight, Folder, History, House, Plus, Settings, Trash2, Users } from 'lucide-react';
+import { ChevronRight, Folder, History, House, Plus, Trash2, Users } from 'lucide-react';
 import type { DragEvent, MouseEvent, ReactNode } from 'react';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupAction, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub } from '@/components/ui/sidebar';
-import { LibrarySafetyStatus } from '../backup/LibrarySafetyStatus.tsx';
+import { SettingsButton } from './SettingsButton.tsx';
 import { HistoryPanelBody } from '../history/HistoryPanel.tsx';
 import { t } from '../_shared/i18n.ts';
 import { store, subscribeKey, subscribeKeys } from '../services/store.ts';
-import { open as openSettings } from '../services/settings.ts';
+import { HelpMenu } from './HelpMenu.tsx';
 import { anchor as historyAnchor, close as closeHistory, isOpen as historyIsOpen, open as openHistory, subscribe as historySubscribe } from '../services/history-panel.ts';
 import { all as folderAll, createFolder, placeFolder, isSavedSearch, load as folderLoad, onChange as folderOnChange, removeFolder, renameFolder } from '../services/folders.ts';
 import { open as confirmOpen } from '../services/confirm.ts';
@@ -29,8 +29,8 @@ const getBrowse = (): string => store.getState().browseMode;
 // ライブラリのフォルダ（folders.json）。データと、書き換えを知らせる通り道（onChange）は
 // folders.ts が持つ。load() はファイルを読み終えると解決する。React は bootApp が load()
 // を呼ぶより先に載るので、最初の一覧の読み取りは空になりうる＝load() を蹴っておき、その
-// 解決と、その後のどの書き換えでも読み直す。（onChange は解除しない。LibrarySafetyStatus と
-// 同じで、単一ページのこのアプリではこのコンポーネントが外れることはない。）
+// 解決と、その後のどの書き換えでも読み直す。（onChange は解除しない。単一ページの
+// このアプリでは、このコンポーネントが外れることはない。）
 function useFolders(): DotFolder[] {
   const [list, setList] = useState<DotFolder[]>(() => folderAll());
   useEffect(() => {
@@ -374,7 +374,6 @@ export function LeftSidebar() {
                   </PopoverContent>
                 </Popover>
               </SidebarMenuItem>
-              <LibrarySafetyStatus />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -382,10 +381,10 @@ export function LeftSidebar() {
       <SidebarFooter className="px-2 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => openSettings()}>
-              <Settings />
-              <span data-slot="menu-label">{t('tabSettings')}</span>
-            </SidebarMenuButton>
+            <SettingsButton />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <HelpMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

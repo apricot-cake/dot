@@ -2,7 +2,7 @@ import { ContextMenuContent } from '../context-menu/ContextMenuContent';
 import { Pencil, Trash2, FolderInput } from 'lucide-react';
 import { useMemo, useSyncExternalStore } from 'react';
 import { close, get, pick, subscribe } from '../services/menu.ts';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 // コンテキストメニューのホスト＝常に載っているただ1つのインスタンスで、menu.ts が今
 // 持っているものを描く（何も無ければ何も描かない）。メニューのデータと動作は
@@ -44,24 +44,26 @@ export function ContextMenuHost() {
       }}
     >
       <ContextMenuContent anchor={anchor} side={menu.side ?? 'bottom'} align={menu.align ?? 'start'} sideOffset={2} collisionPadding={8}>
-        {menu.items.map((it, i) =>
-          it.sep ? (
-            <DropdownMenuSeparator key={i} />
-          ) : it.checked !== undefined ? (
-            <DropdownMenuCheckboxItem key={i} checked={!!it.checked} closeOnClick={false} onClick={() => pick(it)}>
-              {it.label}
-            </DropdownMenuCheckboxItem>
-          ) : (
-            <DropdownMenuItem key={i} variant={it.danger ? 'destructive' : 'default'} className={it.manage ? 'text-muted-foreground' : undefined} closeOnClick={false} onClick={() => pick(it)}>
-              {it.iconName === 'pencil' && <Pencil aria-hidden="true" />}
-              {it.iconName === 'trash-2' && <Trash2 aria-hidden="true" />}
-              {it.iconName === 'folder-input' && <FolderInput aria-hidden="true" />}
-              {/* biome-ignore lint/security/noDangerouslySetInnerHtml: 定着した SVG グリフの書き方＝アイコンの文字列はオーケストレータが持つアプリ定義の定数で、利用者の内容が入ることはない */}
-              {it.icon && <span className="flex items-center" dangerouslySetInnerHTML={{ __html: it.icon }} />}
-              {it.label}
-            </DropdownMenuItem>
-          ),
-        )}
+        <DropdownMenuGroup>
+          {menu.items.map((it, i) =>
+            it.sep ? (
+              <DropdownMenuSeparator key={i} />
+            ) : it.checked !== undefined ? (
+              <DropdownMenuCheckboxItem key={i} checked={!!it.checked} closeOnClick={false} onClick={() => pick(it)}>
+                {it.label}
+              </DropdownMenuCheckboxItem>
+            ) : (
+              <DropdownMenuItem key={i} variant={it.danger ? 'destructive' : 'default'} className={it.manage ? 'text-muted-foreground' : undefined} closeOnClick={false} onClick={() => pick(it)}>
+                {it.iconName === 'pencil' && <Pencil aria-hidden="true" />}
+                {it.iconName === 'trash-2' && <Trash2 aria-hidden="true" />}
+                {it.iconName === 'folder-input' && <FolderInput aria-hidden="true" />}
+                {/* biome-ignore lint/security/noDangerouslySetInnerHtml: 定着した SVG グリフの書き方＝アイコンの文字列はオーケストレータが持つアプリ定義の定数で、利用者の内容が入ることはない */}
+                {it.icon && <span className="flex items-center" dangerouslySetInnerHTML={{ __html: it.icon }} />}
+                {it.label}
+              </DropdownMenuItem>
+            ),
+          )}
+        </DropdownMenuGroup>
       </ContextMenuContent>
     </DropdownMenu>
   );

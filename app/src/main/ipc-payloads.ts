@@ -95,7 +95,7 @@ export interface ExtensionContactStatus {
   contacted: boolean;
 }
 
-/** app-info——設定の「About」パネルが表示するビルド情報。 */
+/** app-info——「このアプリについて」が表示するビルド情報。 */
 export interface AppInfo {
   version: string;
   electron: string;

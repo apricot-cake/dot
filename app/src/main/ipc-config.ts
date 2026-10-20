@@ -90,7 +90,7 @@ function register(ctx: IpcContext) {
     { retainAfterSenderDestroyed: (event) => isPrimarySender(event.sender.id) },
   );
 
-  // 設定の「About」パネル向けのビルド／バージョン情報。app.getVersion() は
+  // 「このアプリについて」向けのビルド／バージョン情報。app.getVersion() は
   // 読み込まれたアプリの package.json（1.1.0）を読むので、開発時もパッケージ済み
   // でも等しく正しい。
   ipcMain.handle(

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Hint } from '../components/Hint.tsx';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SettingRow } from '../components/SettingRow.tsx';
+import { SettingsGroup } from '../components/SettingsGroup.tsx';
 import { t } from '../../_shared/i18n.ts';
 import * as ipc from '../ipc.ts';
 
@@ -19,26 +20,29 @@ export function Language() {
   }, []);
 
   return (
-    <>
-      <Select
-        items={{ auto: t('langAuto'), ja: '日本語', en: 'English' }}
-        value={lang}
-        onValueChange={(v) => {
-          if (v === null) return;
-          setLang(v);
-          Promise.resolve(ipc.setPref('language', v)).then(() => location.reload());
-        }}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="auto">{t('langAuto')}</SelectItem>
-          <SelectItem value="ja">日本語</SelectItem>
-          <SelectItem value="en">English</SelectItem>
-        </SelectContent>
-      </Select>
-      <Hint text={t('hintLang')} />
-    </>
+    <SettingsGroup>
+      <SettingRow label={t('langDisplayLabel')} hint={t('hintLang')} controlId="settings-language">
+        <Select
+          items={{ auto: t('langAuto'), ja: '日本語', en: 'English' }}
+          value={lang}
+          onValueChange={(v) => {
+            if (v === null) return;
+            setLang(v);
+            Promise.resolve(ipc.setPref('language', v)).then(() => location.reload());
+          }}
+        >
+          <SelectTrigger id="settings-language" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="auto">{t('langAuto')}</SelectItem>
+              <SelectItem value="ja">日本語</SelectItem>
+              <SelectItem value="en">English</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+    </SettingsGroup>
   );
 }

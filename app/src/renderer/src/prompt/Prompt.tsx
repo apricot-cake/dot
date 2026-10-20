@@ -40,6 +40,7 @@ function PromptContent({ model }: { model: DotPromptModel }) {
         type="text"
         autoComplete="off"
         placeholder={model.placeholder}
+        aria-label={model.title}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Check, ChevronDown, Plus, X } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Command, CommandInput, CommandList, CommandItem } from '@/components/ui/command';
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxTrigger } from '@/components/ui/combobox';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import type { TagVocabRow } from '../../../main/ipc-payloads.ts';
 import type { TagAssignment } from '../../../shared/tag-classification.ts';
@@ -43,71 +43,74 @@ function Picker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const anchor = useRef<HTMLDivElement>(null);
   const matches = filterTagRows(rows, query);
+  const createName = !matches.length ? normalizeTypedTagName(query) : '';
+  const selectedValues = selected.map(String);
+  const items = createName ? ['create'] : matches.map((row) => String(row.id));
   return (
-    <Popover
+    <Combobox<string, boolean>
+      multiple={!!multiple}
+      value={multiple ? selectedValues : (selectedValues[0] ?? null)}
+      items={items}
+      filter={null}
+      disabled={disabled}
       open={open}
+      inputValue={query}
+      onInputValueChange={setQuery}
+      itemToStringLabel={(value) => (value === 'create' ? t('classificationCreate', { name: createName }) : (rows.find((row) => String(row.id) === value)?.name ?? ''))}
+      onValueChange={(value) => {
+        const values = Array.isArray(value) ? value : value === null ? [] : [value];
+        if (values.includes('create')) {
+          setOpen(false);
+          onCreate(createName);
+          return;
+        }
+        const changed = multiple ? [...values, ...selectedValues].find((id) => values.includes(id) !== selectedValues.includes(id)) : values[0];
+        const row = rows.find((item) => String(item.id) === changed);
+        if (row) void onPick(row);
+      }}
       onOpenChange={(value) => {
         setOpen(value);
         if (!value) setQuery('');
       }}
     >
-      <div className="flex min-h-9 flex-wrap items-center gap-1 rounded-lg border bg-background p-1">
+      <div ref={anchor} className="flex min-h-9 flex-wrap items-center gap-1 rounded-lg border bg-background p-1">
         {chips}
-        <PopoverTrigger render={<Button variant="ghost" disabled={disabled} aria-label={label} className="h-auto min-h-7 min-w-0 flex-1 justify-between whitespace-normal text-left" />}>
-          {children}
-          <ChevronDown className="size-4 shrink-0" />
-        </PopoverTrigger>
+        <ComboboxTrigger render={<Button variant="ghost" disabled={disabled} aria-label={label} className="h-auto min-h-7 min-w-0 flex-1 justify-between whitespace-normal text-left" />}>{children}</ComboboxTrigger>
       </div>
-      <PopoverContent align="start" className="w-[var(--anchor-width)] min-w-60 max-w-[calc(100vw-24px)] p-1">
-        <Command shouldFilter={false}>
-          <CommandInput aria-label={label} placeholder={t('classificationSearch')} value={query} onValueChange={setQuery} />
-          <CommandList>
-            {matches.map((row) => (
-              <CommandItem
-                key={row.id}
-                value={String(row.id)}
-                disabled={disabled}
-                onContextMenu={(event) => {
-                  if (onEdit) {
-                    event.preventDefault();
-                    setOpen(false);
-                    onEdit(row);
-                  }
-                }}
-                onSelect={() => {
-                  void onPick(row);
-                  if (!multiple) setOpen(false);
-                }}
-              >
-                {multiple && (
-                  <span aria-hidden className="flex size-4 shrink-0 items-center justify-center rounded border">
-                    {selected.includes(row.id) && <Check className="size-3" />}
-                  </span>
-                )}
-                <span className="min-w-0 break-words">
-                  {row.name}
-                  {row.displayName !== row.name && <span className="block text-xs text-muted-foreground">{row.displayName}</span>}
-                </span>
-                {!multiple && selected.includes(row.id) && <Check className="ml-auto size-4" />}
-              </CommandItem>
-            ))}
-            {!matches.length && normalizeTypedTagName(query) && (
-              <CommandItem
-                value="create"
-                disabled={disabled}
-                onSelect={() => {
+      <ComboboxContent anchor={anchor} align="start" className="min-w-60">
+        <div className="p-1">
+          <ComboboxInput autoFocus showTrigger={false} aria-label={label} placeholder={t('classificationSearch')} />
+        </div>
+        <ComboboxList>
+          {matches.map((row) => (
+            <ComboboxItem
+              key={row.id}
+              value={String(row.id)}
+              disabled={disabled}
+              onContextMenu={(event) => {
+                if (onEdit && !disabled) {
+                  event.preventDefault();
                   setOpen(false);
-                  onCreate(normalizeTypedTagName(query));
-                }}
-              >
-                <Plus />
-                {t('classificationCreate', { name: normalizeTypedTagName(query) })}
-              </CommandItem>
-            )}
-            {!matches.length && !query && <div className="p-3 text-xs text-muted-foreground">{t('classificationTypeToCreate')}</div>}
-          </CommandList>
-        </Command>
+                  onEdit(row);
+                }
+              }}
+            >
+              <span className="min-w-0 break-words">
+                {row.name}
+                {row.displayName !== row.name && <span className="block text-xs text-muted-foreground">{row.displayName}</span>}
+              </span>
+            </ComboboxItem>
+          ))}
+          {createName && (
+            <ComboboxItem value="create" disabled={disabled}>
+              <Plus />
+              {t('classificationCreate', { name: createName })}
+            </ComboboxItem>
+          )}
+          {!matches.length && !query && <div className="p-3 text-xs text-muted-foreground">{t('classificationTypeToCreate')}</div>}
+        </ComboboxList>
         {multiple && (
           <div className="flex justify-end border-t p-1">
             <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
@@ -115,12 +118,37 @@ function Picker({
             </Button>
           </div>
         )}
-      </PopoverContent>
-    </Popover>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
+
+function TagCombobox({ label, emptyLabel, rows, value, disabled, onValueChange }: { label: string; emptyLabel: string; rows: Row[]; value: number | null; disabled: boolean; onValueChange: (value: number | null) => void }) {
+  const id = useId();
+  const options = ['', ...rows.map((row) => String(row.id))];
+  const getLabel = (value: string) => rows.find((row) => String(row.id) === value)?.displayName ?? emptyLabel;
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id}>{label}</label>
+      <Combobox items={options} value={value === null ? '' : String(value)} disabled={disabled} itemToStringLabel={getLabel} onValueChange={(value) => onValueChange(value ? Number(value) : null)}>
+        <ComboboxInput id={id} aria-label={label} />
+        <ComboboxContent>
+          <ComboboxEmpty>{t('fpNoResults')}</ComboboxEmpty>
+          <ComboboxList>
+            {(value: string) => (
+              <ComboboxItem key={value} value={value}>
+                {getLabel(value)}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
   );
 }
 
 export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[]; rows: Row[]; reload: () => Promise<void> }) {
+  const categoryId = useId();
   const [assignments, setAssignments] = useState<TagAssignment[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -219,9 +247,9 @@ export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[
                   }}
                 >
                   <span className="break-words">{row.name}</span>
-                  <button type="button" disabled={busy} aria-label={t('classificationRemove', { name: row.name })} onClick={() => void toggleCharacter(row)}>
+                  <Button type="button" variant="ghost" size="icon-xs" className="size-4" disabled={busy} aria-label={t('classificationRemove', { name: row.name })} onClick={() => void toggleCharacter(row)}>
                     <X className="size-3" />
-                  </button>
+                  </Button>
                 </span>
               ))}
             >
@@ -304,52 +332,45 @@ export function WorkCharacterField({ postIds, rows, reload }: { postIds: string[
                 }
               }}
             >
-              <label className="flex flex-col gap-2">
-                {t('classificationExisting')}
-                <select
-                  className="rounded border bg-background p-2"
-                  disabled={busy}
-                  value={edit.id || ''}
-                  onChange={(e) => {
-                    const row = rows.find((r) => r.id === Number(e.target.value));
-                    if (row) editRow(row);
-                    else setEdit({ name: '', category: edit.category, workId: edit.workId });
-                  }}
-                >
-                  <option value="">{t('classificationNew')}</option>
-                  {rows.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.name}
-                      {row.workId ? ` — ${works.find((w) => w.id === row.workId)?.name || ''}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <TagCombobox
+                label={t('classificationExisting')}
+                emptyLabel={t('classificationNew')}
+                rows={rows.map((row) => ({ ...row, displayName: row.workId ? `${row.name} — ${works.find((work) => work.id === row.workId)?.name || ''}` : row.name }))}
+                value={edit.id ?? null}
+                disabled={busy}
+                onValueChange={(value) => {
+                  const row = rows.find((row) => row.id === value);
+                  if (row) editRow(row);
+                  else setEdit({ name: '', category: edit.category, workId: edit.workId });
+                }}
+              />
               <label htmlFor="classified-tag-name" className="flex flex-col gap-2">
                 {t('tagName')}
                 <Input id="classified-tag-name" value={edit.name} autoFocus disabled={busy} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
               </label>
-              <label className="flex flex-col gap-2">
-                {t('classificationType')}
-                <select className="rounded border bg-background p-2" disabled={busy} value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value as Edit['category'], workId: null })}>
-                  <option value="general">{t('classificationOther')}</option>
-                  <option value="work">{t('classificationWork')}</option>
-                  <option value="character">{t('classificationCharacter')}</option>
-                </select>
-              </label>
-              {edit.category === 'character' && (
-                <label className="flex flex-col gap-2">
-                  {t('classificationWork')}
-                  <select className="rounded border bg-background p-2" disabled={busy} value={edit.workId || ''} onChange={(e) => setEdit({ ...edit, workId: Number(e.target.value) || null })}>
-                    <option value="">{t('classificationNoWork')}</option>
-                    {works.map((row) => (
-                      <option key={row.id} value={row.id}>
-                        {row.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
+              <div className="flex flex-col gap-2">
+                <label htmlFor={categoryId}>{t('classificationType')}</label>
+                <Select
+                  disabled={busy}
+                  value={edit.category}
+                  items={{ general: t('classificationOther'), work: t('classificationWork'), character: t('classificationCharacter') }}
+                  onValueChange={(value) => {
+                    if (value) setEdit({ ...edit, category: value, workId: null });
+                  }}
+                >
+                  <SelectTrigger id={categoryId} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="general">{t('classificationOther')}</SelectItem>
+                      <SelectItem value="work">{t('classificationWork')}</SelectItem>
+                      <SelectItem value="character">{t('classificationCharacter')}</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+              {edit.category === 'character' && <TagCombobox label={t('classificationWork')} emptyLabel={t('classificationNoWork')} rows={works.map((row) => ({ ...row, displayName: row.name }))} value={edit.workId} disabled={busy} onValueChange={(value) => setEdit({ ...edit, workId: value })} />}
               {error && (
                 <p role="alert" className="text-destructive">
                   {t('tagMgmtErrorGeneric')}

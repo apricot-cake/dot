@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Input } from '@/components/ui/input';
 import { Hint } from '../components/Hint.tsx';
 import { t } from '../../_shared/i18n.ts';
 import { notify } from '../../services/ui.ts';
@@ -46,6 +47,7 @@ export function Shortcuts() {
 
   const capture = (id: string, e: React.KeyboardEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (MODIFIER_KEYS.has(e.key)) return; // まだ修飾キーを押さえているだけ＝本来のキーを待つ
     if (e.key === 'Escape') {
       cancelCustom();
@@ -59,13 +61,13 @@ export function Shortcuts() {
   };
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-4">
       <Hint text={t('shortcutsSectionHint')} />
-      <div className="divide-border mt-3 divide-y">
+      <div className="divide-border divide-y rounded-lg border bg-card px-4">
         {rows.map((row) => (
-          <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
-            <span className="text-sm">{row.title}</span>
-            <div className="flex items-center gap-2">
+          <div key={row.id} className="grid min-w-0 grid-cols-1 gap-3 py-3 @min-[22rem]/settings-content:grid-cols-[minmax(0,1fr)_auto] @min-[22rem]/settings-content:items-center @min-[22rem]/settings-content:gap-4">
+            <span className="min-w-0 text-sm leading-relaxed">{row.title}</span>
+            <div className="flex flex-wrap items-center gap-2">
               <ToggleGroup
                 variant="outline"
                 spacing={0}
@@ -86,14 +88,9 @@ export function Shortcuts() {
                 <ToggleGroupItem value="custom">{t('shortcutCustom')}</ToggleGroupItem>
               </ToggleGroup>
               {recordingId === row.id ? (
-                /* biome-ignore lint/a11y/noAutofocus: この入力欄は次の打鍵を受け取るためだけに
-                   在る＝利用者が「カスタム」を選んだから現れたもので、フォーカスが無ければ
-                   キーを打ち込む先が無い。この規則が問題にしているのはページの読み込み時の
-                   autofocus が利用者からフォーカスを奪うことで、ここでは利用者自身のクリックが
-                   これを画面に出している。 */
-                <input autoFocus readOnly value="" placeholder={t('shortcutPressKey')} onKeyDown={(e) => capture(row.id, e)} onBlur={cancelCustom} className="border-input bg-background text-muted-foreground focus:border-ring h-8 w-40 rounded-md border px-2.5 text-xs outline-none" />
+                <Input autoFocus readOnly value="" aria-label={row.title} placeholder={t('shortcutPressKey')} onKeyDown={(e) => capture(row.id, e)} onBlur={cancelCustom} className="w-32" />
               ) : (
-                <code className="bg-muted min-w-24 rounded-md px-2.5 py-1 text-center font-mono text-xs">{comboLabel(row.currentCombo)}</code>
+                <code className="bg-muted w-24 shrink-0 rounded-md px-2 py-1 text-center font-mono text-xs whitespace-nowrap">{comboLabel(row.currentCombo)}</code>
               )}
             </div>
           </div>

@@ -26,6 +26,8 @@ test('タグタブで付与と解除が保存され、投稿を切り替えて�
 });
 
 test('グループ作成、タグ作成、折りたたんだ移動先へのドラッグと右クリック編集', async ({ launchDot }) => {
+  // 作成・移動・名前変更・統合・削除を同じライブラリで通して確認する。
+  test.setTimeout(120_000);
   const { page } = await launchDot();
   await page.locator('[data-slot="post-grid"] [data-slot="post-card"]').first().click();
   const inspector = page.locator('[data-slot="inspector"]');
@@ -38,6 +40,9 @@ test('グループ作成、タグ作成、折りたたんだ移動先へのド�
   await inspector.getByRole('button', { name: 'タグを作成', exact: true }).click();
   dialog = page.getByRole('dialog');
   await dialog.getByRole('textbox', { name: 'タグ名', exact: true }).fill('ドラッグ確認');
+  await dialog.getByRole('combobox', { name: 'グループ', exact: true }).click();
+  await page.getByRole('option', { name: '未分類', exact: true }).click();
+  await expect(dialog.getByRole('combobox', { name: 'グループ', exact: true }).locator('[data-slot="select-value"]')).toHaveText('未分類');
   await dialog.getByRole('button', { name: '作成して追加', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const destination = inspector.locator('details').filter({ has: page.locator('summary', { hasText: '移動先' }) });

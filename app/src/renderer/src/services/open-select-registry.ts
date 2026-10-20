@@ -7,10 +7,8 @@
 // DOM を `[data-slot="select-content"]` で探ることを禁じている――信号は
 // 代わりにコンポーネントの状態から来る必要がある。
 //
-// 登録元: components/ui/select.tsx の Select Root ラッパー（マウントされた
-// すべての Select）と、インスペクタのインラインタグ欄
-// （inspector/TagField.tsx）。その Combobox ポップアップはインスペクタの
-// 「上」に座るので、その Esc も勝ち取らなければならない。
+// 登録元: components/ui/ の Select・Combobox・Autocomplete の Root ラッパー。
+// インスペクタ上の候補面も、共通部品から開閉を通知する。
 //
 // _shared ではなく他のレンダラー状態ブリッジ（qf-pop.ts、bulk-tag.ts、…）
 // と一緒に住んでいる: 読み取り側はレンダラーのコードで、全体（レンダラーの

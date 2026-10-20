@@ -10,7 +10,7 @@ import { beginFilterEditSession, endFilterEditSession, type FilterCatDate, type 
 import { t } from '../_shared/i18n.ts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type Option = { value: string; label: string };
 
@@ -30,11 +30,13 @@ function OptionSelect({ value, onChange, options, triggerClassName = 'w-full' }:
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o.value} value={o.value}>
-            {o.label}
-          </SelectItem>
-        ))}
+        <SelectGroup>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   );
@@ -105,12 +107,14 @@ function DateForm({ cat, onClose }: { cat: FilterCatDate; onClose: () => void })
         <SelectTrigger size="sm" aria-label={t('fpPeriod')} className="w-full text-muted-foreground enabled:hover:bg-accent">
           <SelectValue placeholder={t('fpChoosePeriod')} />
         </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false} side="bottom" align="start" sideOffset={4} className="p-1 text-muted-foreground">
-          {presets.map((p) => (
-            <SelectItem key={p.value} value={p.value} className="text-muted-foreground data-highlighted:text-muted-foreground not-data-[variant=destructive]:data-highlighted:**:text-muted-foreground">
-              {p.label}
-            </SelectItem>
-          ))}
+        <SelectContent alignItemWithTrigger={false} side="bottom" align="start" sideOffset={4} className="text-muted-foreground">
+          <SelectGroup>
+            {presets.map((p) => (
+              <SelectItem key={p.value} value={p.value} className="text-muted-foreground data-highlighted:text-muted-foreground not-data-[variant=destructive]:data-highlighted:**:text-muted-foreground">
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
         </SelectContent>
       </Select>
       {preset === 'custom' && (

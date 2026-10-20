@@ -4,8 +4,7 @@ test('ソート候補をマウスとキーボードで強調する', async ({ la
   const { page } = await launchDot();
   for (const mode of ['ホーム', '投稿者']) {
     await page.locator('[data-slot="sidebar-menu-button"]').filter({ hasText: mode }).press('Enter');
-    await page.getByRole('button', { name: '表示', exact: true }).press('Enter');
-    const trigger = page.locator('[data-slot="select-trigger"]');
+    const trigger = page.locator('[data-slot="toolbar-sort"]');
     await page.mouse.move(0, 0);
     await page.waitForTimeout(200);
     const normal = await trigger.evaluate((e) => getComputedStyle(e).backgroundColor);
@@ -13,13 +12,15 @@ test('ソート候補をマウスとキーボードで強調する', async ({ la
     await page.waitForTimeout(200);
     expect(await trigger.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe(normal);
     await trigger.press('Space');
-    const views = page.getByRole('option', { name: '閲覧数', exact: true });
-    const date = page.getByRole('option', { name: '閲覧日', exact: true });
+    const views = page.getByRole('menuitemradio', { name: '閲覧数', exact: true });
+    const date = page.getByRole('menuitemradio', { name: '閲覧日', exact: true });
     await views.hover();
     await expect(views).toHaveAttribute('data-highlighted');
     const inset = await views.evaluate((e) => {
       const item = e.getBoundingClientRect();
-      const popup = e.closest('[data-slot="select-content"]')!.getBoundingClientRect();
+      const menu = e.closest('[data-slot="dropdown-menu-content"]');
+      if (!menu) throw new Error('ソート候補が共通メニュー内にありません');
+      const popup = menu.getBoundingClientRect();
       return { left: item.left - popup.left, right: popup.right - item.right };
     });
     expect(inset.left).toBeGreaterThanOrEqual(4);
@@ -31,6 +32,5 @@ test('ソート候補をマウスとキーボードで強調する', async ({ la
     await expect(views).not.toHaveAttribute('data-highlighted');
     expect(await date.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe(background);
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: '表示', exact: true }).press('Enter');
   }
 });

@@ -7,6 +7,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { normalizeTagName, tagNameInputIsSafe } from '../../../../../native-host/tag-normalize.mts';
 import { t } from '../_shared/i18n.ts';
 import { CreateTagDialog } from './CreateTagDialog.tsx';
@@ -140,22 +141,23 @@ export function TagField({ tags, vocabGroups, labels, onAdd, onRemove, onContext
         {!!generalTags.length && (
           <div className="flex shrink-0 flex-wrap gap-1 border-b pb-3">
             {generalTags.map((tag) => (
-              <span
+              <Badge
                 key={tag}
+                variant="secondary"
                 data-slot="tag-chip"
                 data-tag={tag}
-                className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs text-[color:var(--text-muted-strong)]"
+                className="h-auto min-h-7 max-w-full pr-0.5"
                 onContextMenu={(e) => {
                   e.preventDefault();
                   setContextTarget('tag:' + tag);
                   onContextMenu(tag, e.clientX, e.clientY);
                 }}
               >
-                {tag}
-                <button type="button" aria-label={labels.removeTag + ': ' + tag} className="rounded text-muted-foreground hover:text-foreground" onClick={() => onRemove(tag)}>
-                  <X className="size-3" />
-                </button>
-              </span>
+                <span className="min-w-0 truncate">{tag}</span>
+                <Button variant="ghost" size="icon-xs" className="size-5" aria-label={labels.removeTag + ': ' + tag} onClick={() => onRemove(tag)}>
+                  <X />
+                </Button>
+              </Badge>
             ))}
           </div>
         )}

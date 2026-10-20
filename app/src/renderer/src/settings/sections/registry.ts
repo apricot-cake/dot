@@ -1,13 +1,12 @@
 import type { MessageKey } from '../../services/translation.ts';
 import type { ComponentType } from 'react';
-import { Palette, Languages, Database, Keyboard, TriangleAlert, Info } from 'lucide-react';
+import { Palette, Languages, Database, Keyboard, TriangleAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Appearance } from './Appearance.tsx';
 import { Language } from './Language.tsx';
 import { Data } from './Data.tsx';
 import { Shortcuts } from './Shortcuts.tsx';
 import { Danger } from './Danger.tsx';
-import { About } from './About.tsx';
 
 // 節の登録簿＝横の目次と本体のパネルの両方をこれが動かすので、節を足すのはここの1行の
 // 変更で済む。titleKey は i18n のキー（素のアプリから流用）。並び順は元のパネルに合わせて
@@ -22,5 +21,4 @@ export const SECTIONS: { id: string; titleKey: MessageKey; Icon: LucideIcon; Com
   { id: 'data', titleKey: 'dataTitle', Icon: Database, Component: Data },
   { id: 'shortcuts', titleKey: 'shortcutsSectionTitle', Icon: Keyboard, Component: Shortcuts },
   { id: 'danger', titleKey: 'dangerTitle', Icon: TriangleAlert, Component: Danger },
-  { id: 'about', titleKey: 'aboutTitle', Icon: Info, Component: About },
 ];

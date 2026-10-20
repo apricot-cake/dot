@@ -5,8 +5,8 @@ import type { ComponentType, KeyboardEvent as ReactKeyboardEvent, UIEvent as Rea
 import { ScrollArea as ScrollAreaPrimitive } from '@base-ui/react/scroll-area';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 import { t } from '../_shared/i18n.ts';
 import { localeDate } from '../services/format.ts';
 import { fileSrc } from '../services/asset-src.ts';
@@ -189,8 +189,8 @@ export function HistoryPanelBody() {
       <div className="flex items-center gap-1.5">
         <Input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={onSearchKeyDown} placeholder={t('historySearchPlaceholder')} aria-label={t('historyTitle')} className="flex-1" />
         <Tooltip>
-          <TooltipTrigger render={<button type="button" onClick={onClearAll} aria-label={t('historyClearAll')} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" />}>
-            <Trash2 className="size-4" />
+          <TooltipTrigger render={<Button variant="ghost" size="icon" onClick={onClearAll} aria-label={t('historyClearAll')} />}>
+            <Trash2 />
           </TooltipTrigger>
           <TooltipContent>{t('historyClearAll')}</TooltipContent>
         </Tooltip>
@@ -216,39 +216,31 @@ export function HistoryPanelBody() {
                     const Icon = KIND_ICON[row.kind] || ImageIcon;
                     const thumbFile = historyThumbFile(row);
                     return (
-                      <button
-                        key={row.id}
-                        ref={(el) => {
-                          if (el) rowRefs.current.set(row.id, el);
-                          else rowRefs.current.delete(row.id);
-                        }}
-                        type="button"
-                        onClick={() => openRow(row)}
-                        onAuxClick={(e) => {
-                          if (e.button === 1) {
-                            e.preventDefault();
-                            openRow(row, { background: true });
-                          }
-                        }}
-                        onKeyDown={(e) => onRowKeyDown(e, row, index)}
-                        className="group flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
-                      >
-                        {thumbFile ? <img data-slot="history-thumb" src={fileSrc(thumbFile, 32)} alt="" className="size-6 shrink-0 rounded object-cover" /> : <Icon className="size-4 shrink-0 text-muted-foreground" />}
-                        <span className="min-w-0 flex-1 truncate">{row.title}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground group-focus-within:hidden group-hover:hidden">{_clockFmt.format(row.ts)}</span>
-                        <span
-                          role="button"
-                          tabIndex={-1}
-                          aria-label={t('historyDeleteRow')}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeRow(row.id);
+                      <div key={row.id} className="group flex min-w-0 items-center rounded-md hover:bg-muted focus-within:bg-muted">
+                        <button
+                          ref={(el) => {
+                            if (el) rowRefs.current.set(row.id, el);
+                            else rowRefs.current.delete(row.id);
                           }}
-                          className={cn('hidden size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-background hover:text-foreground', 'group-hover:flex group-focus-within:flex')}
+                          type="button"
+                          onClick={() => openRow(row)}
+                          onAuxClick={(e) => {
+                            if (e.button === 1) {
+                              e.preventDefault();
+                              openRow(row, { background: true });
+                            }
+                          }}
+                          onKeyDown={(e) => onRowKeyDown(e, row, index)}
+                          className="flex min-w-0 flex-1 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm focus-visible:outline-none"
                         >
-                          <X className="size-3.5" />
-                        </span>
-                      </button>
+                          {thumbFile ? <img data-slot="history-thumb" src={fileSrc(thumbFile, 32)} alt="" className="size-6 shrink-0 rounded object-cover" /> : <Icon className="size-4 shrink-0 text-muted-foreground" />}
+                          <span className="min-w-0 flex-1 truncate">{row.title}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground group-focus-within:hidden group-hover:hidden">{_clockFmt.format(row.ts)}</span>
+                        </button>
+                        <Button variant="ghost" size="icon-xs" aria-label={t('historyDeleteRow')} onClick={() => removeRow(row.id)} className="mr-1 hidden group-hover:inline-flex group-focus-within:inline-flex">
+                          <X />
+                        </Button>
+                      </div>
                     );
                   })}
                 </div>

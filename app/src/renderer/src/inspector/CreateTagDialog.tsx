@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { t } from '../_shared/i18n.ts';
 import { dotIpc } from '../services/ipc.ts';
 import { setTagGroup } from '../services/tags.ts';
@@ -10,6 +11,7 @@ import type { TagPickGroup } from './TagField.tsx';
 
 export function CreateTagDialog({ groups, onAdd, onClose }: { groups: TagPickGroup[]; onAdd: (name: string) => void | Promise<void>; onClose: () => void }) {
   const nameId = useId();
+  const groupId = useId();
   const [name, setName] = useState('');
   const [group, setGroup] = useState('');
   const [busy, setBusy] = useState(false);
@@ -52,19 +54,26 @@ export function CreateTagDialog({ groups, onAdd, onClose }: { groups: TagPickGro
             {t('tagName')}
             <Input id={nameId} autoFocus value={name} onChange={(e) => setName(e.target.value)} disabled={busy} />
           </label>
-          <label className="flex flex-col gap-2">
-            {t('tagGroupHeader')}
-            <select className="rounded-md border bg-background p-2" value={group} onChange={(e) => setGroup(e.target.value)} disabled={busy}>
-              <option value="">{t('tagUncategorized')}</option>
-              {groups
-                .filter((g) => g.id)
-                .map((g) => (
-                  <option key={g.id} value={g.id || ''}>
-                    {g.name}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <div className="flex flex-col gap-2">
+            <label htmlFor={groupId}>{t('tagGroupHeader')}</label>
+            <Select value={group} onValueChange={(value) => setGroup(value ?? '')} disabled={busy} items={[{ value: '', label: t('tagUncategorized') }, ...groups.filter((g) => g.id).map((g) => ({ value: g.id || '', label: g.name }))]}>
+              <SelectTrigger id={groupId} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="">{t('tagUncategorized')}</SelectItem>
+                  {groups
+                    .filter((g) => g.id)
+                    .map((g) => (
+                      <SelectItem key={g.id} value={g.id || ''}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
           {error && (
             <p role="alert" className="text-destructive">
               {t('tagMgmtErrorGeneric')}

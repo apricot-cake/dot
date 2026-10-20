@@ -14,6 +14,9 @@ function Select<Value, Multiple extends boolean | undefined = false>({ onOpenCha
   const idRef = React.useRef<symbol | null>(null);
   if (idRef.current === null) idRef.current = Symbol('select');
   React.useEffect(() => () => setSelectOpen(idRef.current as symbol, false), []);
+  React.useEffect(() => {
+    if (props.open !== undefined) setSelectOpen(idRef.current as symbol, props.open);
+  }, [props.open]);
   return (
     <SelectPrimitive.Root
       onOpenChange={(open, details) => {
@@ -57,7 +60,7 @@ function SelectTrigger({
   );
 }
 
-function SelectContent({ className, children, side = 'bottom', sideOffset = 4, align = 'center', alignOffset = 0, alignItemWithTrigger = true, ...props }: SelectPrimitive.Popup.Props & Pick<SelectPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset' | 'alignItemWithTrigger'>) {
+function SelectContent({ className, children, side = 'bottom', sideOffset = 4, align = 'center', alignOffset = 0, alignItemWithTrigger = false, ...props }: SelectPrimitive.Popup.Props & Pick<SelectPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset' | 'alignItemWithTrigger'>) {
   return (
     <SelectPrimitive.Portal>
       {/* z-[13500]: @layer-legacy との共存が続く間、select のポップアップは旧来の

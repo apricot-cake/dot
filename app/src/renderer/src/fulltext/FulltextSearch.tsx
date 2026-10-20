@@ -1,7 +1,8 @@
 import type { MessageKey } from '../services/translation.ts';
 import { toast } from 'sonner';
 import { subscribe as subscribePosts, getGeneration } from '../services/posts-data.ts';
-import { Autocomplete } from '@base-ui/react/autocomplete';
+import { Autocomplete, AutocompleteEmpty, AutocompleteInput, AutocompleteItem, AutocompleteList } from '@/components/ui/autocomplete';
+import { Button } from '@/components/ui/button';
 import { FileSearch } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -79,16 +80,16 @@ function FulltextBody() {
         <DialogTitle>{t('fulltextTitle')}</DialogTitle>
         <DialogDescription>{t('fulltextDesc')}</DialogDescription>
       </DialogHeader>
-      <Autocomplete.Root inline open mode="none" items={hits} value={ftQuery} onValueChange={setFtQuery} autoHighlight="always" itemToStringValue={(hit: FullTextMatch) => hit.post.captureId}>
+      <Autocomplete inline open mode="none" items={hits} value={ftQuery} onValueChange={setFtQuery} autoHighlight="always" itemToStringValue={(hit: FullTextMatch) => hit.post.captureId}>
         <div className="flex items-center gap-1 border-b p-1">
           <FileSearch className="ml-2 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <Autocomplete.Input autoFocus aria-label={t('fulltextTitle')} placeholder={t('fulltextPlaceholder')} className="h-8 w-full min-w-0 border-0 bg-transparent px-2 text-base outline-none placeholder:text-muted-foreground md:text-sm" />
+          <AutocompleteInput autoFocus aria-label={t('fulltextTitle')} placeholder={t('fulltextPlaceholder')} className="border-0 bg-transparent px-2 shadow-none focus-visible:ring-0 dark:bg-transparent" />
         </div>
-        <Autocomplete.List className="max-h-80 overflow-y-auto overscroll-contain p-1">
+        <AutocompleteList className="max-h-80 overscroll-contain">
           {(hit: FullTextMatch) => {
             const file = thumbFileOf(hit.post);
             return (
-              <Autocomplete.Item key={hit.post.captureId} value={hit} onClick={() => jumpTo(hit)} className="flex cursor-default items-start gap-2 rounded-sm px-2 py-1.5 text-sm select-none data-highlighted:bg-muted">
+              <AutocompleteItem key={hit.post.captureId} value={hit} onClick={() => jumpTo(hit)} className="items-start">
                 {file && bridge ? <img src={bridge.fileSrc(file, 64)} alt="" className="mt-0.5 size-8 shrink-0 rounded object-cover" /> : <div className="mt-0.5 size-8 shrink-0 rounded bg-muted" />}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
@@ -108,16 +109,16 @@ function FulltextBody() {
                     )}
                   </div>
                 </div>
-              </Autocomplete.Item>
+              </AutocompleteItem>
             );
           }}
-        </Autocomplete.List>
-        <Autocomplete.Empty className="px-3 py-6 text-center text-sm text-muted-foreground empty:hidden">{t('fulltextEmpty')}</Autocomplete.Empty>
-      </Autocomplete.Root>
+        </AutocompleteList>
+        <AutocompleteEmpty>{t('fulltextEmpty')}</AutocompleteEmpty>
+      </Autocomplete>
       {total > hits.length && (
-        <button type="button" onClick={() => setShowAll(true)} className="w-full shrink-0 border-t px-3 py-2 text-center text-xs text-muted-foreground hover:bg-muted">
+        <Button variant="ghost" onClick={() => setShowAll(true)} className="w-full rounded-none border-t text-xs text-muted-foreground">
           {t('fulltextShowAll', { count: total })}
-        </button>
+        </Button>
       )}
     </DialogContent>
   );

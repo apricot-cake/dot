@@ -6,7 +6,7 @@ import { dotImageTabSource, isActive as imageViewIsActive } from '../services/im
 import { dotIpc } from '../services/ipc.ts';
 import { open as openMenu } from '../services/menu.ts';
 import { t } from '../_shared/i18n.ts';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { hashtagParts } from './hashtag-parts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -106,24 +106,18 @@ function PostTags({ m }: { m: DotInspectorModel }) {
   const tags = (m.hashtags || []).filter((tag) => m.platformLabel === 'pixiv' || !inline.has(tag));
   if (!tags.length) return null;
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="outline" size="sm" className="self-start" />}>{t('inspectorPlatformTags', { site: m.platformLabel, count: tags.length })}</PopoverTrigger>
-      <PopoverContent className="w-64 max-h-72 overflow-y-auto p-1.5" align="start">
-        {tags.map((tag) => (
-          <button
-            key={tag}
-            type="button"
-            className="block w-full rounded-md px-2 py-1.5 text-left text-sm break-words hover:bg-muted"
-            onClick={() => {
-              setOpen(false);
-              m.onHashtagClick?.(tag);
-            }}
-          >
-            {tag}
-          </button>
-        ))}
-      </PopoverContent>
-    </Popover>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="self-start" />}>{t('inspectorPlatformTags', { site: m.platformLabel, count: tags.length })}</DropdownMenuTrigger>
+      <DropdownMenuContent className="w-64 max-h-72 overflow-y-auto" align="start">
+        <DropdownMenuGroup>
+          {tags.map((tag) => (
+            <DropdownMenuItem key={tag} className="break-words" onClick={() => m.onHashtagClick?.(tag)}>
+              {tag}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

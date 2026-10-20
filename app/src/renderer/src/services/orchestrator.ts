@@ -262,7 +262,7 @@ export function endFilterEditSession(): void {
   // 最後で解決する → AppBoot の bootApp はその後に走る。）
   await shellReady;
   // 件数・日付の表示整形は今は format.ts にある（上で import 済み）。
-  // エクスポート通知の表示は LibrarySafetyStatus が持つ。
+  // エクスポート通知のドットは SettingsButton が表示する。
 
   // （カーソル位置に出したポップアップをビューポートの内側へ押し戻していた手書きの
   // clampIntoView は無くなった。メニューはすべて Base UI のポップアップになり、衝突の
@@ -1614,7 +1614,7 @@ export function endFilterEditSession(): void {
   // ZIP からの取り込みは今は services/zip-import.ts にある＝呼び出し側2つ（設定パネルの
   // ボタン、空状態の CTA）が、そこから runZipImport を直接 import する。
 
-  // エクスポート通知のレールは LibrarySafetyStatus が完全に持つ。orchestrator は
+  // エクスポート通知は SettingsButton と設定の Data が表示する。orchestrator は
   // その状態を持たない。
 
   // --- データの消去 ---

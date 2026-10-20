@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SettingRow } from '../components/SettingRow.tsx';
-import { FontCombobox } from '../components/FontCombobox.tsx';
+import { SettingsGroup } from '../components/SettingsGroup.tsx';
+import { FontAutocomplete } from '../components/FontAutocomplete.tsx';
 import { t } from '../../_shared/i18n.ts';
 import * as ipc from '../ipc.ts';
 
@@ -31,8 +32,8 @@ export function Appearance() {
   }, []);
 
   return (
-    <div>
-      <SettingRow label={t('themeMode')} hint={t('hintTheme')}>
+    <SettingsGroup>
+      <SettingRow label={t('themeMode')} hint={t('hintTheme')} controlId="settings-theme">
         <Select
           items={{ auto: t('themeAuto'), light: t('themeLight'), dark: t('themeDark') }}
           value={theme}
@@ -42,18 +43,21 @@ export function Appearance() {
             ipc.theme.set(v);
           }}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger id="settings-theme" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="auto">{t('themeAuto')}</SelectItem>
-            <SelectItem value="light">{t('themeLight')}</SelectItem>
-            <SelectItem value="dark">{t('themeDark')}</SelectItem>
+            <SelectGroup>
+              <SelectItem value="auto">{t('themeAuto')}</SelectItem>
+              <SelectItem value="light">{t('themeLight')}</SelectItem>
+              <SelectItem value="dark">{t('themeDark')}</SelectItem>
+            </SelectGroup>
           </SelectContent>
         </Select>
       </SettingRow>
-      <SettingRow label={t('uiFontLabel')} hint={t('uiFontHint')}>
-        <FontCombobox
+      <SettingRow label={t('uiFontLabel')} hint={t('uiFontHint')} controlId="settings-font">
+        <FontAutocomplete
+          id="settings-font"
           value={uiFont}
           onPreview={(v) => ipc.uiFont.preview(v)}
           onCommit={(v) => {
@@ -62,6 +66,6 @@ export function Appearance() {
           }}
         />
       </SettingRow>
-    </div>
+    </SettingsGroup>
   );
 }

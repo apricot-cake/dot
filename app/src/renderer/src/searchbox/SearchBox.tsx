@@ -1,7 +1,8 @@
 import { subscribeSearch, searchRevision } from '../services/search-results.ts';
 import { subscribe as subscribePosts, getGeneration } from '../services/posts-data.ts';
-import { Autocomplete } from '@base-ui/react/autocomplete';
-import { Search, Tag, User, X } from 'lucide-react';
+import { Autocomplete, AutocompleteClear, AutocompleteContent, AutocompleteInput, AutocompleteInputGroup, AutocompleteItem, AutocompleteList } from '@/components/ui/autocomplete';
+import { InputGroupAddon } from '@/components/ui/input-group';
+import { Search, Tag, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import type { ComponentType } from 'react';
 import { t } from '../_shared/i18n.ts';
@@ -38,9 +39,8 @@ export function SearchBox({ placeholder }: { placeholder?: string }) {
 
   return (
     <div className="flex min-w-0 items-center justify-end">
-      <div className="relative min-w-0 w-72">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Autocomplete.Root
+      <div className="min-w-0 w-72">
+        <Autocomplete
           // mode="none": レジストリが問い合わせに対して行を絞り込み済み＝Base UI がそれを絞り
           // 込み直したり、選択中の項目を入力欄へ書き込んだりしてはいけない。
           mode="none"
@@ -54,42 +54,32 @@ export function SearchBox({ placeholder }: { placeholder?: string }) {
           }}
           itemToStringValue={(entry: SearchSuggestion) => entry.title}
         >
-          <Autocomplete.Input ref={inputRef} aria-label={placeholder} placeholder={placeholder} className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent py-1 pr-9 pl-8 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring md:text-sm dark:bg-input/30" />
-          <Autocomplete.Portal>
-            {/* z-[13500]: @layer-legacy との同居が続く間、旧オーバーレイの z 尺より上に置く
-            （shadcn のポータルの面がどれも使うのと同じ場所＝popover.tsx を参照）。 */}
-            <Autocomplete.Positioner side="bottom" align="start" sideOffset={4} collisionPadding={8} className="isolate z-[13500]">
-              <Autocomplete.Popup className="w-(--anchor-width) max-h-(--available-height) origin-(--transform-origin) overflow-y-auto rounded-lg bg-popover p-1 font-sans text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-[empty]:hidden">
-                <Autocomplete.List>
-                  {(entry: SearchSuggestion) => {
-                    const Icon = SUG_ICON[entry.section] || Tag;
-                    return (
-                      <Autocomplete.Item key={entry.id} value={entry} onClick={() => entry.perform()} className="flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 select-none data-highlighted:bg-muted">
-                        <Icon className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 flex-1 truncate">{entry.title}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">{entry.hint}</span>
-                      </Autocomplete.Item>
-                    );
-                  }}
-                </Autocomplete.List>
-              </Autocomplete.Popup>
-            </Autocomplete.Positioner>
-          </Autocomplete.Portal>
-        </Autocomplete.Root>
-        {value ? (
-          <button
-            type="button"
-            aria-label={t('searchClear')}
-            className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => {
-              store.setState(isTrash ? { trashSearchQuery: '' } : { searchQuery: '' });
-              inputRef.current?.focus();
-            }}
-          >
-            <X aria-hidden="true" className="size-3.5" />
-          </button>
-        ) : null}
+          <AutocompleteInputGroup>
+            <InputGroupAddon>
+              <Search aria-hidden="true" />
+            </InputGroupAddon>
+            <AutocompleteInput inGroup ref={inputRef} aria-label={placeholder} placeholder={placeholder} />
+            {value ? (
+              <InputGroupAddon align="inline-end">
+                <AutocompleteClear aria-label={t('searchClear')} />
+              </InputGroupAddon>
+            ) : null}
+          </AutocompleteInputGroup>
+          <AutocompleteContent className="data-empty:hidden">
+            <AutocompleteList>
+              {(entry: SearchSuggestion) => {
+                const Icon = SUG_ICON[entry.section] || Tag;
+                return (
+                  <AutocompleteItem key={entry.id} value={entry} onClick={() => entry.perform()}>
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{entry.hint}</span>
+                  </AutocompleteItem>
+                );
+              }}
+            </AutocompleteList>
+          </AutocompleteContent>
+        </Autocomplete>
       </div>
     </div>
   );

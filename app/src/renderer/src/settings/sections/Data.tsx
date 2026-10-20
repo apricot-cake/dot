@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Hint } from '../components/Hint.tsx';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Highlight } from '../components/Highlight.tsx';
+import { SettingRow } from '../components/SettingRow.tsx';
+import { SettingsGroup } from '../components/SettingsGroup.tsx';
 import { toast } from 'sonner';
 import { t } from '../../_shared/i18n.ts';
 import { notify } from '../../services/ui.ts';
-import { getExportReminder, setExportReminderEnabled, setExportReminderThreshold, getIntegrityStatus, runOrphanRecovery, onIntegrityCheckDone } from '../../services/backup.ts';
+import { getExportReminder, setExportReminderEnabled, setExportReminderThreshold, getIntegrityStatus, runOrphanRecovery, onIntegrityCheckDone, onExportReminderChanged } from '../../services/backup.ts';
 import { createBackupFile } from '../../services/backup-file.ts';
 import { onExportProgress, onSaveFolderProgress, pickSaveFolder, moveSaveFolder, exportComplete, importImages } from '../../services/posts.ts';
 import { loadPosts } from '../../services/post-grid-builder.ts';
@@ -35,6 +35,7 @@ const reloadPosts = () => {
 // 出し入れするだけで、IPC を購読し直すことは一切しない。
 const progressSubs = new Set<(p: SaveFolderProgress) => void>();
 const integritySubs = new Set<(s: IntegrityStatus) => void>();
+const reminderSubs = new Set<(s: ExportReminderState) => void>();
 let ipcWired = false;
 function wireIpcOnce() {
   if (ipcWired) return;
@@ -48,6 +49,11 @@ function wireIpcOnce() {
     onIntegrityCheckDone((s: IntegrityStatus) => integritySubs.forEach((cb) => cb(s)));
   } catch {
     /* 素の開発サーバー: dotBackup の裏に preload のブリッジが無い */
+  }
+  try {
+    onExportReminderChanged((state: ExportReminderState) => reminderSubs.forEach((cb) => cb(state)));
+  } catch {
+    /* preload のブリッジがない環境 */
   }
 }
 
@@ -84,9 +90,9 @@ const fmtTime = (iso?: string | null) => {
   return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 };
 
-// ファイルシステムのパスを、行中のコードのチップとして見せる。
-function PathChip({ children }: { children?: string | null }) {
-  return <code className="bg-muted min-w-0 flex-1 rounded-md px-2.5 py-1.5 font-mono text-xs break-all">{children}</code>;
+// 長い保存先も省略せず折り返す。
+function LibraryPath({ children }: { children?: string | null }) {
+  return <code className="text-muted-foreground block min-w-0 font-mono text-sm leading-relaxed break-all">{children}</code>;
 }
 
 // データ: 保存先フォルダ、書き出しと取り込み、ローカル復旧、エクスポート通知。
@@ -252,8 +258,10 @@ export function Data() {
     wireIpcOnce();
     const onDone = (s: IntegrityStatus) => setIntegrity(s || null);
     integritySubs.add(onDone);
+    reminderSubs.add(setExportReminder);
     return () => {
       integritySubs.delete(onDone);
+      reminderSubs.delete(setExportReminder);
     };
   }, []);
 
@@ -279,166 +287,137 @@ export function Data() {
 
   return (
     <div className="space-y-6">
-      {/* 保存先フォルダ */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">
-            <Highlight text={t('saveFolderSubTitle')} />
-          </CardTitle>
-          <CardDescription>
-            <Highlight text={t('saveFolderHint')} />
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <PathChip>{saveFolder}</PathChip>
-            <Button variant="outline" onClick={chooseSaveFolder} disabled={migrating}>
-              {migrating ? t('saveFolderMoving') : t('saveFolderChange')}
+      {exportReminder?.due && (
+        <section data-slot="backup-reminder" className="space-y-3 rounded-lg border border-blue-200/70 bg-blue-50/50 p-4 dark:border-blue-900/70 dark:bg-blue-950/20">
+          <div className="space-y-1">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Badge aria-hidden="true" className="size-2 bg-blue-600 p-0 dark:bg-blue-400" />
+              <Highlight text={t('exportReminderTitle')} />
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              <Highlight text={t('exportReminderStatus', { count: exportReminder.changesSinceExport })} />
+            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              <Highlight text={t('exportReminderDismissHint')} />
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void writeArchive('full')}>{t('backupFileCreate')}</Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                void setExportReminderEnabled(false)
+                  .then(setExportReminder)
+                  .catch(() => {})
+              }
+            >
+              {t('exportReminderDisable')}
             </Button>
           </div>
-          {/* 移行の進み具合（移動中以外は隠す） */}
-          {progress && (
-            <div className="space-y-2.5">
-              <div className="text-sm font-medium">{t('saveFolderProgressTitle')}</div>
-              <div className="flex items-center gap-3">
-                <Progress value={progress.pct} className="flex-1" />
-                <span className="text-muted-foreground min-w-10 text-right text-xs tabular-nums">{progress.pct}%</span>
-              </div>
-              <div className="bg-muted text-muted-foreground max-h-36 overflow-y-auto rounded-md p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
-                {progress.log.map((line, i) => (
-                  <div key={i}>{line}</div>
+        </section>
+      )}
+      <SettingsGroup title={t('saveFolderSubTitle')} description={t('saveFolderHint')}>
+        <div className="flex min-w-0 flex-col gap-3 py-4 @min-[32rem]/settings-content:flex-row @min-[32rem]/settings-content:items-center">
+          <div className="min-w-0 flex-1">
+            <LibraryPath>{saveFolder}</LibraryPath>
+          </div>
+          <Button variant="outline" onClick={chooseSaveFolder} disabled={migrating} className="self-start">
+            {migrating ? t('saveFolderMoving') : t('saveFolderChange')}
+          </Button>
+        </div>
+        {progress && (
+          <div className="space-y-2.5 py-4">
+            <div className="text-sm font-medium">{t('saveFolderProgressTitle')}</div>
+            <div className="flex items-center gap-3">
+              <Progress value={progress.pct} className="flex-1" />
+              <span className="text-muted-foreground min-w-10 text-right text-xs tabular-nums">{progress.pct}%</span>
+            </div>
+            <div className="bg-muted text-muted-foreground max-h-36 overflow-y-auto rounded-md p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+              {progress.log.map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </SettingsGroup>
+      <SettingsGroup title={t('exportSubTitle')}>
+        <SettingRow label={t('exportZip')} hint={t('hintZip')} controlWidth="auto">
+          <Button variant="outline" onClick={() => void writeArchive('images')}>
+            {t('exportZip')}
+          </Button>
+        </SettingRow>
+        <SettingRow label={t('importImages')} hint={t('hintMedia')} controlWidth="auto">
+          <Button variant="outline" onClick={importMedia}>
+            {t('importImages')}
+          </Button>
+        </SettingRow>
+      </SettingsGroup>
+      <SettingsGroup title={t('backupSubTitle')} description={t('hintBackup')}>
+        {!exportReminder?.due && (
+          <SettingRow label={t('backupFileCreate')} hint={t('hintBackupFile')} controlWidth="auto">
+            <Button variant="outline" onClick={() => void writeArchive('full')}>
+              {t('backupFileCreate')}
+            </Button>
+          </SettingRow>
+        )}
+        <SettingRow label={t('importZip')} controlWidth="auto">
+          <Button variant="outline" onClick={() => void runZipImport()}>
+            {t('importZip')}
+          </Button>
+        </SettingRow>
+        <SettingRow label={t('exportIncludeTrash')} controlId="export-include-trash" controlWidth="auto" inline>
+          <Checkbox id="export-include-trash" checked={exportIncludeTrash} onCheckedChange={(v) => setExportIncludeTrash(v === true)} />
+        </SettingRow>
+        <SettingRow label={t('exportReminderEnabled')} hint={t('exportReminderHint')} controlId="export-reminder" controlWidth="auto" inline>
+          <Switch
+            id="export-reminder"
+            checked={exportReminder?.enabled !== false}
+            onCheckedChange={(enabled) => {
+              void setExportReminderEnabled(enabled)
+                .then(setExportReminder)
+                .catch(() => {});
+            }}
+          />
+        </SettingRow>
+        <SettingRow label={t('exportReminderThreshold')} controlId="export-reminder-threshold">
+          <Select
+            value={String(exportReminder?.threshold ?? 100)}
+            onValueChange={(value) => {
+              const threshold = Number(value);
+              void setExportReminderThreshold(threshold)
+                .then(setExportReminder)
+                .catch(() => {});
+            }}
+          >
+            <SelectTrigger id="export-reminder-threshold" className="w-full" disabled={exportReminder?.enabled === false}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {[25, 50, 100, 250].map((threshold) => (
+                  <SelectItem key={threshold} value={String(threshold)}>
+                    {t('exportReminderCount', { count: threshold })}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* メディアの書き出しと取り込み＝バックアップではなく、他の何かへファイルを渡すこと */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">
-            <Highlight text={t('exportSubTitle')} />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Button variant="outline" onClick={() => void writeArchive('images')}>
-              {t('exportZip')}
-            </Button>
-            <Hint text={t('hintZip')} />
-          </div>
-          <Separator />
-          <div>
-            <Button variant="outline" onClick={importMedia}>
-              {t('importImages')}
-            </Button>
-            <Hint text={t('hintMedia')} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 手動バックアップと、この PC 内での復元。 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">
-            <Highlight text={t('backupSubTitle')} />
-          </CardTitle>
-          <CardDescription>
-            <Highlight text={t('hintBackup')} />
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="text-sm font-medium">
-              <Highlight text={t('backupFileSubTitle')} />
-            </div>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
-              <Button variant="outline" onClick={() => void writeArchive('full')}>
-                {t('backupFileCreate')}
-              </Button>
-              <Button variant="outline" onClick={() => void runZipImport()}>
-                {t('importZip')}
-              </Button>
-              <div className="flex items-center gap-1.5">
-                <Checkbox id="export-include-trash" checked={exportIncludeTrash} onCheckedChange={(v) => setExportIncludeTrash(v === true)} />
-                <Label htmlFor="export-include-trash" className="font-normal">
-                  {t('exportIncludeTrash')}
-                </Label>
-              </div>
-            </div>
-            <Hint text={t('hintBackupFile')} />
-            <div className="mt-3 flex items-center gap-2">
-              <Checkbox
-                id="export-reminder"
-                checked={exportReminder?.enabled !== false}
-                onCheckedChange={(value) => {
-                  const enabled = value === true;
-                  void setExportReminderEnabled(enabled)
-                    .then(setExportReminder)
-                    .catch(() => {});
-                }}
-              />
-              <Label htmlFor="export-reminder" className="font-normal">
-                {t('exportReminderEnabled')}
-              </Label>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2.5">
-              <Label htmlFor="export-reminder-threshold" className="font-normal">
-                {t('exportReminderThreshold')}
-              </Label>
-              <Select
-                value={String(exportReminder?.threshold ?? 100)}
-                onValueChange={(value) => {
-                  const threshold = Number(value);
-                  void setExportReminderThreshold(threshold)
-                    .then(setExportReminder)
-                    .catch(() => {});
-                }}
-              >
-                <SelectTrigger id="export-reminder-threshold" className="w-28" disabled={exportReminder?.enabled === false}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[25, 50, 100, 250].map((threshold) => (
-                    <SelectItem key={threshold} value={String(threshold)}>
-                      {t('exportReminderCount', { count: threshold })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Hint text={t('exportReminderHint')} />
-            {exportReminder?.lastExportAt && <div className="text-muted-foreground mt-2 text-[0.8rem]">{t('exportReminderLast', { date: fmtTime(exportReminder.lastExportAt) })}</div>}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 整合性の検査（#301）＝問題が無いときは段階的な開示によって隠す */}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        {exportReminder?.lastExportAt && <p className="text-muted-foreground py-4 text-sm">{t('exportReminderLast', { date: fmtTime(exportReminder.lastExportAt) })}</p>}
+      </SettingsGroup>
       {integrity && (integrity.dbOk === false || (integrity.orphanCount ?? 0) > 0 || (integrity.missingCount ?? 0) > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">
-              <Highlight text={t('integritySubTitle')} />
-            </CardTitle>
-            <CardDescription>
-              <Highlight text={t('hintIntegrity')} />
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {integrity.dbOk === false && <div className="text-destructive text-[0.8rem]">{`⚠ ${t('integrityDbBad')}`}</div>}
-            {(integrity.orphanCount ?? 0) > 0 && (
-              <div className="text-destructive flex flex-wrap items-center gap-2.5 text-[0.8rem]">
-                <span>{`⚠ ${t('integrityOrphanLine', { count: integrity.orphanCount })}`}</span>
-                <Button variant="outline" size="sm" onClick={recoverOrphans} disabled={recovering}>
-                  {t('integrityRecoverBtn')}
-                </Button>
-              </div>
-            )}
-            {(integrity.missingCount ?? 0) > 0 && <div className="text-destructive text-[0.8rem]">{`⚠ ${t('integrityMissingLine', { count: integrity.missingCount })}`}</div>}
-            {integrity.lastCheckAt && <div className="text-muted-foreground text-[0.8rem]">{t('integrityLastChecked', { date: fmtTime(integrity.lastCheckAt) })}</div>}
-          </CardContent>
-        </Card>
+        <SettingsGroup title={t('integritySubTitle')} description={t('hintIntegrity')}>
+          {integrity.dbOk === false && <p className="text-destructive py-4 text-sm">{`⚠ ${t('integrityDbBad')}`}</p>}
+          {(integrity.orphanCount ?? 0) > 0 && (
+            <SettingRow label={t('integrityOrphanLine', { count: integrity.orphanCount })} controlWidth="auto">
+              <Button variant="outline" onClick={recoverOrphans} disabled={recovering}>
+                {t('integrityRecoverBtn')}
+              </Button>
+            </SettingRow>
+          )}
+          {(integrity.missingCount ?? 0) > 0 && <p className="text-destructive py-4 text-sm">{`⚠ ${t('integrityMissingLine', { count: integrity.missingCount })}`}</p>}
+          {integrity.lastCheckAt && <p className="text-muted-foreground py-4 text-sm">{t('integrityLastChecked', { date: fmtTime(integrity.lastCheckAt) })}</p>}
+        </SettingsGroup>
       )}
     </div>
   );

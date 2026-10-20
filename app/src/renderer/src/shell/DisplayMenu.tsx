@@ -1,4 +1,4 @@
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { gridSlot, subscribeGridSlots } from '../services/content-area.ts';
 import type { MessageKey } from '../services/translation.ts';
 type SortOption = { value: string; key: MessageKey; icon: LucideIcon; hint?: MessageKey };
@@ -202,10 +202,12 @@ function SortMenu({ storeKey, apply, options }: { storeKey: 'sortPost' | 'sortPo
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         {value === 'random' ? (
-          <DropdownMenuItem onClick={() => rerollShuffle?.()}>
-            <Shuffle />
-            {t('sortReroll')}
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => rerollShuffle?.()}>
+              <Shuffle />
+              {t('sortReroll')}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         ) : (
           <DropdownMenuRadioGroup value={ascending ? 'asc' : 'desc'} onValueChange={(next) => choose(sortWithDirection(value, next === 'asc'))}>
             <DropdownMenuRadioItem value="desc">{t(labels[0])}</DropdownMenuRadioItem>

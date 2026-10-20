@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react';
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { Plus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { addTab, closeTab, closeTabByGesture, showTabMenu } from '../services/orchestrator.ts';
 
@@ -87,9 +88,9 @@ export function Tabs({ model }: { model: TabsModel | null }) {
       <Tooltip>
         <TooltipTrigger
           render={
-            <button type="button" data-slot="tab-new" className="app-no-drag ml-1.5 grid size-6 shrink-0 place-items-center self-center rounded-[6px] text-[var(--text-muted)] transition-colors hover:bg-[var(--hover)] hover:text-[var(--text)]" aria-label={model.newTitle} onClick={() => addTab()}>
-              <Plus aria-hidden="true" size={13} />
-            </button>
+            <Button variant="ghost" size="icon-xs" data-slot="tab-new" className="app-no-drag ml-1.5 self-center" aria-label={model.newTitle} onClick={() => addTab()}>
+              <Plus aria-hidden="true" />
+            </Button>
           }
         />
         <TooltipContent side="bottom">{model.newTitle}</TooltipContent>

@@ -8,6 +8,7 @@ import { CatIcon, CategoryEditor } from './index.tsx';
 import { InlineFilterInput } from './InlineFilterInput.tsx';
 import { t } from '../_shared/i18n.ts';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 // browseMode と2本のクエリの木をまとめて1つ購読する。スナップショットは有効なモードの木
 // （変更と変更の間は参照が安定＝store.set は実際に変わったときだけ差し替える）なので、
@@ -60,9 +61,9 @@ function Chip({ f }: { f: ActiveFilter }) {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" className="ml-0.5 flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground" aria-label={t('qfDelete')} onClick={() => f.remove()}>
-        <X className="size-3.5" />
-      </button>
+      <Button variant="ghost" size="icon-xs" className="ml-0.5 size-5" aria-label={t('qfDelete')} onClick={() => f.remove()}>
+        <X />
+      </Button>
     </span>
   );
 }
@@ -90,9 +91,9 @@ export function FilterChips() {
           <span className="flex h-7 min-w-0 items-center border-l border-border px-1.5">
             <span className="min-w-0 truncate">{activeFolder.name}</span>
           </span>
-          <button type="button" className="ml-0.5 flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground" aria-label={t('qfDelete')} onClick={() => openFolder(null)}>
-            <X className="size-3.5" />
-          </button>
+          <Button variant="ghost" size="icon-xs" className="ml-0.5 size-5" aria-label={t('qfDelete')} onClick={() => openFolder(null)}>
+            <X />
+          </Button>
         </span>
       )}
       {chips.map((f, i) => (

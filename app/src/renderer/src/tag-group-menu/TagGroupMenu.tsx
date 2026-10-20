@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { useMemo, useSyncExternalStore } from 'react';
 import { close, get, subscribe } from '../services/tag-group-menu.ts';
 import { tagGroupDotClass } from '../_shared/tag-group-dot.ts';
-import { DropdownMenu, DropdownMenuLabel, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 // タグの移動先を選ぶメニュー。グループ自身の編集は見出しの右クリックで行う。
 export function TagGroupMenuHost() {
@@ -47,15 +47,17 @@ export function TagGroupMenuHost() {
           )}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => {
-            close();
-            menu.onCreate();
-          }}
-        >
-          <Plus />
-          {menu.createLabel}
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onClick={() => {
+              close();
+              menu.onCreate();
+            }}
+          >
+            <Plus />
+            {menu.createLabel}
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </ContextMenuContent>
     </DropdownMenu>
   );

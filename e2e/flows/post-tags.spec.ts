@@ -13,7 +13,7 @@ for (const viewer of [false, true]) {
       const inspector = page.locator('[data-slot="inspector"]');
       if (platform === 'pixiv') {
         await inspector.getByRole('button', { name: 'pixivタグ 2件', exact: true }).click();
-        await page.locator('[data-slot="popover-content"]').getByRole('button', { name: '猫', exact: true }).click();
+        await page.getByRole('menuitem', { name: '猫', exact: true }).click();
       } else {
         await inspector.getByRole('button', { name: '#猫', exact: true }).click();
       }

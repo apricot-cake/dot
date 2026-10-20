@@ -10,6 +10,7 @@
 // 幅確保の分岐なしにそれへ追随する。
 import { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { t } from '../_shared/i18n.ts';
 import { scroller } from '../services/content-area.ts';
@@ -51,15 +52,9 @@ export function ScrollToTop() {
     // `inert` にして、誰にも見えないボタンがタブ順にもアクセシビリティの木にも入らない
     // ようにする。`inert` はレイアウトに触らないので、トランジションが再生できるままになる。
     <div inert={!shown} className={cn('absolute right-6 bottom-6 z-50 transition-[opacity,transform] duration-[var(--motion-duration-base)] ease-[var(--motion-ease-out)]', shown ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0')}>
-      <button
-        type="button"
-        data-slot="scroll-to-top"
-        aria-label={label}
-        className="inline-grid size-9 place-items-center rounded-md border bg-popover text-popover-foreground shadow-lg transition-colors duration-75 hover:bg-muted active:bg-foreground/16"
-        onClick={() => scroller()?.scrollTo({ top: 0, behavior: 'smooth' })}
-      >
-        <ArrowUp className="size-4" />
-      </button>
+      <Button variant="outline" size="icon-lg" data-slot="scroll-to-top" aria-label={label} className="shadow-lg" onClick={() => scroller()?.scrollTo({ top: 0, behavior: 'smooth' })}>
+        <ArrowUp />
+      </Button>
     </div>
   );
 }

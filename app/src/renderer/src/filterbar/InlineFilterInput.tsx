@@ -2,7 +2,8 @@ import { subscribeSearch, searchRevision } from '../services/search-results.ts';
 import { isComposing } from '../_shared/composition.ts';
 import { subscribe as subscribePosts, getGeneration } from '../services/posts-data.ts';
 import type { MessageKey } from '../services/translation.ts';
-import { Autocomplete } from '@base-ui/react/autocomplete';
+import { Autocomplete, AutocompleteContent, AutocompleteInput, AutocompleteItem, AutocompleteList } from '@/components/ui/autocomplete';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Folder, Plus, Tag, User } from 'lucide-react';
 import { useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -75,14 +76,15 @@ export function InlineFilterInput({ posters }: { posters: boolean }) {
       <Tooltip>
         <TooltipTrigger
           render={
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               data-slot="filter-add-inline"
               // アイコンだけの「+」（帯の末尾に置く小さな追加の入り口）。境界線は持たない＝この帯の
               // 破線の境界線は「除く」チップの印なので、追加の入り口が同じ顔を着ていると、除外の
               // 条件がそこに立っているように読める（隣の検索の保存と同じ ghost のスタイルに揃えて
               // ある）。
-              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="text-muted-foreground"
               aria-label={t('fbAddFilter')}
               onClick={() => setEditing(true)}
             />
@@ -95,7 +97,7 @@ export function InlineFilterInput({ posters }: { posters: boolean }) {
     );
 
   return (
-    <Autocomplete.Root
+    <Autocomplete
       mode="none"
       autoHighlight
       items={rows}
@@ -115,36 +117,30 @@ export function InlineFilterInput({ posters }: { posters: boolean }) {
       }}
       itemToStringValue={(row: Row) => row.title}
     >
-      <Autocomplete.Input ref={inputRef} autoFocus aria-label={t('fbAddFilter')} placeholder={t('fbAddFilterPh')} onKeyDown={onKeyDown} className="h-7 w-44 min-w-0 rounded-md border border-input bg-background px-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring md:text-sm" />
-      <Autocomplete.Portal>
-        {/* z-[13500]: 旧来の z の段より上（shadcn の portal の画面が共有する層）。 */}
-        <Autocomplete.Positioner side="bottom" align="start" sideOffset={4} collisionPadding={8} className="isolate z-[13500]">
-          <Autocomplete.Popup className="max-h-(--available-height) w-72 max-w-[calc(100vw-24px)] origin-(--transform-origin) overflow-y-auto rounded-lg bg-popover p-1 font-sans text-popover-foreground text-sm shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-[empty]:hidden data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95">
-            <Autocomplete.List>
-              {(row: Row) => {
-                const Icon = ROW_ICON[row.section] || Tag;
-                const label = ROW_LABEL[row.section];
-                return (
-                  <Autocomplete.Item
-                    key={row.id}
-                    value={row}
-                    onClick={() => {
-                      row.commit();
-                      close();
-                    }}
-                    className="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 data-highlighted:bg-muted"
-                  >
-                    <Icon className="size-4 shrink-0 text-muted-foreground" />
-                    {label ? <span className="shrink-0 text-muted-foreground text-xs">{t(label)}</span> : null}
-                    <span className="min-w-0 flex-1 truncate">{row.title}</span>
-                    {row.hint ? <span className="shrink-0 text-muted-foreground text-xs">{row.hint}</span> : null}
-                  </Autocomplete.Item>
-                );
-              }}
-            </Autocomplete.List>
-          </Autocomplete.Popup>
-        </Autocomplete.Positioner>
-      </Autocomplete.Portal>
-    </Autocomplete.Root>
+      <AutocompleteInput ref={inputRef} autoFocus aria-label={t('fbAddFilter')} placeholder={t('fbAddFilterPh')} onKeyDown={onKeyDown} className="h-7 w-44 px-2" />
+      <AutocompleteContent className="w-72 max-w-[calc(100vw-24px)] data-empty:hidden">
+        <AutocompleteList>
+          {(row: Row) => {
+            const Icon = ROW_ICON[row.section] || Tag;
+            const label = ROW_LABEL[row.section];
+            return (
+              <AutocompleteItem
+                key={row.id}
+                value={row}
+                onClick={() => {
+                  row.commit();
+                  close();
+                }}
+              >
+                <Icon className="size-4 shrink-0 text-muted-foreground" />
+                {label ? <span className="shrink-0 text-muted-foreground text-xs">{t(label)}</span> : null}
+                <span className="min-w-0 flex-1 truncate">{row.title}</span>
+                {row.hint ? <span className="shrink-0 text-muted-foreground text-xs">{row.hint}</span> : null}
+              </AutocompleteItem>
+            );
+          }}
+        </AutocompleteList>
+      </AutocompleteContent>
+    </Autocomplete>
   );
 }
