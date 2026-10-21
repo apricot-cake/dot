@@ -1,5 +1,5 @@
 name: 不具合報告
-description: dot が期待どおりに動かない場合はこちら
+description: 期待どおりに動かない場合はこちら
 body:
   - type: markdown
     attributes:
