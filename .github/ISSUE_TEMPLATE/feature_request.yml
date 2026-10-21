@@ -7,19 +7,21 @@ body:
         投稿は公開されます。個人情報やログイン情報は載せないでください。
         画像を添付する場合は、内容を確認してから添付してください。
   - type: textarea
-    id: problem
+    id: request
     attributes:
-      label: 困っていること
-      description: どのような場面で、何に困っていますか？
+      label: 希望する機能・動作
+      description: 追加してほしい機能や、改善後に期待する動作を記入してください。
     validations:
       required: true
   - type: textarea
-    id: request
+    id: scenario
     attributes:
-      label: できるようになってほしいこと
-      description: 希望する動作や改善案があれば教えてください。
+      label: 利用場面・困っていること
+      description: どのような場面で使いますか？ 現在の問題や、この機能が必要な理由を教えてください。
+    validations:
+      required: true
   - type: textarea
     id: additional
     attributes:
-      label: 補足・画像
-      description: 具体例や画像など、参考になる情報があれば追加してください。
+      label: 補足・具体例
+      description: 具体例や画像、現在の代替手段など、参考になる情報があれば追加してください。
