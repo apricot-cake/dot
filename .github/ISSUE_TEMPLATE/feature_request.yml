@@ -1,0 +1,25 @@
+name: 機能要望
+description: dot に追加してほしい機能や改善の提案はこちら
+body:
+  - type: markdown
+    attributes:
+      value: |
+        投稿は公開されます。個人情報やログイン情報は載せないでください。
+        画像を添付する場合は、内容を確認してから添付してください。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 困っていること
+      description: どのような場面で、何に困っていますか？
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: できるようになってほしいこと
+      description: 希望する動作や改善案があれば教えてください。
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足・画像
+      description: 具体例や画像など、参考になる情報があれば追加してください。

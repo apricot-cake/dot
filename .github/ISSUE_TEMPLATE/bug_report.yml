@@ -1,0 +1,44 @@
+name: 不具合報告
+description: dot が期待どおりに動かない場合はこちら
+body:
+  - type: markdown
+    attributes:
+      value: |
+        投稿は公開されます。個人情報やログイン情報は載せないでください。
+        画像やログを添付する場合は、内容を確認してから添付してください。
+  - type: textarea
+    id: actual
+    attributes:
+      label: 起きたこと
+      description: どの画面で、どのような問題が起きましたか？
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 問題が起きるまでの操作を、分かる範囲で教えてください。
+      placeholder: |
+        1. …を開く
+        2. …を押す
+        3. …が起きる
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した動作
+      description: 本来はどう動いてほしかったですか？
+  - type: input
+    id: app-version
+    attributes:
+      label: アプリのバージョン
+      description: 分かる場合は、「ヘルプ」→「dotについて」で確認したバージョンを記入してください。
+  - type: input
+    id: extension-version
+    attributes:
+      label: 拡張機能のバージョン
+      description: 拡張機能に関する問題の場合、分かる範囲で記入してください。
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足・画像
+      description: エラーメッセージや画像など、参考になる情報があれば追加してください。
