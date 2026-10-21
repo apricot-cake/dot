@@ -57,7 +57,9 @@ body:
     id: extension-version
     attributes:
       label: 拡張機能のバージョン
-      description: 拡張機能に関する問題の場合、分かる範囲で記入してください。
+      description: |
+        拡張機能に関する問題の場合に記入してください。
+        Chrome のアドレスバーに `chrome://extensions` を入力し、dot の「詳細」を開くと「バージョン」を確認できます。
   - type: input
     id: browser-version
     attributes:
