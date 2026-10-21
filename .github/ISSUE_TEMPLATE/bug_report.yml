@@ -18,10 +18,6 @@ body:
     attributes:
       label: 再現手順
       description: 問題が起きるまでの操作を、分かる範囲で教えてください。
-      placeholder: |
-        1. …を開く
-        2. …を押す
-        3. …が起きる
     validations:
       required: true
   - type: textarea
