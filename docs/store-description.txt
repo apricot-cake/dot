@@ -3,9 +3,6 @@ The SUMMARY must match extension/public/_locales/en/messages.json extDesc (the s
 summary is taken from the manifest description; max 132 characters).
 Before submission, re-verify every feature claim against the shipped UI
 (features and terminology may change before release).
-The "when post details cannot be fetched" block must be checked against the
-wording the extension actually shows at save time — the range narrows as the
-page-side fallback reaches more save routes.
 
 === SUMMARY (max 132 chars) ===
 
@@ -13,42 +10,8 @@ Save web posts and artwork to your PC with images, text, creator, and source URL
 
 === DETAILED DESCRIPTION ===
 
-A library for finding the posts and artwork you saved, whenever you need them again.
+“Where did I save that post?” Spend less time searching with a library of your own.
 
-dot saves posts and artwork you find on the web—including original images and videos, text, author, date, engagement counts, and source URL—into a library on your own PC, where you can search, tag, and organize them.
+dot brings posts and artwork from X, Bluesky, and pixiv into a library you can return to. Search what you have saved in the dot app for Windows, and organize it with tags and folders.
 
-YOUR DATA STAYS WITH YOU
-- Everything is saved to a local folder you choose. No data is collected or sent to any server of ours.
-- Images and videos are saved as ordinary files, with metadata recorded in a database inside your library. Open the media in other tools, back up your library, or move the whole library.
-- Your library stays with you even when a post or account is no longer available online.
-- Save the whole library manually as a ZIP backup file, with an optional reminder after you save a chosen number of posts.
-
-HOW TO SAVE
-1. On supported sites, point at a post and press the save button in its top-left corner. dot saves all images and videos in the post together with its text, author, and source URL. The same button also saves text-only posts.
-2. To save a single image or video, choose dot from the browser's context menu. This also works for web images and videos outside supported sites.
-3. To import what you have already saved on a platform, open your X bookmarks or history, your Bluesky saved posts, or your own pixiv bookmarks, and start import mode from the prompt on the page or the context menu. As you scroll or page through the list yourself, dot saves the posts that are not yet in your library. dot never scrolls or turns pages for you.
-4. Import images and videos from your computer by dropping them into the desktop app or using the file picker. You can also paste an image from the clipboard.
-5. Content saved in the browser appears in the desktop app automatically.
-
-FIND IT AGAIN
-- Search by text or username, with smart matching that forgives typos and kana variants
-- Filter by platform, author, tag, in-text hashtag, date, engagement, and folder — combined freely
-- Sort by newest, most likes, save date, and more
-- Browse in a grid or list; in the grid, square thumbnails and show info are independent toggles. Posts with multiple images or videos open as one gallery
-
-ORGANIZE
-- Tags — filter to "No tags" and arrow from post to post to tag them one after another
-- Folders for themes and favorites
-- Bulk actions: select many posts and tag, file, group, or delete them at once
-
-SUPPORTED PLATFORMS
-X (Twitter) / Bluesky / pixiv
-
-WHEN POST DETAILS CANNOT BE FETCHED
-For some posts the platform returns no details—such as age-restricted or protected posts on X. When you press a post's save button, dot fills part of that gap from the text and author shown on the page. It tells you when details are still missing. A post that has already been deleted cannot be saved.
-
-REQUIREMENTS
-Saving and browsing require the dot desktop app for Windows (free and open source). Install it first, then add this extension.
-
-PRIVACY
-No data is collected or transmitted to any server of ours. To enrich metadata, read-only requests go directly from your browser to the platform the post comes from (X's syndication API, Bluesky, and pixiv — pixiv requests use your own pixiv session so logged-in-only works can be captured). To save a Bluesky video, dot also fetches the author's DID document from plc.directory or from the domain named in the author's DID. See the privacy policy for details. Everything is saved locally to a folder you choose.
+Install the dot app for Windows first, then add this extension. On supported sites, hover over a post and press its save button. To save a single image or video, right-click it and choose dot.
