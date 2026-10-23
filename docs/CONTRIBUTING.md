@@ -201,52 +201,20 @@ pnpm run ext:dev:status
 pnpm run check
 ```
 
-拡張機能のソース、マニフェスト、またはバンドル方法を変更した場合は、次を実行します。
-
-```powershell
-pnpm run check:ext
-```
-
-保存、IPC、ネイティブ メッセージング、アプリの起動に関わる変更では、さらに次を実行します。
-
-```powershell
-pnpm run test:integration
-```
-
-画面の操作や見た目に影響する変更では、アプリをビルドして画面 E2E も実行します。
-
-```powershell
-pnpm run app:build
-pnpm run test:e2e:ci
-```
+拡張機能、保存処理、IPC、画面など、変更した対象に応じて追加の検証を行います。コマンドの選び方、ビルドの前提、実行方法は [テスト](テスト.md) を参照してください。
 
 実機確認に入る前に、変更した対象を配備してください。アプリだけを変更した場合は `pnpm run app:deploy`、拡張機能だけを変更した場合は `pnpm run ext:deploy`、両方を変更した場合は両方を実行します。
 
 ## 配布物を作る
 
-### Chrome 拡張機能
+配布物の作成とストアへの提出は、次の文書を参照してください。
 
-Chrome ウェブストアへ提出する成果物を作る前に、次を実行します。
-
-```powershell
-pnpm run release:ext:verify
-```
-
-出力先は `extension/.output/chrome-mv3-release/` です。ZIP が必要な場合は `pnpm run ext:package` を実行します。
-
-### デスクトップアプリ
-
-Windows 向けの配布物は Electron Forge で作ります。
-
-```powershell
-pnpm run app:make
-```
-
-公式 MSIX Maker により、`app/artifacts/make/msix/x64/` に MSIX が出力されます。既定は署名のない検証専用パッケージです。必要な Windows SDK、検証版の更新方法、Store 用の識別情報は [MSIX の作成](../app/msix/README.md) を参照してください。
-
-Store へのアップロード・審査提出・公開は、パッケージの作成とは別の操作です。現在は提出を保留しています。登録・認証と承認の手順は [ストア操作](ストア操作.md) にまとめています。
-
-配布前には、クリーンな Windows 環境でアプリの起動、拡張機能からの保存、ライブラリの作成と既存ライブラリの読み込みを確認してください。
+| 内容 | 参照先 |
+| --- | --- |
+| 配布方式、対応環境、検証状況 | [配布とストア提出](配布とストア提出.md) |
+| MSIX のビルド、Windows SDK、検証版の導入 | [MSIX の作成](../app/msix/README.md) |
+| 拡張機能の ZIP 作成、成果物の検証、ストアの登録・認証・提出 | [ストア操作](ストア操作.md) |
+| Chrome ウェブストアの掲載情報と権限・データ利用の申告 | [Chrome ウェブストア掲載](Chromeウェブストア掲載.md) |
 
 ## 保存に失敗したとき
 

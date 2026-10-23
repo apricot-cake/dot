@@ -4,7 +4,7 @@
 
 Windows x64 と Windows SDK `10.0.26100.0`、Visual Studio C++ Build Tools を使います。アプリの最低 Windows ビルドは `10.0.22000.0` です。SDK の版はインストール要件とは別に管理します。
 
-`pnpm run app:make` は公式 `@electron-forge/maker-msix` `8.0.1` で MSIX を作成します。パッケージ作成時に `dot-native-host.exe` をコンパイルし、同梱の Electron を Node モードで起動するコンソール入口として配置します。Chrome の標準入出力を継承し、入口の終了時には子プロセスも終了します。
+`pnpm run app:make` は `app/artifacts/make/msix/x64/` に MSIX を出力します。公式 `@electron-forge/maker-msix` `8.0.1` で MSIX を作成します。パッケージ作成時に `dot-native-host.exe` をコンパイルし、同梱の Electron を Node モードで起動するコンソール入口として配置します。Chrome の標準入出力を継承し、入口の終了時には子プロセスも終了します。
 
 既定は検証専用の `dot.Verification` / `CN=dot Verification, OID.2.25.311729368913984317654407730594956997722=1` です。末尾の OID は Windows の unsigned パッケージ用識別子で、Store の製品を表す識別情報ではありません。検証パッケージも `dot-native-host.exe` の Alias と `dot:` を登録するため、別の MSIX 版と同時に有効化せず、主担当の検証手順で登録と解除を管理します。
 
