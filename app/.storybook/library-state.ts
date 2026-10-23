@@ -124,7 +124,7 @@ export async function readPreviewState(configDirectory?: string): Promise<{ stat
         tagGroups: reader.getTagGroups(),
         posterTags: reader.getPosterTags(),
         vocab: reader.tagVocabOverview(),
-        tabs: readTabs(sqlite),
+        tabs: process.env.DOT_STORYBOOK_FRESH_TABS === '1' ? null : readTabs(sqlite),
         history,
       };
     })();

@@ -1497,8 +1497,7 @@ export function endFilterEditSession(): void {
   subscribeKey('sortPoster', () => {
     if (tabsCtl.isRestoring()) return; // ストアを書いたのは applyEntry/initTabs＝あちらが自分で描画を走らせる
     if (store.getState().sortPoster === 'random' && !store.getState().shuffleSeed) store.setState({ shuffleSeed: newShuffleSeed() });
-    // 並び順の変更は push ではなく、今の履歴のエントリを書き換える（#144 確定（保留項目2））。
-    tabsCtl.setNavReplaceNext();
+    tabsCtl.setNavPushNext();
     renderPosters();
   });
   // 投稿者のクエリのリセット（バーの右側の「リセット」）。投稿者の木と、共有の検索ボックスを
@@ -1586,15 +1585,15 @@ export function endFilterEditSession(): void {
 
   // 表示ポップオーバーの並び順の Select がこれを呼ぶ。並び順はタブの状態にある
   // （renderPosts→永続化 の経路でタブごとに保存する）。別のグローバルな設定にはしていない＝
-  // 二重に持つと読み込み時に競合したため。並び順の変更は push ではなく、今の履歴のエントリを
-  // 書き換える（#144 確定（保留項目2））。まだ種が無い状態で 'random' を選ぶと種を作るので、
+  // 二重に持つと読み込み時に競合したため。並び順の変更は戻る・進むで復元する。
+  // まだ種が無い状態で 'random' を選ぶと種を作るので、
   // 最初の選択で既にシャッフルされる（#118）。既にある種はそのまま残す。だから random を
   // 離れて戻ってきても、利用者が振り直すまでは同じ順序が出る。
   setPostSort = (v: string) => {
     if (v === sortValue()) return;
+    if (store.getState().browseMode === 'posts') tabsCtl.setNavPushNext();
     store.setState({ sortPost: v });
     if (v === 'random' && !store.getState().shuffleSeed) store.setState({ shuffleSeed: newShuffleSeed() });
-    tabsCtl.setNavReplaceNext();
     if (store.getState().browseMode === 'trash') refilterTrash();
     else renderPosts();
   };
@@ -1604,8 +1603,8 @@ export function endFilterEditSession(): void {
     refilterTrash();
   };
   rerollShuffle = () => {
+    if (store.getState().browseMode !== 'trash') tabsCtl.setNavPushNext();
     store.setState({ shuffleSeed: newShuffleSeed() });
-    tabsCtl.setNavReplaceNext();
     if (store.getState().browseMode === 'posters') renderPosters();
     else if (store.getState().browseMode === 'trash') refilterTrash();
     else renderPosts();

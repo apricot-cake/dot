@@ -103,6 +103,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     return {
       tree: cloneTree(deps.getPosterTree()),
       sort: deps.getPosterSort(),
+      shuffleSeed: deps.getShuffleSeed(),
       search: deps.searchQuery(),
       inspectedPosterKey: selectedPosterKey,
     };
@@ -117,17 +118,16 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     if (store.getState().browseMode === 'posters') return entryOf('posters', snapshotPosterState());
     return entryOf('posts', snapshotState());
   }
-  // nav.record を包む push／置き換えの振り分け。1回限りの置き換えフラグ（並び順の変更＝
-  // 決着済みの保留の判断2の置き換え一覧）が、まとめる時のキー（実時間の打ち込み／
-  // ファセットエディタ）に勝つ。
-  let _navReplaceNext = false;
-  function setNavReplaceNext() {
-    _navReplaceNext = true;
+  // ソートと振り直しは、検索・フィルタの編集中でも独立した移動として残す。
+  let _navPushNext = false;
+  function setNavPushNext() {
+    nav.saveScrollTop(deps.contentScrollTop());
+    _navPushNext = true;
   }
   function recordEntry(e: DotNavEntry) {
-    if (_navReplaceNext) {
-      _navReplaceNext = false;
-      nav.replace(e);
+    if (_navPushNext) {
+      _navPushNext = false;
+      nav.push(e);
       return;
     }
     nav.record(e, deps.navCoalesceKey());
@@ -192,7 +192,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
   // （下のエントリ自身の描画がその描画そのもの）。image はグリッドの上にそのまま重なる。
   function applyEntry(e: DotNavEntry) {
     pendingPostScroll = e.kind === 'posts';
-    _navReplaceNext = false; // 復元は、保留中の置き換えの手がかりを消費しない
+    _navPushNext = false;
     if (e.kind === 'image') {
       const st = e.state as { recs: string[]; idx: number };
       deps.showImageView(st.recs, st.idx);
@@ -202,10 +202,11 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     prepareScroll(e.scrollTop ?? 0);
     deps.setBrowseModeLite(e.kind === 'posters' ? 'posters' : 'posts');
     if (e.kind === 'posters') {
-      const st = e.state as { tree?: any; sort?: string; search?: string; inspectedPosterKey?: string | null };
+      const st = e.state as { tree?: any; sort?: string; shuffleSeed?: string; search?: string; inspectedPosterKey?: string | null };
       restoringState = true;
       try {
         deps.setPosterTree(st.tree || null);
+        deps.setShuffleSeed(st.shuffleSeed || '');
         deps.setPosterSort(st.sort || 'count');
         deps.setSearchBoxValue(st.search || '');
         deps.renderPosters();
@@ -546,9 +547,10 @@ export function makeTabsController(deps: TabsBuilderDeps) {
       // 画像ビューを開く。
       const cur = at && Array.isArray(at._navHist) && at._navHist.length ? (JSON.parse(at._navHist[Math.max(0, Math.min(at._navIdx ?? at._navHist.length - 1, at._navHist.length - 1))]) as DotNavEntry) : null;
       if (cur && cur.kind === 'posters') {
-        const st = cur.state as { tree?: any; sort?: string; search?: string };
+        const st = cur.state as { tree?: any; sort?: string; shuffleSeed?: string; search?: string };
         restoringState = true; // sortPoster へのストアの書き込みが、利用者による並び順の変更として読まれてはいけない
         deps.setPosterTree(st.tree || null);
+        deps.setShuffleSeed(st.shuffleSeed || '');
         deps.setPosterSort(st.sort || 'count');
         deps.setSearchBoxValue(st.search || '');
         restoringState = false;
@@ -633,7 +635,7 @@ export function makeTabsController(deps: TabsBuilderDeps) {
     syncTitleAndPersist,
     syncPosterTitleAndPersist,
     syncPosterInspection,
-    setNavReplaceNext,
+    setNavPushNext,
     isRestoring: () => restoringState,
     navBack,
     navForward,
