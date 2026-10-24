@@ -1,6 +1,6 @@
 # dot の公式サイト
 
-Astro の静的ページに、React の操作再生デモを埋め込みます。日本語・ライト表示のみです。ページの説明とプライバシーポリシーは、JavaScript を無効にしても読めます。
+公式サイトは Astro で作成し、React による操作デモを埋め込んでいます。表示は日本語とライトテーマです。ページの説明とプライバシーポリシーは、JavaScript を無効にしても読めます。
 
 ## 開発と検証
 
@@ -12,7 +12,7 @@ pnpm run setup
 pnpm run site:dev
 ```
 
-ルートのワークスペースでサイトと共有モジュールの依存、WXT の型設定を準備します。開発環境と CI は同じ `pnpm-lock.yaml` を使います。
+ルートのワークスペースでサイトと共有モジュールの依存関係と、拡張機能のビルドツール WXT の型設定を準備します。開発環境と CI は同じ `pnpm-lock.yaml` を使います。
 
 公開用ビルドと操作の検証は次のコマンドで行います。
 
@@ -39,7 +39,7 @@ pnpm run site:test
 
 `.github/workflows/website.yml` がページと共有部品を検査します。main の変更は GitHub Pages へ配信します。リポジトリの Pages の Source を GitHub Actions に設定する必要があります。
 
-予定 URL は `https://apricot-cake.github.io/dot/` です。ストアの公開 URL が確定するまでは、ストアごとに「公式バッジをここに配置」と書いたプレースホルダーを表示します。紹介動画は未制作のため掲載していません。
+公開先 URL は `https://apricot-cake.github.io/dot/` です。ストアの公開 URL が確定するまでは、ストアごとに「公式バッジをここに配置」と書いた仮の表示を置きます。紹介動画は未制作のため掲載していません。
 
 公開時には公式配布素材を改変せずに配置します。Microsoftは `https://get.microsoft.com/images/ja%20dark.svg`、Chromeは `https://developer.chrome.com/docs/webstore/branding` のmedium PNG（枠あり）です。商品URLが確定するまでは公式素材を表示せず、配置場所を示します。
 

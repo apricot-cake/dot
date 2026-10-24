@@ -15,7 +15,7 @@ dot は、画像や動画を投稿の本文・作者情報とともに保存し�
 
 ## 必要な環境・インストール
 
-Windows と Chrome が必要です。ストア配布に向けて開発しており、現在はソースから開発環境を準備して起動します。[開発ガイド](docs/CONTRIBUTING.md)に沿って、アプリの起動と拡張機能の登録を行ってください。
+現在はソースから開発環境を準備して起動します。ストア配布に向けて開発中です。[開発ガイド](docs/CONTRIBUTING.md)に沿って、アプリの起動と拡張機能の登録を行ってください。
 
 配布対象は Windows 11 x64 を予定しています。Microsoft Store と Chrome ウェブストアでの配布方針、対応環境の検証状況は、[配布とストア提出](docs/配布とストア提出.md)にまとめています。
 
@@ -46,4 +46,4 @@ Windows と Chrome が必要です。ストア配布に向けて開発してお�
 
 ## ライセンス
 
-[MIT License](LICENSE)。同梱する第三者ソフトウェアのライセンスは、[Third-Party Notices](docs/THIRD-PARTY-NOTICES.md)を参照してください。
+[MIT License](LICENSE)。同梱する第三者ソフトウェアのライセンスは、[第三者ソフトウェアのライセンス](docs/THIRD-PARTY-NOTICES.md)を参照してください。

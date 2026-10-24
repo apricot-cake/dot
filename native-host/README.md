@@ -1,6 +1,6 @@
-# dot のネイティブメッセージングホスト
+# dot のネイティブ メッセージングホスト
 
-このディレクトリには、Chrome 拡張機能とローカルライブラリをつなぐネイティブメッセージングホストがあります。Chrome は [`chrome.runtime.connectNative`](https://developer.chrome.com/docs/extensions/reference/api/runtime#method-connectNative) を通じてホストを起動します。デスクトップアプリを閉じている間も投稿を保存できます。
+このディレクトリには、Chrome 拡張機能とローカルライブラリをつなぐネイティブ メッセージングホストがあります。Chrome は [`chrome.runtime.connectNative`](https://developer.chrome.com/docs/extensions/reference/api/runtime#method-connectNative) を通じてホストを起動します。デスクトップアプリを閉じている間も投稿を保存できます。
 
 ## 保存するデータ
 
@@ -17,7 +17,7 @@ items/<captureId>/  投稿の原寸画像、動画、動画のポスターなど
 
 | ファイル | 役割 |
 | --- | --- |
-| `bridge.mts` | 標準入出力でネイティブメッセージングの JSON を読み書きするエントリーポイントです。 |
+| `bridge.mts` | 標準入出力でネイティブ メッセージングの JSON を読み書きする起動用のファイルです。 |
 | `item-storage.mts` | `items/<captureId>/` のディレクトリと安全な相対パスを作ります。 |
 | `protocol.mts` | 拡張機能とホストが共有するリクエスト、応答、エラー、プロトコルバージョンを定義します。 |
 | `paths.mts` | アプリとホストで設定・キャッシュ・ログの保存先を解決します。 |
@@ -54,9 +54,9 @@ MSIX 版では、パッケージ内の専用コンソール入口を `dot-native
 | 隔離検証 | `com.dot.host.sandbox` | 検証コマンドが所有する `DOT_CONFIG_DIR` |
 | MSIX | `com.dot.host` | Windows API が返す `LocalState\config.json` |
 
-ホスト manifest は設定ディレクトリ内の `NativeMessaging` に配置します。保存済み索引とジャーナルは `cacheDir()`、ログは `logsDir()` を使います。MSIX ではそれぞれ `LocalCache` と `LocalState\Logs` です。主作業ツリーでは `%LOCALAPPDATA%\dot-Workspace` 内に分けます。
+ホスト manifest は設定ディレクトリ内の `NativeMessaging` に配置します。保存済み索引とジャーナルは `cacheDir()`、ログは `logsDir()` を使います。MSIX ではそれぞれ `LocalCache` と `LocalCache\Logs` です。主作業ツリーでは `%LOCALAPPDATA%\dot-Workspace` 内に分けます。
 
-`pnpm run ext:dev:register` は普段のライブラリへ接続する workspace ホストを登録します。ローカル配備した共有拡張機能も workspace を既定に使います。検証用タブは sandbox ホストへ接続し、検証コマンドが排他所有して終了時に登録を解除します。Store 用拡張機能の既定は MSIX ホストです。
+`pnpm run ext:dev:register` は普段のライブラリへ接続する workspace ホストを登録します。ローカル配備した共有拡張機能も workspace を既定に使います。検証用タブは sandbox ホストへ接続し、一つの検証コマンドだけが登録を管理し、終了時に解除します。Store 用拡張機能の既定は MSIX ホストです。
 
 既存の設定やライブラリを自動移動する処理はありません。
 
