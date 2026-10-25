@@ -6,7 +6,7 @@ import { t } from '../_shared/i18n.ts';
 import { dotIpc } from '../services/ipc.ts';
 import { AboutDialog } from '../settings/AboutDialog.tsx';
 
-const FEEDBACK_URL = 'https://github.com/apricot-cake/dot/issues/new';
+const FEEDBACK_URL = 'https://github.com/apricot-cake/dot/issues';
 
 export function HelpMenu() {
   const [aboutOpen, setAboutOpen] = useState(false);
