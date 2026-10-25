@@ -2,7 +2,7 @@
 
 dot は、画像や動画を投稿の本文・作者情報とともに保存し、後から探せる個人用メディアライブラリです。Windows アプリと Chrome 拡張機能を組み合わせて使います。
 
-[公式サイト](https://apricot-cake.github.io/dot/)
+[紹介ページ](https://apricot-cake.github.io/dot/)
 
 ## 主な機能
 
